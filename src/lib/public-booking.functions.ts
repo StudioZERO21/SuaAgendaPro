@@ -1,14 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-
-function anonClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
+import { supabase } from "@/integrations/supabase/client";
 
 // ── Public types ──────────────────────────────────────────────
 
@@ -78,9 +69,7 @@ export const fetchPublicProfile = createServerFn({ method: "GET" })
     return slug.trim();
   })
   .handler(async ({ data: slug }): Promise<PublicData | null> => {
-    const db = anonClient();
-
-    const { data: profile } = await db
+    const { data: profile } = await supabase
       .from("profiles")
       .select(
         "id, slug, display_name, bio, phone, avatar_url, city, state, specialty, business_name, theme_color, show_prices, accept_online",
@@ -92,17 +81,17 @@ export const fetchPublicProfile = createServerFn({ method: "GET" })
     if (!profile) return null;
 
     const [{ data: services }, { data: wh }, { data: portfolio }] = await Promise.all([
-      db
+      supabase
         .from("services")
         .select("id, name, description, duration_minutes, price_cents")
         .eq("professional_id", profile.id)
         .eq("is_active", true)
         .order("name"),
-      db
+      supabase
         .from("working_hours")
         .select("day_of_week, is_open, start_time, end_time")
         .eq("professional_id", profile.id),
-      db
+      supabase
         .from("portfolio_items")
         .select("id, image_url, title, description, order_index")
         .eq("professional_id", profile.id)
@@ -135,9 +124,7 @@ export const fetchPublicSlots = createServerFn({ method: "GET" })
   )
   .handler(
     async ({ data: { professionalId, dateStr, durationMin } }): Promise<string[]> => {
-      const db = anonClient();
-
-      const { data } = await db.rpc("get_available_slots", {
+      const { data } = await supabase.rpc("get_available_slots", {
         p_professional_id: professionalId,
         p_date: dateStr,
         p_duration_min: durationMin,
