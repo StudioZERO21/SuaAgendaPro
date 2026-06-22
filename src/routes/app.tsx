@@ -96,14 +96,23 @@ function AgendaPage() {
 
   const { unreadCount } = useNotifications();
 
-  const monday = todayMonday();
-  const week   = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+  const today          = useMemo(() => new Date(), []);
+  const todayIdx       = (today.getDay() + 6) % 7;
+  const [weekOffset, setWeekOffset]       = useState(0);
+  const [activeDateIdx, setActiveDateIdx] = useState(todayIdx);
+
+  const monday = useMemo(() => {
+    const d = todayMonday();
+    d.setDate(d.getDate() + weekOffset * 7);
     return d;
-  });
-  const today          = new Date();
-  const [activeDateIdx, setActiveDateIdx] = useState(((today.getDay() + 6) % 7) as number);
+  }, [weekOffset]);
+
+  const week = useMemo(() =>
+    Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d;
+    }), [monday]);
 
   // ── Data ──────────────────────────────────────────────────
   const { data: appts   = [], isLoading: loadingAppts } = useAgendamentos();
@@ -212,13 +221,29 @@ function AgendaPage() {
         <div className="mt-6 px-6">
           <div className="flex items-center gap-3">
             <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-card">
-              <button className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary">
+              <button
+                onClick={() => { setWeekOffset((w) => w - 1); setActiveDateIdx(0); }}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary active:scale-95"
+              >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button className="flex flex-1 items-center justify-center gap-2 text-sm font-bold">
-                Hoje <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <button
+                onClick={() => { setWeekOffset(0); setActiveDateIdx(todayIdx); setPeriod("dia"); }}
+                className="flex flex-1 items-center justify-center gap-2 text-sm font-bold"
+              >
+                {weekOffset === 0 ? "Hoje" : (() => {
+                  const s = monday;
+                  const e = week[6];
+                  return s.getMonth() === e.getMonth()
+                    ? s.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+                    : `${s.toLocaleDateString("pt-BR", { month: "short" })} / ${e.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}`;
+                })()}
+                <CalendarDays className="h-4 w-4 text-muted-foreground" />
               </button>
-              <button className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary">
+              <button
+                onClick={() => { setWeekOffset((w) => w + 1); setActiveDateIdx(0); }}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary active:scale-95"
+              >
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
@@ -270,17 +295,24 @@ function AgendaPage() {
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={cn(
-                  "rounded-full px-3.5 py-1.5 text-xs font-bold capitalize transition-all",
-                  period === p ? "gradient-primary text-white shadow-glow" : "text-muted-foreground",
+                  "relative rounded-full px-3.5 py-1.5 text-xs font-bold capitalize transition-colors duration-200",
+                  period === p ? "text-white" : "text-muted-foreground",
                 )}
               >
-                {p === "mes" ? "Mês" : p}
+                {period === p && (
+                  <motion.div
+                    layoutId="period-pill"
+                    className="absolute inset-0 rounded-full gradient-primary shadow-glow"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10">{p === "mes" ? "Mês" : p === "dia" ? "Dia" : "Semana"}</span>
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <Filter className="h-3.5 w-3.5" /> Status
-          </button>
+          </div>
         </div>
 
         {/* Status chips */}
