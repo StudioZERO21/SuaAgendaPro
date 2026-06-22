@@ -188,12 +188,19 @@ function AgendaPage() {
                     key={v.id}
                     onClick={() => setView(v.id)}
                     className={cn(
-                      "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all",
-                      active ? "bg-foreground text-background shadow-soft" : "text-muted-foreground",
+                      "relative inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors duration-200",
+                      active ? "text-background" : "text-muted-foreground",
                     )}
                   >
-                    <v.icon className="h-4 w-4" />
-                    {v.label}
+                    {active && (
+                      <motion.div
+                        layoutId="view-pill"
+                        className="absolute inset-0 rounded-xl bg-foreground shadow-soft"
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <v.icon className="relative z-10 h-4 w-4" />
+                    <span className="relative z-10">{v.label}</span>
                   </button>
                 );
               })}
