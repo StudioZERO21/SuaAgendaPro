@@ -43,11 +43,6 @@ type LocalExtras = {
   experience:      string;
   phoneIsWhatsapp: boolean;
   whatsapp:        string;
-  cep:             string;
-  street:          string;
-  number:          string;
-  complement:      string;
-  neighborhood:    string;
 };
 
 const EXTRA_DEFAULTS: LocalExtras = {
@@ -55,11 +50,6 @@ const EXTRA_DEFAULTS: LocalExtras = {
   experience:      "",
   phoneIsWhatsapp: true,
   whatsapp:        "",
-  cep:             "",
-  street:          "",
-  number:          "",
-  complement:      "",
-  neighborhood:    "",
 };
 
 function loadExtras(): LocalExtras {
@@ -110,6 +100,11 @@ function PerfilProfissionalPage() {
   const [specialty, setSpecialty] = useState("Lash Designer");
   const [city,      setCity]      = useState("");
   const [state,     setState]     = useState("");
+  const [cep,           setCep]           = useState("");
+  const [street,        setStreet]        = useState("");
+  const [streetNumber,  setStreetNumber]  = useState("");
+  const [addrComplement,setAddrComplement]= useState("");
+  const [neighborhood,  setNeighborhood]  = useState("");
   const [photo,     setPhoto]     = useState(""); // URL or data URL
   const [showPrices,   setShowPrices]   = useState(true);
   const [acceptOnline, setAcceptOnline] = useState(true);
@@ -126,6 +121,11 @@ function PerfilProfissionalPage() {
     setSpecialty(prof.specialty ?? "Lash Designer");
     setCity(prof.city ?? "");
     setState(prof.state ?? "");
+    setCep(prof.cep ?? "");
+    setStreet(prof.street ?? "");
+    setStreetNumber(prof.street_number ?? "");
+    setAddrComplement(prof.address_complement ?? "");
+    setNeighborhood(prof.neighborhood ?? "");
     setPhoto(prof.avatar_url ?? "");
     setShowPrices(prof.show_prices);
     setAcceptOnline(prof.accept_online);
@@ -175,12 +175,9 @@ function PerfilProfissionalPage() {
     try {
       const json = await (await fetch(`https://viacep.com.br/ws/${digits}/json/`)).json();
       if (json.erro) { toast.error("CEP não encontrado"); return; }
-      setExtras((e) => ({
-        ...e,
-        street:       json.logradouro   || e.street,
-        neighborhood: json.bairro       || e.neighborhood,
-        complement:   json.complemento  || e.complement,
-      }));
+      setStreet(json.logradouro  || street);
+      setNeighborhood(json.bairro || neighborhood);
+      setAddrComplement(json.complemento || addrComplement);
       setCity(json.localidade || city);
       setState(json.uf || state);
       toast.success("Endereço preenchido");
@@ -199,14 +196,19 @@ function PerfilProfissionalPage() {
     setSaving(true);
     try {
       await updateProfile.mutateAsync({
-        display_name:   name.trim(),
-        phone:          phone.trim() || null,
-        bio:            bio.trim()   || null,
-        specialty:      specialty || null,
-        city:           city.trim()  || null,
-        state:          state.trim() || null,
-        show_prices:    showPrices,
-        accept_online:  acceptOnline,
+        display_name:       name.trim(),
+        phone:              phone.trim()          || null,
+        bio:                bio.trim()            || null,
+        specialty:          specialty             || null,
+        cep:                cep.trim()            || null,
+        street:             street.trim()         || null,
+        street_number:      streetNumber.trim()   || null,
+        address_complement: addrComplement.trim() || null,
+        neighborhood:       neighborhood.trim()   || null,
+        city:               city.trim()           || null,
+        state:              state.trim()          || null,
+        show_prices:        showPrices,
+        accept_online:      acceptOnline,
       });
       // Save non-DB extras to localStorage
       localStorage.setItem(LOCAL_KEY, JSON.stringify(extras));
@@ -320,11 +322,11 @@ function PerfilProfissionalPage() {
             <div className="space-y-1.5">
               <Label htmlFor="cep">CEP</Label>
               <div className="flex gap-2">
-                <Input id="cep" inputMode="numeric" placeholder="00000-000" value={extras.cep}
-                  onChange={(e) => setExtras((ex) => ({ ...ex, cep: formatCep(e.target.value) }))}
+                <Input id="cep" inputMode="numeric" placeholder="00000-000" value={cep}
+                  onChange={(e) => setCep(formatCep(e.target.value))}
                   onBlur={(e) => lookupCep(e.target.value)}
                 />
-                <Button type="button" variant="secondary" onClick={() => lookupCep(extras.cep)} disabled={cepLoading}>
+                <Button type="button" variant="secondary" onClick={() => lookupCep(cep)} disabled={cepLoading}>
                   {cepLoading ? "..." : "Buscar"}
                 </Button>
               </div>
@@ -333,20 +335,20 @@ function PerfilProfissionalPage() {
             <div className="grid grid-cols-[1fr_90px] gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="street">Rua</Label>
-                <Input id="street" value={extras.street} onChange={(e) => setExtras((ex) => ({ ...ex, street: e.target.value }))} />
+                <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="number">Número</Label>
-                <Input id="number" value={extras.number} onChange={(e) => setExtras((ex) => ({ ...ex, number: e.target.value }))} />
+                <Input id="number" value={streetNumber} onChange={(e) => setStreetNumber(e.target.value)} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="complement">Complemento</Label>
-              <Input id="complement" placeholder="Sala, andar..." value={extras.complement} onChange={(e) => setExtras((ex) => ({ ...ex, complement: e.target.value }))} />
+              <Input id="complement" placeholder="Sala, andar..." value={addrComplement} onChange={(e) => setAddrComplement(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="neighborhood">Bairro</Label>
-              <Input id="neighborhood" value={extras.neighborhood} onChange={(e) => setExtras((ex) => ({ ...ex, neighborhood: e.target.value }))} />
+              <Input id="neighborhood" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
             </div>
             <div className="grid grid-cols-[1fr_80px] gap-3">
               <div className="space-y-1.5">
