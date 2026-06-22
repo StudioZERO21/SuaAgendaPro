@@ -412,16 +412,19 @@ export type Database = {
       profiles: {
         Row: {
           accept_online: boolean
+          address_complement: string | null
           avatar_url: string | null
           bio: string | null
           business_name: string | null
           cancellation_policy: string | null
+          cep: string | null
           city: string | null
           cover_url: string | null
           created_at: string
           display_name: string
           id: string
           is_active: boolean
+          neighborhood: string | null
           onboarding_completed: boolean
           phone: string | null
           show_portfolio: boolean
@@ -430,6 +433,8 @@ export type Database = {
           social_links: Json
           specialty: string | null
           state: string | null
+          street: string | null
+          street_number: string | null
           theme_color: string
           updated_at: string
           welcome_message: string | null
@@ -441,16 +446,19 @@ export type Database = {
         }
         Insert: {
           accept_online?: boolean
+          address_complement?: string | null
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
+          cep?: string | null
           city?: string | null
           cover_url?: string | null
           created_at?: string
           display_name?: string
           id: string
           is_active?: boolean
+          neighborhood?: string | null
           onboarding_completed?: boolean
           phone?: string | null
           show_portfolio?: boolean
@@ -459,6 +467,8 @@ export type Database = {
           social_links?: Json
           specialty?: string | null
           state?: string | null
+          street?: string | null
+          street_number?: string | null
           theme_color?: string
           updated_at?: string
           welcome_message?: string | null
@@ -470,16 +480,19 @@ export type Database = {
         }
         Update: {
           accept_online?: boolean
+          address_complement?: string | null
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null
           cancellation_policy?: string | null
+          cep?: string | null
           city?: string | null
           cover_url?: string | null
           created_at?: string
           display_name?: string
           id?: string
           is_active?: boolean
+          neighborhood?: string | null
           onboarding_completed?: boolean
           phone?: string | null
           show_portfolio?: boolean
@@ -488,6 +501,8 @@ export type Database = {
           social_links?: Json
           specialty?: string | null
           state?: string | null
+          street?: string | null
+          street_number?: string | null
           theme_color?: string
           updated_at?: string
           welcome_message?: string | null

@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Sparkles, Scissors, Store, Check,
   Eye, Heart, Flame, Flower2, Star, Brush,
   Phone, User, Link2, DollarSign, Clock, AlertCircle,
-  Plus, X, Share2,
+  Plus, X, Share2, MapPin, Loader2, Home,
 } from "lucide-react";
 import {
   Select,
@@ -73,6 +73,13 @@ type Form = {
   service_name: string;
   service_price: string;
   service_duration: string;
+  cep: string;
+  street: string;
+  street_number: string;
+  address_complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
 };
 
 const INITIAL: Form = {
@@ -84,6 +91,13 @@ const INITIAL: Form = {
   service_name: "",
   service_price: "",
   service_duration: "60",
+  cep: "",
+  street: "",
+  street_number: "",
+  address_complement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
 };
 
 function OnboardingPage() {
@@ -94,8 +108,10 @@ function OnboardingPage() {
   const [otherSpecialty, setOtherSpecialty] = useState("");
   const [slugError, setSlugError] = useState("");
   const [slugChecking, setSlugChecking] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState("");
   const [saving, setSaving] = useState(false);
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   // Pre-fill display_name from user metadata
   useEffect(() => {
@@ -129,6 +145,39 @@ function OnboardingPage() {
     setSocialLinks((links) =>
       links.map((l, i) => (i === index ? { ...l, [field]: value } : l))
     );
+  }
+
+  async function handleCepChange(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    const formatted = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+    set("cep", formatted);
+    setCepError("");
+
+    if (digits.length === 8) {
+      setCepLoading(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+        const data = await res.json();
+        if (data.erro) {
+          setCepError("CEP não encontrado. Verifique e tente novamente.");
+          setForm((f) => ({ ...f, street: "", neighborhood: "", city: "", state: "" }));
+        } else {
+          setForm((f) => ({
+            ...f,
+            street:       data.logradouro || "",
+            neighborhood: data.bairro      || "",
+            city:         data.localidade  || "",
+            state:        data.uf          || "",
+          }));
+        }
+      } catch {
+        setCepError("Erro ao buscar CEP. Verifique sua conexão.");
+      } finally {
+        setCepLoading(false);
+      }
+    } else {
+      setForm((f) => ({ ...f, street: "", neighborhood: "", city: "", state: "" }));
+    }
   }
 
   // Auto-generate slug when name changes
@@ -176,6 +225,11 @@ function OnboardingPage() {
       const price = parseFloat(form.service_price.replace(",", "."));
       return form.service_name.trim().length > 0 && !isNaN(price) && price > 0;
     }
+    if (step === 3) {
+      const digits = form.cep.replace(/\D/g, "");
+      if (digits.length === 0) return true; // endereço opcional
+      return digits.length === 8 && !!form.city && !cepError && !cepLoading;
+    }
     return true;
   }
 
@@ -207,6 +261,13 @@ function OnboardingPage() {
           bio:                  form.bio.trim() || null,
           specialty:            form.specialty === "Outro" ? otherSpecialty.trim() : form.specialty,
           social_links:         socialLinks.filter((l) => l.handle.trim()),
+          cep:                  form.cep || null,
+          street:               form.street || null,
+          street_number:        form.street_number || null,
+          address_complement:   form.address_complement || null,
+          neighborhood:         form.neighborhood || null,
+          city:                 form.city || null,
+          state:                form.state || null,
           onboarding_completed: true,
         })
         .eq("id", user.id);
@@ -614,6 +675,151 @@ function OnboardingPage() {
                       Você pode personalizar tudo depois.
                     </span>
                   </p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── PASSO 4: Endereço ── */}
+            {step === 3 && (
+              <motion.div
+                key="s3"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                className="flex flex-1 flex-col"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-soft text-primary">
+                  <Home className="h-5 w-5" />
+                </div>
+                <h1 className="mt-4 font-display text-3xl font-bold leading-tight">
+                  Onde fica o seu <span className="text-gradient italic">studio?</span>
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Digite o CEP e preenchemos o resto para você.
+                </p>
+
+                <div className="mt-6 space-y-4">
+                  {/* CEP */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      CEP
+                    </Label>
+                    <div className="relative">
+                      {cepLoading
+                        ? <Loader2 className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" />
+                        : <MapPin className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      }
+                      <Input
+                        inputMode="numeric"
+                        value={form.cep}
+                        onChange={(e) => handleCepChange(e.target.value)}
+                        placeholder="00000-000"
+                        maxLength={9}
+                        className={cn(
+                          "h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary font-mono tracking-widest",
+                          cepError && "border-red-400 focus-visible:ring-red-400",
+                        )}
+                      />
+                    </div>
+                    {cepError && (
+                      <p className="flex items-center gap-1 text-xs text-red-500">
+                        <AlertCircle className="h-3 w-3" /> {cepError}
+                      </p>
+                    )}
+                  </div>
+
+                  <AnimatePresence>
+                    {form.city && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-4 overflow-hidden"
+                      >
+                        {/* Logradouro */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Logradouro
+                          </Label>
+                          <Input
+                            value={form.street}
+                            onChange={(e) => set("street", e.target.value)}
+                            placeholder="Rua, Avenida…"
+                            className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                          />
+                        </div>
+
+                        {/* Número + Complemento */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Número
+                            </Label>
+                            <Input
+                              value={form.street_number}
+                              onChange={(e) => set("street_number", e.target.value)}
+                              placeholder="123"
+                              className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Complemento
+                            </Label>
+                            <Input
+                              value={form.address_complement}
+                              onChange={(e) => set("address_complement", e.target.value)}
+                              placeholder="Sala 2, Apto…"
+                              className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Bairro */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Bairro
+                          </Label>
+                          <Input
+                            value={form.neighborhood}
+                            onChange={(e) => set("neighborhood", e.target.value)}
+                            placeholder="Bairro"
+                            className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                          />
+                        </div>
+
+                        {/* Cidade + UF readonly */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2 space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Cidade
+                            </Label>
+                            <Input
+                              value={form.city}
+                              readOnly
+                              className="h-14 rounded-2xl border-border bg-secondary/50 text-base shadow-card cursor-default opacity-70"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              UF
+                            </Label>
+                            <Input
+                              value={form.state}
+                              readOnly
+                              className="h-14 rounded-2xl border-border bg-secondary/50 text-center text-base shadow-card cursor-default uppercase opacity-70"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {!form.city && !cepLoading && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Você pode pular este passo e preencher depois nas configurações.
+                    </p>
+                  )}
                 </div>
               </motion.div>
             )}
