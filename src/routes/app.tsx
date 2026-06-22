@@ -334,31 +334,49 @@ function AgendaPage() {
             </div>
           )}
 
-          {view === "timeline" ? (
-            <div className="space-y-3">
-              {sorted.map((a, i) => (
-                <AppointmentCard
-                  key={a.id}
-                  appointment={a}
-                  delay={i * 0.05}
-                  isLast={i === sorted.length - 1}
+          <AnimatePresence mode="wait">
+            {view === "timeline" ? (
+              <motion.div
+                key="timeline"
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 16 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="space-y-3"
+              >
+                {sorted.map((a, i) => (
+                  <AppointmentCard
+                    key={a.id}
+                    appointment={a}
+                    delay={i * 0.05}
+                    isLast={i === sorted.length - 1}
+                    maps={maps}
+                    onOpenDetail={() => setDetailAppt(a)}
+                  />
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="grade"
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className={sorted.length === 0 ? "mt-6" : ""}
+              >
+                <GradeView
+                  appointments={period === "semana" ? appts : sorted}
+                  period={period}
+                  week={week}
+                  activeDateIdx={activeDateIdx}
                   maps={maps}
-                  onOpenDetail={() => setDetailAppt(a)}
+                  onSelectDay={(i) => { setActiveDateIdx(i); }}
+                  onChangePeriod={setPeriod}
+                  onOpenAppointment={(a) => setDetailAppt(a)}
                 />
-              ))}
-            </div>
-          ) : (
-            <GradeView
-              appointments={period === "semana" ? appts : sorted}
-              period={period}
-              week={week}
-              activeDateIdx={activeDateIdx}
-              maps={maps}
-              onSelectDay={(i) => { setActiveDateIdx(i); }}
-              onChangePeriod={setPeriod}
-              onOpenAppointment={(a) => setDetailAppt(a)}
-            />
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
 
         <BottomNav />
