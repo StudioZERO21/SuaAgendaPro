@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Save, Camera, Upload, X, Loader2, Plus, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import Cropper, { type Area } from "react-easy-crop";
@@ -119,6 +120,25 @@ function PerfilProfissionalPage() {
   const [photo,     setPhoto]     = useState(""); // URL or data URL
   const [showPrices,   setShowPrices]   = useState(true);
   const [acceptOnline, setAcceptOnline] = useState(true);
+
+  // Specialty editing mode
+  const [editingSpecialty, setEditingSpecialty] = useState(false);
+  const [editChip,         setEditChip]         = useState("");
+  const [otherSpecialty,   setOtherSpecialty]   = useState("");
+
+  function startEditSpecialty() {
+    const isStandard = SPECIALTIES.filter((s) => s !== "Outro").includes(specialty);
+    setEditChip(isStandard ? specialty : "Outro");
+    setOtherSpecialty(isStandard ? "" : specialty);
+    setEditingSpecialty(true);
+  }
+
+  function confirmSpecialty() {
+    const final = editChip === "Outro" ? otherSpecialty.trim() : editChip;
+    if (!final) return;
+    setSpecialty(final);
+    setEditingSpecialty(false);
+  }
 
   // DB-backed social links
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -395,17 +415,74 @@ function PerfilProfissionalPage() {
         <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
           <h2 className="font-display text-base font-bold">Atuação</h2>
 
-          <div className="space-y-1.5">
-            <Label>Especialidade</Label>
-            <div className="flex flex-wrap gap-2">
-              {SPECIALTIES.map((s) => (
-                <button key={s} onClick={() => setSpecialty(s)}
-                  className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold transition", specialty === s ? "border-primary bg-primary text-white" : "border-border bg-secondary/60 text-foreground")}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Especialidade</Label>
+              {!editingSpecialty && (
+                <button
+                  type="button"
+                  onClick={startEditSpecialty}
+                  className="text-xs font-semibold text-primary underline underline-offset-2"
                 >
-                  {s}
+                  Atualizar
                 </button>
-              ))}
+              )}
             </div>
+
+            {!editingSpecialty ? (
+              /* Display mode: show current specialty */
+              <span className="inline-block rounded-full border border-primary bg-primary px-4 py-1.5 text-xs font-semibold text-white">
+                {specialty || "Não definida"}
+              </span>
+            ) : (
+              /* Edit mode: chips + optional text input */
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {SPECIALTIES.map((s) => (
+                    <button key={s} type="button" onClick={() => setEditChip(s)}
+                      className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                        editChip === s ? "border-primary bg-primary text-white" : "border-border bg-secondary/60 text-foreground")}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+
+                <AnimatePresence>
+                  {editChip === "Outro" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className="overflow-hidden"
+                    >
+                      <Input
+                        autoFocus
+                        value={otherSpecialty}
+                        onChange={(e) => setOtherSpecialty(e.target.value)}
+                        placeholder="Qual é a sua especialidade?"
+                        className="rounded-xl"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" onClick={confirmSpecialty}
+                    disabled={editChip === "Outro" && otherSpecialty.trim().length < 2}
+                    className="rounded-xl gradient-primary text-white shadow-glow"
+                  >
+                    Confirmar
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditingSpecialty(false)}
+                    className="rounded-xl"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">
