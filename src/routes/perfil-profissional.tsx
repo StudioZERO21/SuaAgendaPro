@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Save, Camera, Upload, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Camera, Upload, X, Loader2, Plus, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import Cropper, { type Area } from "react-easy-crop";
 import { MobileShell } from "@/components/mobile-shell";
@@ -16,6 +16,7 @@ import { useProfile, useUpdateProfile, useUploadAvatar } from "@/hooks/usePerfil
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { PhoneInputBR } from "@/components/ui/phone-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/perfil-profissional")({
   head: () => ({
@@ -37,16 +38,26 @@ const SPECIALTIES = [
 
 const LOCAL_KEY = "sa.perfil-extras";
 
+const SOCIAL_NETWORKS = [
+  { id: "instagram", label: "Instagram" },
+  { id: "tiktok",    label: "TikTok"    },
+  { id: "facebook",  label: "Facebook"  },
+  { id: "youtube",   label: "YouTube"   },
+  { id: "pinterest", label: "Pinterest" },
+  { id: "twitter",   label: "Twitter / X" },
+  { id: "linkedin",  label: "LinkedIn"  },
+];
+
+type SocialLink = { network: string; handle: string };
+
 // Fields that don't have a DB column — persisted to localStorage only
 type LocalExtras = {
-  instagram:       string;
   experience:      string;
   phoneIsWhatsapp: boolean;
   whatsapp:        string;
 };
 
 const EXTRA_DEFAULTS: LocalExtras = {
-  instagram:       "",
   experience:      "",
   phoneIsWhatsapp: true,
   whatsapp:        "",
@@ -109,6 +120,9 @@ function PerfilProfissionalPage() {
   const [showPrices,   setShowPrices]   = useState(true);
   const [acceptOnline, setAcceptOnline] = useState(true);
 
+  // DB-backed social links
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+
   // localStorage-only extras
   const [extras, setExtras] = useState<LocalExtras>(EXTRA_DEFAULTS);
 
@@ -126,6 +140,7 @@ function PerfilProfissionalPage() {
     setStreetNumber(prof.street_number ?? "");
     setAddrComplement(prof.address_complement ?? "");
     setNeighborhood(prof.neighborhood ?? "");
+    setSocialLinks(Array.isArray(prof.social_links) ? (prof.social_links as SocialLink[]) : []);
     setPhoto(prof.avatar_url ?? "");
     setShowPrices(prof.show_prices);
     setAcceptOnline(prof.accept_online);
@@ -166,6 +181,18 @@ function PerfilProfissionalPage() {
   }
 
   // ── CEP lookup ────────────────────────────────────────────
+  function addSocialLink() {
+    const usedNetworks = new Set(socialLinks.map((l) => l.network));
+    const next = SOCIAL_NETWORKS.find((n) => !usedNetworks.has(n.id));
+    setSocialLinks((ls) => [...ls, { network: next?.id ?? "instagram", handle: "" }]);
+  }
+  function removeSocialLink(i: number) {
+    setSocialLinks((ls) => ls.filter((_, idx) => idx !== i));
+  }
+  function updateSocialLink(i: number, field: keyof SocialLink, value: string) {
+    setSocialLinks((ls) => ls.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
+  }
+
   const [cepLoading, setCepLoading] = useState(false);
 
   async function lookupCep(raw: string) {
@@ -207,6 +234,7 @@ function PerfilProfissionalPage() {
         neighborhood:       neighborhood.trim()   || null,
         city:               city.trim()           || null,
         state:              state.trim()          || null,
+        social_links:       socialLinks.filter((l) => l.handle.trim()),
         show_prices:        showPrices,
         accept_online:      acceptOnline,
       });
@@ -380,19 +408,12 @@ function PerfilProfissionalPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="experience">Anos de experiência</Label>
-              <Input id="experience" type="number" min={0} value={extras.experience}
-                onChange={(e) => setExtras((ex) => ({ ...ex, experience: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="instagram">Instagram</Label>
-              <Input id="instagram" value={extras.instagram} placeholder="@seu_perfil"
-                onChange={(e) => setExtras((ex) => ({ ...ex, instagram: e.target.value }))}
-              />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="experience">Anos de experiência</Label>
+            <Input id="experience" type="number" min={0} value={extras.experience}
+              onChange={(e) => setExtras((ex) => ({ ...ex, experience: e.target.value }))}
+              className="max-w-[140px]"
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -400,6 +421,60 @@ function PerfilProfissionalPage() {
             <Textarea id="bio" rows={5} maxLength={400} value={bio} onChange={(e) => setBio(e.target.value)} />
             <p className="text-right text-[10px] text-muted-foreground">{bio.length}/400</p>
           </div>
+        </section>
+
+        {/* ── Redes Sociais ── */}
+        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-base font-bold">Redes Sociais</h2>
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+              <Share2 className="h-3.5 w-3.5" /> {socialLinks.length} {socialLinks.length === 1 ? "rede" : "redes"}
+            </span>
+          </div>
+
+          {socialLinks.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma rede social cadastrada.</p>
+          )}
+
+          <div className="space-y-3">
+            {socialLinks.map((link, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Select value={link.network} onValueChange={(v) => updateSocialLink(i, "network", v)}>
+                  <SelectTrigger className="w-[130px] shrink-0 rounded-xl border-border bg-secondary/50 text-xs font-semibold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SOCIAL_NETWORKS.map((n) => (
+                      <SelectItem key={n.id} value={n.id}>{n.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={link.handle}
+                  onChange={(e) => updateSocialLink(i, "handle", e.target.value)}
+                  placeholder="@usuario"
+                  className="flex-1 rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSocialLink(i)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/50 text-muted-foreground transition hover:border-destructive hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {socialLinks.length < SOCIAL_NETWORKS.length && (
+            <button
+              type="button"
+              onClick={addSocialLink}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-2.5 text-xs font-semibold text-muted-foreground transition hover:border-primary hover:text-primary"
+            >
+              <Plus className="h-4 w-4" /> Adicionar rede social
+            </button>
+          )}
         </section>
 
         {/* ── Configurações da agenda online ── */}
