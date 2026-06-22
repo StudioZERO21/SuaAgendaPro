@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import { Button } from "@/components/ui/button";
+import { PhoneInputBR } from "@/components/ui/phone-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -971,7 +972,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">WhatsApp *</Label>
-                          <Input value={draft.newClientPhone ?? ""} onChange={(e) => setDraft({ ...draft, newClientPhone: e.target.value })} placeholder="+55 11 99999-0000" className="mt-1 h-12 rounded-2xl" inputMode="tel" />
+                          <PhoneInputBR value={draft.newClientPhone ?? ""} onChange={(v) => setDraft({ ...draft, newClientPhone: v })} className="mt-1" />
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">E-mail (opcional)</Label>
