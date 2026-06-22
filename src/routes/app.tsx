@@ -284,7 +284,7 @@ function AgendaPage() {
           </div>
         </div>
 
-        {/* Period + Status filters */}
+        {/* Period filter */}
         <div className="mt-5 flex items-center justify-between px-6">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             <CalendarDays className="h-3.5 w-3.5" /> Período
@@ -310,31 +310,35 @@ function AgendaPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <Filter className="h-3.5 w-3.5" /> Status
-          </div>
         </div>
 
-        {/* Status chips */}
-        <div className="mt-5 px-6">
-          <div className="no-scrollbar flex gap-2.5 overflow-x-auto pb-1">
+        {/* Status filter */}
+        <div className="mt-4 px-6">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
             {statusFilters.map((s) => {
               const active = selectedStatus === s.key;
               const count  = counts[s.key] ?? 0;
+              const activeClass = s.key === "todos"
+                ? "gradient-primary border-transparent text-white shadow-glow"
+                : s.key === "pendente"   ? "bg-amber-100   border-amber-300   text-amber-800"
+                : s.key === "confirmado" ? "bg-emerald-100 border-emerald-300 text-emerald-800"
+                : s.key === "concluido"  ? "bg-sky-100     border-sky-300     text-sky-800"
+                :                          "bg-zinc-100    border-zinc-300    text-zinc-700";
               return (
                 <button
                   key={s.key}
                   onClick={() => setSelectedStatus(s.key)}
                   className={cn(
-                    "inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all",
-                    active ? "gradient-primary border-transparent text-white shadow-glow" : "border-border bg-card text-foreground",
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all",
+                    active ? activeClass : "border-border bg-card text-muted-foreground",
                   )}
                 >
-                  {s.key !== "todos" && (
-                    <span className={cn("h-2 w-2 rounded-full", active ? "bg-white" : s.dot)} />
-                  )}
+                  <span className={cn("h-2 w-2 rounded-full shrink-0", s.dot)} />
                   {s.label}
-                  <span className={cn("rounded-full px-2 text-[10px] font-bold", active ? "bg-white/25 text-white" : "bg-secondary text-secondary-foreground")}>
+                  <span className={cn(
+                    "rounded-full px-1.5 text-[10px] font-bold",
+                    active && s.key === "todos" ? "bg-white/25 text-white" : "bg-secondary text-secondary-foreground",
+                  )}>
                     {count}
                   </span>
                 </button>
@@ -553,7 +557,6 @@ function GradeView({
 
   return (
     <div className="space-y-4">
-      <StatusLegend />
       {period === "semana" ? (
         <WeekGrid appointments={appointments} week={week} activeDateIdx={activeDateIdx} maps={maps} onSelectDay={onSelectDay} onOpenAppointment={onOpenAppointment} />
       ) : period === "mes" ? (
@@ -565,22 +568,6 @@ function GradeView({
   );
 }
 
-function StatusLegend() {
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border border-border bg-card/60 px-3 py-2 shadow-card backdrop-blur-md">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Legenda</span>
-      {(["confirmado", "pendente", "concluido", "cancelado"] as UIStatus[]).map((s) => {
-        const m = statusMeta(s);
-        return (
-          <span key={s} className="inline-flex items-center gap-1.5">
-            <span className={cn("h-2 w-2 rounded-full", m.dot)} />
-            <span className="text-[11px] font-semibold text-foreground">{m.label.slice(0,5)}.</span>
-          </span>
-        );
-      })}
-    </div>
-  );
-}
 
 function DayGrid({ appointments, maps, onOpenAppointment }: { appointments: UIAppointment[]; maps: DataMaps; onOpenAppointment: (a: UIAppointment) => void }) {
   const startHour = 7; const endHour = 21;
