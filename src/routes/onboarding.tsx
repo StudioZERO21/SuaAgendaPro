@@ -3,15 +3,23 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Sparkles, Scissors, Store, Check,
-  Eye, Hand, Heart, Flame, Flower2, Star, Brush, MapPin,
+  Eye, Heart, Flame, Flower2, Star, Brush,
   Phone, User, Link2, DollarSign, Clock, AlertCircle,
+  Plus, X, Share2,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileShell } from "@/components/mobile-shell";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, formatPhoneBR } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSlug, isSlugAvailable } from "@/lib/auth";
 
@@ -36,6 +44,18 @@ const niches = [
   { id: "Outro",              label: "Outro",             Icon: Star },
 ];
 
+const SOCIAL_NETWORKS = [
+  { id: "instagram", label: "Instagram" },
+  { id: "tiktok",    label: "TikTok" },
+  { id: "facebook",  label: "Facebook" },
+  { id: "youtube",   label: "YouTube" },
+  { id: "pinterest", label: "Pinterest" },
+  { id: "twitter",   label: "Twitter / X" },
+  { id: "linkedin",  label: "LinkedIn" },
+];
+
+type SocialLink = { network: string; handle: string };
+
 const durations = [
   { value: "30",  label: "30 min" },
   { value: "45",  label: "45 min" },
@@ -46,8 +66,6 @@ const durations = [
 
 type Form = {
   display_name: string;
-  city: string;
-  state: string;
   phone: string;
   bio: string;
   slug: string;
@@ -59,8 +77,6 @@ type Form = {
 
 const INITIAL: Form = {
   display_name: "",
-  city: "",
-  state: "",
   phone: "",
   bio: "",
   slug: "",
@@ -74,6 +90,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Form>(INITIAL);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [slugError, setSlugError] = useState("");
   const [slugChecking, setSlugChecking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -97,6 +114,20 @@ function OnboardingPage() {
 
   function set(field: keyof Form, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  function addSocialLink() {
+    setSocialLinks((links) => [...links, { network: "instagram", handle: "" }]);
+  }
+
+  function removeSocialLink(index: number) {
+    setSocialLinks((links) => links.filter((_, i) => i !== index));
+  }
+
+  function updateSocialLink(index: number, field: keyof SocialLink, value: string) {
+    setSocialLinks((links) =>
+      links.map((l, i) => (i === index ? { ...l, [field]: value } : l))
+    );
   }
 
   // Auto-generate slug when name changes
@@ -168,11 +199,10 @@ function OnboardingPage() {
         .update({
           display_name:         form.display_name.trim(),
           slug:                 form.slug,
-          city:                 form.city.trim() || null,
-          state:                form.state.trim().substring(0, 2).toUpperCase() || null,
           phone:                form.phone.trim() || null,
           bio:                  form.bio.trim() || null,
           specialty:            form.specialty,
+          social_links:         socialLinks.filter((l) => l.handle.trim()),
           onboarding_completed: true,
         })
         .eq("id", user.id);
@@ -343,33 +373,57 @@ function OnboardingPage() {
                     ) : null}
                   </div>
 
-                  {/* Cidade + Estado */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2 space-y-2">
-                      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Cidade
-                      </Label>
-                      <div className="relative">
-                        <MapPin className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          value={form.city}
-                          onChange={(e) => set("city", e.target.value)}
-                          placeholder="Onde você atende"
-                          className="h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
-                        />
-                      </div>
-                    </div>
+                  {/* Redes Sociais */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Redes Sociais (opcional)
+                    </Label>
                     <div className="space-y-2">
-                      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        UF
-                      </Label>
-                      <Input
-                        value={form.state}
-                        onChange={(e) => set("state", e.target.value.substring(0, 2).toUpperCase())}
-                        placeholder="SP"
-                        maxLength={2}
-                        className="h-14 rounded-2xl border-border bg-card text-center text-base shadow-card focus-visible:ring-primary uppercase"
-                      />
+                      {socialLinks.map((link, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="flex flex-1 h-14 items-center rounded-2xl border border-border bg-card shadow-card overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-0">
+                            <Share2 className="pointer-events-none ml-4 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <Select
+                              value={link.network}
+                              onValueChange={(v) => updateSocialLink(i, "network", v)}
+                            >
+                              <SelectTrigger className="h-full w-32 shrink-0 border-0 border-x border-border/60 rounded-none bg-secondary/40 text-xs font-semibold focus:ring-0 focus:ring-offset-0 ml-2">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SOCIAL_NETWORKS.map((n) => (
+                                  <SelectItem key={n.id} value={n.id}>
+                                    {n.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <input
+                              value={link.handle}
+                              onChange={(e) => updateSocialLink(i, "handle", e.target.value)}
+                              placeholder="@seuestudio"
+                              className="flex-1 h-full bg-transparent px-3 text-base outline-none placeholder:text-muted-foreground"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeSocialLink(i)}
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground transition"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {socialLinks.length < 6 && (
+                        <button
+                          type="button"
+                          onClick={addSocialLink}
+                          className="flex w-full h-14 items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card text-sm font-medium text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Adicionar rede social
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -382,8 +436,9 @@ function OnboardingPage() {
                       <Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         type="tel"
+                        inputMode="tel"
                         value={form.phone}
-                        onChange={(e) => set("phone", e.target.value)}
+                        onChange={(e) => set("phone", formatPhoneBR(e.target.value))}
                         placeholder="(11) 99999-9999"
                         className="h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
                       />

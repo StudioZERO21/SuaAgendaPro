@@ -427,6 +427,7 @@ export type Database = {
           show_portfolio: boolean
           show_prices: boolean
           slug: string
+          social_links: Json
           specialty: string | null
           state: string | null
           theme_color: string
@@ -455,6 +456,7 @@ export type Database = {
           show_portfolio?: boolean
           show_prices?: boolean
           slug: string
+          social_links?: Json
           specialty?: string | null
           state?: string | null
           theme_color?: string
@@ -483,6 +485,7 @@ export type Database = {
           show_portfolio?: boolean
           show_prices?: boolean
           slug?: string
+          social_links?: Json
           specialty?: string | null
           state?: string | null
           theme_color?: string

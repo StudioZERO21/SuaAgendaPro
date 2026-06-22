@@ -12,7 +12,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
 import { useClientes, useCreateCliente, useUpdateCliente, type UIClient } from "@/hooks/useClientes";
 import { formatPrice } from "@/hooks/useServicos";
-import { cn } from "@/lib/utils";
+import { cn, formatPhoneBR } from "@/lib/utils";
 import { toast } from "sonner";
 
 import mulheresIconUrl from "@/assets/mulheres-icon.svg";
@@ -397,7 +397,7 @@ function ClientModal({
         </div>
 
         <div className="space-y-3 border-t border-border px-5 py-4">
-          <Field label="Telefone"  icon={Phone} value={editing ? form.phone  : client.phone}       editing={editing} onChange={(v) => update("phone", v)} />
+          <Field label="Telefone"  icon={Phone} value={editing ? form.phone  : formatPhoneBR(client.phone)} editing={editing} onChange={(v) => update("phone", formatPhoneBR(v))} />
           <Field label="E-mail"    icon={Mail}  value={editing ? form.email  : client.email ?? ""} editing={editing} onChange={(v) => update("email", v)} />
         </div>
 
@@ -548,7 +548,7 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
         <div className="space-y-3 px-5 pb-3">
           <FormField label="Nome *"        value={form.name}     onChange={(v) => update("name", v)}     placeholder="Nome da cliente" />
-          <FormField label="WhatsApp *"    value={form.phone}    onChange={(v) => update("phone", v)}    placeholder="+55 11 99999-0000" />
+          <FormField label="WhatsApp *"    value={form.phone}    onChange={(v) => update("phone", formatPhoneBR(v))}    placeholder="(11) 99999-9999" />
           <FormField label="E-mail"        value={form.email}    onChange={(v) => update("email", v)}    placeholder="email@exemplo.com" />
           <FormField label="Aniversário"   value={form.birthday} onChange={(v) => update("birthday", v)} placeholder="DD/MM" />
 
