@@ -1,0 +1,5 @@
+{
+  "pageName": "exemplo-pagina",
+  "html": "<div class=\"min-h-screen bg-white p-4\">\n  <div class=\"max-w-md mx-auto\">\n    <h1 class=\"text-3xl font-bold mb-4\">Título da Página</h1>\n    <p class=\"text-gray-600 mb-6\">Descrição da página</p>\n    <button class=\"w-full bg-pink-600 text-white py-2 rounded-lg hover:bg-pink-700\">Botão</button>\n  </div>\n</div>",
+  "css": ""
+}

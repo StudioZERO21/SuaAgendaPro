@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # DESENVOLVIMENTO
+  # ==========================================================================
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: suaagenda-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    networks:
+      - suaagenda-network
+
+  # ==========================================================================
+  # PRODUÇÃO
+  # ==========================================================================
+  prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: suaagenda-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - suaagenda-network
+
+networks:
+  suaagenda-network:
+    driver: bridge
+
+# =============================================================================
+# COMO USAR:
+# =============================================================================
+#
+# DESENVOLVIMENTO:
+#   docker-compose up dev
+#   Acesse: http://localhost:8080
+#
+# PRODUÇÃO:
+#   docker-compose up prod
+#   Acesse: http://localhost:3000
+#
+# BUILD:
+#   docker-compose build
+#
+# PARAR:
+#   docker-compose down
+#
+# VER LOGS:
+#   docker-compose logs -f dev
+#   docker-compose logs -f prod
+#

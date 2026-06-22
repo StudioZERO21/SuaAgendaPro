@@ -1,0 +1,24 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instalar npm atualizado
+RUN npm install -g npm@latest
+
+# Copiar package.json
+COPY package.json package-lock.json ./
+
+# Instalar dependências
+RUN npm ci
+
+# Copiar código
+COPY . .
+
+# Expor porta
+EXPOSE 8080
+
+# Volume para hot reload
+VOLUME ["/app"]
+
+# Comando padrão
+CMD ["npm", "run", "dev"]

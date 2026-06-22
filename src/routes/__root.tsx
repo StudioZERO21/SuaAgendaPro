@@ -1,0 +1,321 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  useRouter,
+  useNavigate,
+  useLocation,
+  HeadContent,
+  Scripts,
+} from "@tanstack/react-router";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ArrowLeft, Home } from "lucide-react";
+
+import appCss from "../styles.css?url";
+import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthContext, useAuthState, createAuthActions } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/cadastro",
+  "/contato",
+  "/recursos",
+  "/precos",
+  "/reset-password",
+];
+
+function isPublicPath(pathname: string) {
+  if (PUBLIC_PATHS.includes(pathname)) return true;
+  if (pathname.startsWith("/agendar/")) return true;
+  if (pathname.startsWith("/perfil-publico")) return true;
+  if (pathname.startsWith("/super/")) return true;
+  return false;
+}
+
+function AuthGuard({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { session, isLoading } = useAuthState();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!session && !isPublicPath(location.pathname)) {
+      navigate({ to: "/login" });
+    }
+  }, [session, isLoading, location.pathname, navigate]);
+
+  return <>{children}</>;
+}
+
+function NotFoundComponent() {
+  const router = useRouter();
+  const [seconds, setSeconds] = useState(5);
+
+  // Rastreamento da rota que caiu em 404
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const info = {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hash: window.location.hash,
+      href: window.location.href,
+      referrer: document.referrer || "(direto)",
+      timestamp: new Date().toISOString(),
+    };
+    console.warn("[404] Rota não encontrada:", info);
+    try {
+      reportLovableError(
+        new Error(`404 Not Found: ${info.pathname}${info.search}`),
+        { boundary: "tanstack_root_not_found", ...info },
+      );
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (seconds <= 0) {
+      router.navigate({ to: "/" });
+      return;
+    }
+    const t = setTimeout(() => setSeconds((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [seconds, router]);
+
+  const pct = ((5 - seconds) / 5) * 100;
+  const requestedPath =
+    typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}`
+      : "";
+
+  return (
+    <div className="relative flex min-h-screen flex-col overflow-hidden not-found-animated-bg">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col px-6">
+        {/* Parte 1: topo vazio */}
+        <div className="flex-1" />
+
+        {/* Parte 2: 404 + barra de progresso */}
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+            Erro
+          </p>
+
+          <h1
+            className="mt-4 font-display text-[180px] font-bold leading-none tracking-tight sm:text-[220px]"
+            style={{
+              backgroundImage: "linear-gradient(135deg, #ec4899, #f472b6)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            404
+          </h1>
+
+          <div className="mt-6 h-1 w-full overflow-hidden rounded-full bg-white/40">
+            <div
+              className="h-full rounded-full transition-all duration-1000 ease-linear"
+              style={{
+                width: `${pct}%`,
+                background: "linear-gradient(90deg, #ec4899, #f472b6)",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Parte 3: textos e botões na base */}
+        <div className="flex flex-1 flex-col justify-end pb-8 text-center">
+          <h2 className="mt-2 font-display text-2xl font-bold text-foreground">
+            Oooops…
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            Não foi possível achar a página que você está procurando.
+          </p>
+          {requestedPath && (
+            <p className="mt-2 break-all font-mono text-[11px] text-muted-foreground/80">
+              {requestedPath}
+            </p>
+          )}
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Você será redirecionado para a página inicial em{" "}
+            <span className="font-bold text-foreground">{seconds}s</span>, ou
+            escolha uma das opções abaixo.
+          </p>
+
+          <div className="mt-8 flex w-full flex-row justify-center gap-3">
+            <button
+              onClick={() => router.history.back()}
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-card/80 px-4 text-sm font-semibold text-foreground shadow-sm backdrop-blur transition hover:bg-secondary"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </button>
+            <Link
+              to="/"
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-semibold text-white shadow-lg transition hover:opacity-95"
+              style={{
+                background: "linear-gradient(135deg, #ec4899, #f472b6)",
+              }}
+            >
+              <Home className="h-4 w-4" />
+              Home
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .not-found-animated-bg {
+          background: linear-gradient(-45deg, #ffe4ef, #fbcfe8, #f9a8d4, #fce7f3, #fbcfe8);
+          background-size: 400% 400%;
+          animation: notFoundGradient 14s ease infinite;
+        }
+        @keyframes notFoundGradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  console.error(error);
+  const router = useRouter();
+  useEffect(() => {
+    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+  }, [error]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          This page didn't load
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Something went wrong on our end. You can try refreshing or head back home.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <button
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            Try again
+          </button>
+          <a
+            href="/"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            Go home
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#ec4899" },
+      { title: "SuaAgenda.Pro — Agenda premium para profissionais da beleza" },
+      {
+        name: "description",
+        content:
+          "Sua agenda, seu tempo, mais clientes. App de agendamento premium para profissionais autônomos da beleza.",
+      },
+      { property: "og:title", content: "SuaAgenda.Pro" },
+      {
+        property: "og:description",
+        content: "Agenda premium para profissionais da beleza.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Space+Grotesk:wght@400;500;600;700&display=swap",
+      },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
+
+function RootShell({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  const isSuperRoute = router.state.location.pathname.startsWith("/super");
+
+  const { session, setSession, user, setUser, isLoading } = useAuthState();
+  const authActions = useMemo(() => createAuthActions(setSession, setUser), [setSession, setUser]);
+
+  const authValue = useMemo(
+    () => ({ session, user, isLoading, ...authActions }),
+    [session, user, isLoading, authActions],
+  );
+
+  useEffect(() => {
+    import("../lib/personalization").then((m) => {
+      m.applyPersonalization(m.loadPersonalization());
+    });
+  }, []);
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const html = document.documentElement;
+    if (isSuperRoute) {
+      html.classList.add("super-scope");
+    } else {
+      html.classList.remove("super-scope");
+    }
+  }, [isSuperRoute]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthContext.Provider value={authValue}>
+        <AuthGuard>
+          <Outlet />
+        </AuthGuard>
+        <Toaster position="top-center" richColors />
+      </AuthContext.Provider>
+    </QueryClientProvider>
+  );
+}

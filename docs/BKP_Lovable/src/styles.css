@@ -1,0 +1,249 @@
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+@source "../src";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-glow: var(--primary-glow);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-rose-cloud: var(--rose-cloud);
+
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --radius: 1rem;
+
+  --background: #ffffff;
+  --foreground: #1f1230;
+
+  --card: #ffffff;
+  --card-foreground: #1f1230;
+  --popover: #ffffff;
+  --popover-foreground: #1f1230;
+
+  /* Vibrant pink premium */
+  --primary: #ec4899;
+  --primary-foreground: #ffffff;
+  --primary-glow: #f472b6;
+
+  --secondary: #fdf2f8;
+  --secondary-foreground: #831843;
+
+  --muted: #f7f4f8;
+  --muted-foreground: #6b5b73;
+
+  --accent: #d946ef;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --info: #3b82f6;
+
+  --border: #f3e8ee;
+  --input: #f3e8ee;
+  --ring: #ec4899;
+
+  --rose-cloud: #fdf2f8;
+
+  /* Signature gradients */
+  --gradient-primary: linear-gradient(135deg, #ec4899 0%, #d946ef 100%);
+  --gradient-soft: linear-gradient(135deg, #fce7f3 0%, #fdf2f8 50%, #fae8ff 100%);
+  --gradient-hero: linear-gradient(160deg, #fdf2f8 0%, #fbcfe8 40%, #f9a8d4 100%);
+  --gradient-card: linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%);
+
+  /* Shadows */
+  --shadow-glow: 0 10px 30px -10px rgba(236, 72, 153, 0.45);
+  --shadow-soft: 0 4px 20px -8px rgba(190, 24, 93, 0.15);
+  --shadow-card: 0 2px 10px -2px rgba(190, 24, 93, 0.08);
+}
+
+.dark {
+  --background: #1a0b1f;
+  --foreground: #fdf2f8;
+  --card: #2a1530;
+  --card-foreground: #fdf2f8;
+  --popover: #2a1530;
+  --popover-foreground: #fdf2f8;
+  --primary: #f472b6;
+  --primary-foreground: #1a0b1f;
+  --primary-glow: #ec4899;
+  --secondary: #3a1d40;
+  --secondary-foreground: #fdf2f8;
+  --muted: #3a1d40;
+  --muted-foreground: #d6b3c9;
+  --accent: #d946ef;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #f472b6;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility gradient-primary {
+  background-image: var(--gradient-primary);
+}
+@utility gradient-soft {
+  background-image: var(--gradient-soft);
+}
+@utility gradient-hero {
+  background-image: var(--gradient-hero);
+}
+@utility gradient-card {
+  background-image: var(--gradient-card);
+}
+@utility shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+@utility shadow-card {
+  box-shadow: var(--shadow-card);
+}
+@utility text-gradient {
+  background-image: var(--gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Scrollbar hide for horizontal chip strips */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes portfolio-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@utility animate-portfolio-marquee {
+  animation: portfolio-marquee 30s linear infinite;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-footer-wave-slow,
+  .animate-footer-wave-mid,
+  .animate-footer-wave-fast {
+    animation: none;
+  }
+}
+
+/* =========================================================
+   High Contrast Mode
+   Activated via .high-contrast on <html>. Boosts foreground,
+   borders, focus rings; strips low-contrast overlays.
+   ========================================================= */
+.high-contrast {
+  --muted-foreground: #1a0b1f;
+  --border: #1a0b1f;
+  --input: #1a0b1f;
+  --card-foreground: #000000;
+  --foreground: #000000;
+}
+.high-contrast.dark {
+  --muted-foreground: #ffffff;
+  --border: #ffffff;
+  --input: #ffffff;
+  --card-foreground: #ffffff;
+  --foreground: #ffffff;
+}
+.high-contrast :focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+.high-contrast a:not([class*="bg-"]) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* Ensure borders are visible, not hairlines */
+.high-contrast * {
+  border-color: var(--border);
+}
+.high-contrast .text-muted-foreground {
+  color: var(--muted-foreground) !important;
+}
+
+/* =========================================================
+   Super Admin Scope — modern sans-serif typography
+   Applied to the <html> element while on any /super route.
+   ========================================================= */
+.super-scope {
+  --font-display: "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif !important;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif !important;
+}
+.super-scope,
+.super-scope body {
+  font-family: var(--font-sans) !important;
+}
+.super-scope h1,
+.super-scope h2,
+.super-scope h3,
+.super-scope .font-display {
+  font-family: var(--font-display) !important;
+  letter-spacing: -0.03em;
+}
+
+

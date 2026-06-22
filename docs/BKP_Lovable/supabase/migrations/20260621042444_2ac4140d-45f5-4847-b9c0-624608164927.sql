@@ -1,0 +1,3 @@
+CREATE UNIQUE INDEX payment_transactions_user_mp_payment_unique
+ON public.payment_transactions (user_id, mercado_pago_payment_id)
+WHERE mercado_pago_payment_id IS NOT NULL;

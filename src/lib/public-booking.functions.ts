@@ -1,0 +1,276 @@
+import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+function anonClient() {
+  return createClient<Database>(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
+
+// ── Public types ──────────────────────────────────────────────
+
+export type PublicProfileRow = {
+  id: string;
+  slug: string;
+  display_name: string;
+  bio: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  state: string | null;
+  specialty: string | null;
+  business_name: string | null;
+  theme_color: string;
+  show_prices: boolean;
+  accept_online: boolean;
+};
+
+export type PublicServiceRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  duration_minutes: number;
+  price_cents: number;
+};
+
+export type PublicWorkingHoursRow = {
+  day_of_week: number;
+  is_open: boolean;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+export type PublicPortfolioRow = {
+  id: string;
+  image_url: string;
+  title: string | null;
+  description: string | null;
+  order_index: number;
+};
+
+export type PublicData = {
+  profile: PublicProfileRow;
+  services: PublicServiceRow[];
+  workingHours: PublicWorkingHoursRow[];
+  portfolio: PublicPortfolioRow[];
+};
+
+export type CreateBookingInput = {
+  professionalId: string;
+  serviceId: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  priceCents: number;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string;
+  notes: string;
+};
+
+// ── Server Functions ──────────────────────────────────────────
+
+export const fetchPublicProfile = createServerFn({ method: "GET" })
+  .inputValidator((slug: unknown): string => {
+    if (typeof slug !== "string" || !slug.trim()) throw new Error("Slug inválido");
+    return slug.trim();
+  })
+  .handler(async ({ data: slug }): Promise<PublicData | null> => {
+    const db = anonClient();
+
+    const { data: profile } = await db
+      .from("profiles")
+      .select(
+        "id, slug, display_name, bio, phone, avatar_url, city, state, specialty, business_name, theme_color, show_prices, accept_online",
+      )
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .single();
+
+    if (!profile) return null;
+
+    const [{ data: services }, { data: wh }, { data: portfolio }] = await Promise.all([
+      db
+        .from("services")
+        .select("id, name, description, duration_minutes, price_cents")
+        .eq("professional_id", profile.id)
+        .eq("is_active", true)
+        .order("name"),
+      db
+        .from("working_hours")
+        .select("day_of_week, is_open, start_time, end_time")
+        .eq("professional_id", profile.id),
+      db
+        .from("portfolio_items")
+        .select("id, image_url, title, description, order_index")
+        .eq("professional_id", profile.id)
+        .order("order_index", { ascending: true }),
+    ]);
+
+    return {
+      profile: profile as PublicProfileRow,
+      services: (services ?? []) as PublicServiceRow[],
+      workingHours: (wh ?? []) as PublicWorkingHoursRow[],
+      portfolio: (portfolio ?? []) as PublicPortfolioRow[],
+    };
+  });
+
+export const fetchPublicSlots = createServerFn({ method: "GET" })
+  .inputValidator(
+    (
+      input: unknown,
+    ): { professionalId: string; dateStr: string; durationMin: number } => {
+      const i = input as Record<string, unknown>;
+      if (
+        typeof i?.professionalId !== "string" ||
+        typeof i?.dateStr !== "string" ||
+        typeof i?.durationMin !== "number"
+      ) {
+        throw new Error("Input inválido");
+      }
+      return i as { professionalId: string; dateStr: string; durationMin: number };
+    },
+  )
+  .handler(
+    async ({ data: { professionalId, dateStr, durationMin } }): Promise<string[]> => {
+      const db = anonClient();
+
+      const { data } = await db.rpc("get_available_slots", {
+        p_professional_id: professionalId,
+        p_date: dateStr,
+        p_duration_min: durationMin,
+      });
+
+      return (data ?? []).map((row: { slot_time: string }) =>
+        row.slot_time.slice(0, 5),
+      );
+    },
+  );
+
+export const createPublicBooking = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown): CreateBookingInput => {
+    const i = input as Record<string, unknown>;
+    if (
+      !i?.professionalId ||
+      !i?.serviceId ||
+      !i?.scheduledAt ||
+      !i?.clientName ||
+      !i?.clientPhone
+    ) {
+      throw new Error("Dados incompletos para agendamento");
+    }
+    return input as CreateBookingInput;
+  })
+  .handler(async ({ data }): Promise<{ appointmentId: string }> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const phone = data.clientPhone.replace(/\D/g, "");
+
+    // Find or create client by professional_id + phone
+    const { data: existing } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .eq("professional_id", data.professionalId)
+      .eq("phone", phone)
+      .maybeSingle();
+
+    let clientId: string;
+    if (existing) {
+      clientId = existing.id;
+    } else {
+      const { data: newClient, error: cErr } = await supabaseAdmin
+        .from("clients")
+        .insert({
+          professional_id: data.professionalId,
+          name: data.clientName.trim(),
+          phone,
+          email: data.clientEmail || null,
+          notes: null,
+        })
+        .select("id")
+        .single();
+      if (cErr || !newClient) throw new Error("Erro ao registrar cliente");
+      clientId = newClient.id;
+    }
+
+    // Create appointment
+    const { data: appt, error: aErr } = await supabaseAdmin
+      .from("appointments")
+      .insert({
+        professional_id: data.professionalId,
+        client_id: clientId,
+        service_id: data.serviceId,
+        scheduled_at: data.scheduledAt,
+        duration_minutes: data.durationMinutes,
+        price_cents: data.priceCents,
+        deposit_cents: 0,
+        status: "pending",
+        notes: data.notes || null,
+      })
+      .select("id")
+      .single();
+
+    if (aErr || !appt) throw new Error("Erro ao criar agendamento");
+
+    // Create in-app notification for the professional (best-effort)
+    try {
+      const dt = new Date(data.scheduledAt);
+      const datePt = dt.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+      const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      await supabaseAdmin.from("notifications").insert({
+        user_id:        data.professionalId,
+        type:           "new_appointment",
+        title:          "Novo agendamento! 🎉",
+        body:           `${data.clientName} agendou para ${datePt} às ${timePt}.`,
+        appointment_id: appt.id,
+      });
+    } catch {}
+
+    // Log WhatsApp confirmation message (best-effort — never fail booking)
+    try {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("whatsapp_enabled, whatsapp_msg_confirmation, display_name")
+        .eq("id", data.professionalId)
+        .maybeSingle();
+
+      if (prof?.whatsapp_enabled) {
+        const { interpolate } = await import("@/lib/whatsapp.functions");
+        const template =
+          prof.whatsapp_msg_confirmation ||
+          "Olá {{cliente_nome}}! ✅ Agendamento confirmado em {{data}} às {{hora}}. Serviço: {{servico}}.";
+
+        const dt = new Date(data.scheduledAt);
+        const datePt = dt.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+        const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+        const { data: svc } = await supabaseAdmin
+          .from("services")
+          .select("name")
+          .eq("id", data.serviceId)
+          .maybeSingle();
+
+        const text = interpolate(template, {
+          cliente_nome: data.clientName,
+          data: datePt,
+          hora: timePt,
+          servico: svc?.name ?? "Serviço",
+          profissional: prof.display_name || "Profissional",
+        });
+
+        await supabaseAdmin.from("whatsapp_messages").insert({
+          professional_id: data.professionalId,
+          appointment_id: appt.id,
+          client_phone: phone,
+          client_name: data.clientName,
+          message_type: "confirmation",
+          message_text: text,
+          status: "pending",
+        });
+      }
+    } catch {}
+
+    return { appointmentId: appt.id };
+  });
