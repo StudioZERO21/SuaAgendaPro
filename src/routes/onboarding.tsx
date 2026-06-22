@@ -91,6 +91,7 @@ function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Form>(INITIAL);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [otherSpecialty, setOtherSpecialty] = useState("");
   const [slugError, setSlugError] = useState("");
   const [slugChecking, setSlugChecking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -167,7 +168,10 @@ function OnboardingPage() {
         !slugChecking
       );
     }
-    if (step === 1) return form.specialty.length > 0;
+    if (step === 1) {
+      if (form.specialty === "Outro") return otherSpecialty.trim().length >= 3;
+      return form.specialty.length > 0;
+    }
     if (step === 2) {
       const price = parseFloat(form.service_price.replace(",", "."));
       return form.service_name.trim().length > 0 && !isNaN(price) && price > 0;
@@ -201,7 +205,7 @@ function OnboardingPage() {
           slug:                 form.slug,
           phone:                form.phone.trim() || null,
           bio:                  form.bio.trim() || null,
-          specialty:            form.specialty,
+          specialty:            form.specialty === "Outro" ? otherSpecialty.trim() : form.specialty,
           social_links:         socialLinks.filter((l) => l.handle.trim()),
           onboarding_completed: true,
         })
@@ -474,7 +478,10 @@ function OnboardingPage() {
                       <button
                         key={n.id}
                         type="button"
-                        onClick={() => set("specialty", n.id)}
+                        onClick={() => {
+                          set("specialty", n.id);
+                          if (n.id !== "Outro") setOtherSpecialty("");
+                        }}
                         className={cn(
                           "relative flex items-center gap-3 rounded-2xl border p-4 text-left transition-all",
                           active
@@ -495,6 +502,31 @@ function OnboardingPage() {
                     );
                   })}
                 </div>
+
+                <AnimatePresence>
+                  {form.specialty === "Outro" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: "auto", marginTop: 16 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Qual é a sua especialidade?
+                      </Label>
+                      <div className="relative mt-2">
+                        <Sparkles className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          autoFocus
+                          value={otherSpecialty}
+                          onChange={(e) => setOtherSpecialty(e.target.value)}
+                          placeholder="Ex: Nail Designer, Micropigmentação…"
+                          className="h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
