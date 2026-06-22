@@ -91,6 +91,7 @@ function AgendaPage() {
   const [notifOpen, setNotifOpen]     = useState(false);
   const [period, setPeriod]           = useState<"dia" | "semana" | "mes">("dia");
   const [selectedStatus, setSelectedStatus] = useState<"todos" | UIStatus>("todos");
+  const [showStatus, setShowStatus]   = useState(false);
   const [detailAppt, setDetailAppt]   = useState<UIAppointment | null>(null);
   const [sheetOpen, setSheetOpen]     = useState(false);
 
@@ -284,9 +285,8 @@ function AgendaPage() {
           </div>
         </div>
 
-        {/* Period + Status filters */}
-        <div className="mt-5 space-y-3 px-6">
-          {/* Period */}
+        {/* Period + Status toggle — single row */}
+        <div className="mt-5 px-6">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               <CalendarDays className="h-3.5 w-3.5" /> Período
@@ -312,44 +312,59 @@ function AgendaPage() {
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => setShowStatus((v) => !v)}
+              className={cn(
+                "flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                showStatus ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              <Filter className="h-3.5 w-3.5" /> Status
+            </button>
           </div>
 
-          {/* Status */}
-          <div className="flex items-center gap-3">
-            <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <Filter className="h-3.5 w-3.5" /> Status
-            </span>
-            <div className="no-scrollbar flex flex-1 gap-1.5 overflow-x-auto">
-              {statusFilters.map((s) => {
-                const active = selectedStatus === s.key;
-                const count  = counts[s.key] ?? 0;
-                const activeClass =
-                  s.key === "todos"      ? "gradient-primary border-transparent text-white shadow-glow"
-                  : s.key === "pendente"   ? "bg-amber-100   border-amber-300   text-amber-800"
-                  : s.key === "confirmado" ? "bg-emerald-100 border-emerald-300 text-emerald-800"
-                  : s.key === "concluido"  ? "bg-sky-100     border-sky-300     text-sky-800"
-                  :                          "bg-zinc-100    border-zinc-300    text-zinc-700";
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => setSelectedStatus(s.key)}
-                    className={cn(
-                      "inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold transition-all",
-                      active ? activeClass : "border-border bg-card text-muted-foreground hover:border-foreground/20",
-                    )}
-                  >
-                    {active && <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", s.key === "todos" ? "bg-white" : s.dot)} />}
-                    {s.label}
-                    {count > 0 && (
-                      <span className={cn("rounded-full px-1.5 text-[10px] font-bold", s.key === "todos" && active ? "bg-white/25 text-white" : "bg-secondary text-secondary-foreground")}>
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {/* Status chips — expandable */}
+          <AnimatePresence>
+            {showStatus && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="no-scrollbar mt-3 flex gap-2.5 overflow-x-auto pb-1">
+                  {statusFilters.map((s) => {
+                    const active = selectedStatus === s.key;
+                    const count  = counts[s.key] ?? 0;
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => setSelectedStatus(s.key)}
+                        className={cn(
+                          "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold transition-all",
+                          active
+                            ? "gradient-primary border-transparent text-white shadow-glow"
+                            : "border-border bg-card text-foreground hover:border-primary/30",
+                        )}
+                      >
+                        {s.key !== "todos" && (
+                          <span className={cn("h-2 w-2 shrink-0 rounded-full", s.dot)} />
+                        )}
+                        {s.label}
+                        <span className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                          active ? "bg-white/25 text-white" : "bg-secondary text-secondary-foreground",
+                        )}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Content */}
