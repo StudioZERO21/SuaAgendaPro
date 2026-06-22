@@ -14,7 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useProfile, useUpdateProfile, useUploadAvatar } from "@/hooks/usePerfil";
 import { useAuth } from "@/hooks/useAuth";
-import { cn, formatPhoneBR } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { PhoneInputBR } from "@/components/ui/phone-input";
 
 export const Route = createFileRoute("/perfil-profissional")({
   head: () => ({
@@ -296,7 +297,7 @@ function PerfilProfissionalPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="phone">Telefone</Label>
-            <Input id="phone" type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(formatPhoneBR(e.target.value))} placeholder="(11) 99999-9999" />
+            <PhoneInputBR id="phone" value={phone} onChange={setPhone} />
             <label className="mt-1 flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <Checkbox
                 checked={extras.phoneIsWhatsapp}
@@ -309,7 +310,7 @@ function PerfilProfissionalPage() {
           {!extras.phoneIsWhatsapp && (
             <div className="space-y-1.5">
               <Label htmlFor="whatsapp">WhatsApp</Label>
-              <Input id="whatsapp" type="tel" inputMode="tel" value={extras.whatsapp} placeholder="(11) 99999-9999" onChange={(e) => setExtras((ex) => ({ ...ex, whatsapp: formatPhoneBR(e.target.value) }))} />
+              <PhoneInputBR id="whatsapp" value={extras.whatsapp} onChange={(v) => setExtras((ex) => ({ ...ex, whatsapp: v }))} />
             </div>
           )}
 

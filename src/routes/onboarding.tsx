@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Sparkles, Scissors, Store, Check,
   Eye, Heart, Flame, Flower2, Star, Brush,
-  Phone, User, Link2, DollarSign, Clock, AlertCircle,
+  User, Link2, DollarSign, Clock, AlertCircle,
   Plus, X, Share2, MapPin, Loader2, Home,
 } from "lucide-react";
 import {
@@ -19,7 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileShell } from "@/components/mobile-shell";
 import { toast } from "sonner";
-import { cn, formatPhoneBR } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { PhoneInputBR } from "@/components/ui/phone-input";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSlug, isSlugAvailable } from "@/lib/auth";
 
@@ -497,17 +498,10 @@ function OnboardingPage() {
                     <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       WhatsApp (opcional)
                     </Label>
-                    <div className="relative">
-                      <Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        type="tel"
-                        inputMode="tel"
-                        value={form.phone}
-                        onChange={(e) => set("phone", formatPhoneBR(e.target.value))}
-                        placeholder="(11) 99999-9999"
-                        className="h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
-                      />
-                    </div>
+                    <PhoneInputBR
+                      value={form.phone}
+                      onChange={(v) => set("phone", v)}
+                    />
                   </div>
                 </div>
               </motion.div>

@@ -12,7 +12,8 @@ import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
 import { useClientes, useCreateCliente, useUpdateCliente, type UIClient } from "@/hooks/useClientes";
 import { formatPrice } from "@/hooks/useServicos";
-import { cn, formatPhoneBR } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { PhoneInputBR } from "@/components/ui/phone-input";
 import { toast } from "sonner";
 
 import mulheresIconUrl from "@/assets/mulheres-icon.svg";
@@ -397,7 +398,7 @@ function ClientModal({
         </div>
 
         <div className="space-y-3 border-t border-border px-5 py-4">
-          <Field label="Telefone"  icon={Phone} value={editing ? form.phone  : formatPhoneBR(client.phone)} editing={editing} onChange={(v) => update("phone", formatPhoneBR(v))} />
+          <Field label="Telefone"  icon={Phone} value={editing ? form.phone  : client.phone} editing={editing} onChange={(v) => update("phone", v)} phone />
           <Field label="E-mail"    icon={Mail}  value={editing ? form.email  : client.email ?? ""} editing={editing} onChange={(v) => update("email", v)} />
         </div>
 
@@ -467,7 +468,7 @@ function ClientModal({
 // ── Field ─────────────────────────────────────────────────────
 
 function Field({
-  label, icon: Icon, value, editing, onChange, multiline,
+  label, icon: Icon, value, editing, onChange, multiline, phone,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -475,6 +476,7 @@ function Field({
   editing: boolean;
   onChange: (v: string) => void;
   multiline?: boolean;
+  phone?: boolean;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -484,7 +486,9 @@ function Field({
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
         {editing ? (
-          multiline ? (
+          phone ? (
+            <PhoneInputBR value={value} onChange={onChange} className="mt-1 h-9 text-sm [&>span]:text-xs [&>span]:px-2" />
+          ) : multiline ? (
             <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3}
               className="mt-1 w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -548,7 +552,10 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
         <div className="space-y-3 px-5 pb-3">
           <FormField label="Nome *"        value={form.name}     onChange={(v) => update("name", v)}     placeholder="Nome da cliente" />
-          <FormField label="WhatsApp *"    value={form.phone}    onChange={(v) => update("phone", formatPhoneBR(v))}    placeholder="(11) 99999-9999" />
+          <div>
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">WhatsApp *</p>
+            <PhoneInputBR value={form.phone} onChange={(v) => update("phone", v)} />
+          </div>
           <FormField label="E-mail"        value={form.email}    onChange={(v) => update("email", v)}    placeholder="email@exemplo.com" />
           <FormField label="Aniversário"   value={form.birthday} onChange={(v) => update("birthday", v)} placeholder="DD/MM" />
 

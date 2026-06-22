@@ -45,7 +45,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { cn, formatPhoneBR } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { PhoneInputBR } from "@/components/ui/phone-input";
 import {
   fetchPublicProfile,
   fetchPublicSlots,
@@ -246,7 +247,7 @@ function PublicBookingPage() {
     if (avatarRef.current?.complete) setAvatarLoaded(true);
   }, []);
   const openStatus = useMemo(() => getOpenStatus(profile.hours), [profile.hours]);
-  const phoneDigits = profile.phone.replace(/\D/g, "");
+  const phoneDigits = "55" + profile.phone.replace(/\D/g, "");
   const instaHandle = profile.instagram.replace(/^@/, "");
   const mapsQuery = encodeURIComponent(`${profile.address}, ${profile.city}`);
 
@@ -1095,7 +1096,7 @@ function BookingSheet({
                       email={email}
                       notes={notes}
                       onName={setName}
-                      onPhone={(v) => setPhone(formatPhoneBR(v))}
+                      onPhone={setPhone}
                       onEmail={setEmail}
                       onNotes={setNotes}
                     />
@@ -1359,14 +1360,11 @@ function StepDetails({
         </div>
         <div>
           <Label htmlFor="b-phone">WhatsApp</Label>
-          <Input
+          <PhoneInputBR
             id="b-phone"
             value={phone}
-            onChange={(e) => onPhone(e.target.value)}
-            placeholder="(11) 99999-0000"
-            inputMode="tel"
-            maxLength={15}
-            className="mt-1 h-12 rounded-2xl"
+            onChange={onPhone}
+            className="mt-1"
           />
         </div>
         <div>
