@@ -284,66 +284,71 @@ function AgendaPage() {
           </div>
         </div>
 
-        {/* Period filter */}
-        <div className="mt-5 flex items-center justify-between px-6">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <CalendarDays className="h-3.5 w-3.5" /> Período
-          </div>
-          <div className="inline-flex rounded-full bg-secondary p-1">
-            {(["dia", "semana", "mes"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "relative rounded-full px-3.5 py-1.5 text-xs font-bold capitalize transition-colors duration-200",
-                  period === p ? "text-white" : "text-muted-foreground",
-                )}
-              >
-                {period === p && (
-                  <motion.div
-                    layoutId="period-pill"
-                    className="absolute inset-0 rounded-full gradient-primary shadow-glow"
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                  />
-                )}
-                <span className="relative z-10">{p === "mes" ? "Mês" : p === "dia" ? "Dia" : "Semana"}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Status filter */}
-        <div className="mt-4 px-6">
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-            {statusFilters.map((s) => {
-              const active = selectedStatus === s.key;
-              const count  = counts[s.key] ?? 0;
-              const activeClass = s.key === "todos"
-                ? "gradient-primary border-transparent text-white shadow-glow"
-                : s.key === "pendente"   ? "bg-amber-100   border-amber-300   text-amber-800"
-                : s.key === "confirmado" ? "bg-emerald-100 border-emerald-300 text-emerald-800"
-                : s.key === "concluido"  ? "bg-sky-100     border-sky-300     text-sky-800"
-                :                          "bg-zinc-100    border-zinc-300    text-zinc-700";
-              return (
+        {/* Period + Status filters */}
+        <div className="mt-5 space-y-3 px-6">
+          {/* Period */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <CalendarDays className="h-3.5 w-3.5" /> Período
+            </span>
+            <div className="inline-flex rounded-full bg-secondary p-1">
+              {(["dia", "semana", "mes"] as const).map((p) => (
                 <button
-                  key={s.key}
-                  onClick={() => setSelectedStatus(s.key)}
+                  key={p}
+                  onClick={() => setPeriod(p)}
                   className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all",
-                    active ? activeClass : "border-border bg-card text-muted-foreground",
+                    "relative rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors duration-200",
+                    period === p ? "text-white" : "text-muted-foreground",
                   )}
                 >
-                  <span className={cn("h-2 w-2 rounded-full shrink-0", s.dot)} />
-                  {s.label}
-                  <span className={cn(
-                    "rounded-full px-1.5 text-[10px] font-bold",
-                    active && s.key === "todos" ? "bg-white/25 text-white" : "bg-secondary text-secondary-foreground",
-                  )}>
-                    {count}
-                  </span>
+                  {period === p && (
+                    <motion.div
+                      layoutId="period-pill"
+                      className="absolute inset-0 rounded-full gradient-primary shadow-glow"
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">{p === "mes" ? "Mês" : p === "dia" ? "Dia" : "Semana"}</span>
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="flex items-center gap-3">
+            <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <Filter className="h-3.5 w-3.5" /> Status
+            </span>
+            <div className="no-scrollbar flex flex-1 gap-1.5 overflow-x-auto">
+              {statusFilters.map((s) => {
+                const active = selectedStatus === s.key;
+                const count  = counts[s.key] ?? 0;
+                const activeClass =
+                  s.key === "todos"      ? "gradient-primary border-transparent text-white shadow-glow"
+                  : s.key === "pendente"   ? "bg-amber-100   border-amber-300   text-amber-800"
+                  : s.key === "confirmado" ? "bg-emerald-100 border-emerald-300 text-emerald-800"
+                  : s.key === "concluido"  ? "bg-sky-100     border-sky-300     text-sky-800"
+                  :                          "bg-zinc-100    border-zinc-300    text-zinc-700";
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => setSelectedStatus(s.key)}
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-bold transition-all",
+                      active ? activeClass : "border-border bg-card text-muted-foreground hover:border-foreground/20",
+                    )}
+                  >
+                    {active && <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", s.key === "todos" ? "bg-white" : s.dot)} />}
+                    {s.label}
+                    {count > 0 && (
+                      <span className={cn("rounded-full px-1.5 text-[10px] font-bold", s.key === "todos" && active ? "bg-white/25 text-white" : "bg-secondary text-secondary-foreground")}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
