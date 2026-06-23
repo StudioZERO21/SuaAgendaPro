@@ -58,7 +58,9 @@ import {
   getPublicSlots,
   createPublicBooking,
   type PublicData,
+  type PublicPixSettings,
 } from "@/lib/public-booking.functions";
+import { buildPixPayload, normalizePixKey } from "@/lib/pix";
 import { categoryMeta } from "@/lib/services-store";
 import type { ServiceCategory } from "@/lib/mock-data";
 import { formatDuration } from "@/hooks/useServicos";
@@ -344,6 +346,7 @@ function PublicBookingPage() {
         highlights: [] as string[],
         show_prices: p.show_prices,
         accept_online: p.accept_online,
+        pix: loaderData.pix,
       },
       services: mappedServices,
       portfolio: mappedPortfolio,
@@ -1087,6 +1090,8 @@ function PublicBookingPage() {
         professionalName={profile.name}
         professionalSlug={profile.slug}
         professionalId={profile.id}
+        professionalPhone={profile.phone}
+        pix={profile.pix}
         scheduleBlocks={loaderData?.scheduleBlocks ?? []}
       />
 
@@ -1240,6 +1245,8 @@ function BookingSheet({
   professionalName,
   professionalSlug,
   professionalId,
+  professionalPhone,
+  pix,
   scheduleBlocks,
 }: {
   open: boolean;
@@ -1249,6 +1256,8 @@ function BookingSheet({
   professionalName: string;
   professionalSlug: string;
   professionalId: string;
+  professionalPhone: string;
+  pix: PublicPixSettings;
   scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
 }) {
   const [step, setStep] = useState<Step>(preselect ? 2 : 1);
@@ -1449,6 +1458,7 @@ function BookingSheet({
                       accepted={acceptedPolicy}
                       onAcceptedChange={setAcceptedPolicy}
                       onOpenPolicy={() => setPolicyOpen(true)}
+                      pix={pix}
                     />
                   )}
                 </motion.div>
@@ -1500,6 +1510,8 @@ function BookingSheet({
         service={service}
         clientName={name}
         professionalName={professionalName}
+        professionalPhone={professionalPhone}
+        pix={pix}
         onConfirmed={handlePaymentConfirmed}
         onExpired={handlePaymentExpired}
       />
@@ -1775,6 +1787,7 @@ function StepReview({
   accepted,
   onAcceptedChange,
   onOpenPolicy,
+  pix,
 }: {
   service: PublicService;
   date: string;
@@ -1786,6 +1799,7 @@ function StepReview({
   accepted: boolean;
   onAcceptedChange: (v: boolean) => void;
   onOpenPolicy: () => void;
+  pix: PublicPixSettings;
 }) {
   const d = new Date(date + "T00:00:00");
   const fmt = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
@@ -1823,17 +1837,21 @@ function StepReview({
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Sinal para reservar
             </div>
-            <div className="text-sm font-semibold text-foreground">Pagamento via Mercado Pago</div>
+            <div className="text-sm font-semibold text-foreground">
+              {pix?.enabled && pix?.key
+                ? `PIX pessoal · ${pix.beneficiaryName || "profissional"}`
+                : "Pagamento via Mercado Pago"}
+            </div>
           </div>
         </div>
         <div className="flex items-center justify-between px-5 py-4">
           <span className="text-sm text-muted-foreground">Sinal (30%)</span>
           <span className="font-display text-xl font-bold text-gradient">
-            {formatPrice(Math.round(service.price * 0.3))}
+            {formatPrice(Math.round(service.price_cents * 0.3) / 100)}
           </span>
         </div>
         <div className="border-t border-border/60 px-5 py-3 text-xs text-muted-foreground">
-          O restante de <strong className="text-foreground">{formatPrice(service.price - Math.round(service.price * 0.3))}</strong> é pago no atendimento.
+          O restante de <strong className="text-foreground">{formatPrice(service.price - Math.round(service.price_cents * 0.3) / 100)}</strong> é pago no atendimento.
         </div>
       </div>
 
@@ -2014,7 +2032,7 @@ function SuccessView({
 
       <div className="mx-auto mt-3 flex max-w-sm items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-secondary/40 px-4 py-2 text-xs text-muted-foreground">
         <ShieldCheck className="h-4 w-4 text-primary" />
-        Sinal de <strong className="text-foreground">{formatPrice(Math.round(service.price * 0.3))}</strong> pago via Mercado Pago.
+        Sinal de <strong className="text-foreground">{formatPrice(Math.round(service.price_cents * 0.3) / 100)}</strong> pago via PIX pessoal.
       </div>
 
       <Button
@@ -2034,6 +2052,8 @@ function PaymentDialog({
   service,
   clientName,
   professionalName,
+  professionalPhone,
+  pix,
   onConfirmed,
   onExpired,
 }: {
@@ -2042,45 +2062,56 @@ function PaymentDialog({
   service: PublicService;
   clientName: string;
   professionalName: string;
+  professionalPhone: string;
+  pix: PublicPixSettings;
   onConfirmed: () => void;
   onExpired: () => void;
 }) {
   const TOTAL_SECONDS = 10 * 60;
   const [remaining, setRemaining] = useState(TOTAL_SECONDS);
   const [processing, setProcessing] = useState(false);
-  const depositCents = Math.round(service.price * 0.3);
-  const pixCode = useMemo(
-    () =>
-      `00020126360014BR.GOV.BCB.PIX0114+55119${Math.floor(
-        Math.random() * 1e8,
-      )
-        .toString()
-        .padStart(8, "0")}5204000053039865802BR5913${professionalName
-        .normalize("NFD")
-        .replace(/[^A-Za-z ]/g, "")
-        .slice(0, 13)
-        .toUpperCase()}6009SAO PAULO62070503***6304ABCD`,
-    [professionalName, open],
-  );
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // valor em reais (consistente com o resto da UI)
+  const depositValue = Math.round(service.price_cents * 0.3) / 100;
+
+  const pixPayload = useMemo(() => {
+    if (!pix?.enabled || !pix?.key) return null;
+    return buildPixPayload({
+      key: normalizePixKey(pix.keyType, pix.key),
+      name: pix.beneficiaryName || professionalName,
+      city: pix.city || "BRASIL",
+      amount: depositValue,
+      description: `Sinal ${service.name}`.slice(0, 50),
+    });
+  }, [pix, professionalName, depositValue, service.name]);
 
   // reset ao abrir
   useEffect(() => {
     if (open) {
       setRemaining(TOTAL_SECONDS);
       setProcessing(false);
+      setCopied(false);
     }
   }, [open]);
+
+  // QR code real (lado cliente)
+  useEffect(() => {
+    if (!open || !pixPayload) { setQrDataUrl(null); return; }
+    import("qrcode").then(({ default: QRCode }) => {
+      QRCode.toDataURL(pixPayload, { width: 200, margin: 1 })
+        .then(setQrDataUrl)
+        .catch(() => setQrDataUrl(null));
+    });
+  }, [open, pixPayload]);
 
   // contador
   useEffect(() => {
     if (!open) return;
     const id = window.setInterval(() => {
       setRemaining((r) => {
-        if (r <= 1) {
-          window.clearInterval(id);
-          onExpired();
-          return 0;
-        }
+        if (r <= 1) { window.clearInterval(id); onExpired(); return 0; }
         return r - 1;
       });
     }, 1000);
@@ -2091,21 +2122,35 @@ function PaymentDialog({
   const ss = String(remaining % 60).padStart(2, "0");
   const pct = (remaining / TOTAL_SECONDS) * 100;
   const urgent = remaining <= 60;
+  const firstName = clientName?.split(" ")[0] || "Você";
+
+  // Link WhatsApp para enviar comprovante
+  const proDigits = professionalPhone?.replace(/\D/g, "") || "";
+  const waNumber = proDigits.startsWith("55") ? proDigits : `55${proDigits}`;
+  const waComprovanteLink = proDigits
+    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(
+        `Olá! Sou ${clientName} e acabei de realizar o pagamento do sinal para ${service.name}. Segue meu comprovante:`,
+      )}`
+    : null;
 
   async function copyPix() {
+    if (!pixPayload) return;
     try {
-      await navigator.clipboard.writeText(pixCode);
+      await navigator.clipboard.writeText(pixPayload);
+      setCopied(true);
       toast.success("Código PIX copiado!");
+      setTimeout(() => setCopied(false), 3000);
     } catch {
       toast.error("Não foi possível copiar");
     }
   }
 
-  function simulatePaid() {
+  function handleConfirm() {
     setProcessing(true);
-    // simula confirmação do Mercado Pago
-    setTimeout(() => onConfirmed(), 900);
+    setTimeout(() => onConfirmed(), 600);
   }
+
+  const hasPix = pix?.enabled && !!pix?.key;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -2117,10 +2162,7 @@ function PaymentDialog({
           {/* Barra de progresso topo */}
           <div className="h-1.5 w-full bg-secondary">
             <div
-              className={cn(
-                "h-full transition-all duration-1000 ease-linear",
-                urgent ? "bg-destructive" : "gradient-primary",
-              )}
+              className={cn("h-full transition-all duration-1000 ease-linear", urgent ? "bg-destructive" : "gradient-primary")}
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -2132,11 +2174,11 @@ function PaymentDialog({
                   <Wallet className="h-5 w-5" />
                 </div>
                 <div>
-                  <DialogTitle className="font-display text-lg">
-                    Pagamento do sinal
-                  </DialogTitle>
+                  <DialogTitle className="font-display text-lg">Pagamento do sinal</DialogTitle>
                   <DialogDescription className="text-xs">
-                    Via Mercado Pago — PIX
+                    {hasPix
+                      ? `PIX pessoal · ${pix.beneficiaryName || professionalName}`
+                      : "Confirme com o profissional"}
                   </DialogDescription>
                 </div>
               </div>
@@ -2144,75 +2186,96 @@ function PaymentDialog({
 
             {/* Timer */}
             <div
-              className={cn(
-                "mt-4 flex items-center justify-between rounded-2xl border px-4 py-3",
-                urgent
-                  ? "border-destructive/40 bg-destructive/10 text-destructive"
-                  : "border-border/60 bg-secondary/40",
-              )}
-              role="status"
-              aria-live="polite"
+              className={cn("mt-4 flex items-center justify-between rounded-2xl border px-4 py-3", urgent ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-border/60 bg-secondary/40")}
+              role="status" aria-live="polite"
             >
               <div className="flex items-center gap-2 text-sm font-medium">
-                <Timer className="h-4 w-4" />
-                Slot reservado por
+                <Timer className="h-4 w-4" /> Slot reservado por
               </div>
-              <div className="font-display text-xl font-bold tabular-nums">
-                {mm}:{ss}
-              </div>
+              <div className="font-display text-xl font-bold tabular-nums">{mm}:{ss}</div>
             </div>
 
             {/* Valor */}
             <div className="mt-4 flex items-center justify-between rounded-2xl gradient-soft px-4 py-3">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Sinal a pagar
-                </div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sinal a pagar</div>
                 <div className="text-xs text-muted-foreground">{service.name}</div>
               </div>
-              <div className="font-display text-2xl font-bold text-gradient">
-                {formatPrice(depositCents)}
-              </div>
+              <div className="font-display text-2xl font-bold text-gradient">{formatPrice(depositValue)}</div>
             </div>
 
-            {/* QR mock */}
+            {/* QR Code real ou placeholder */}
             <div className="mt-4 flex flex-col items-center rounded-3xl border border-border/60 bg-card p-5">
-              <div className="flex h-44 w-44 items-center justify-center rounded-2xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
-                <QrCode className="h-24 w-24" aria-hidden="true" />
-              </div>
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                Abra o app do seu banco e escaneie o QR Code,<br />ou copie o código PIX abaixo.
-              </p>
-              <button
-                type="button"
-                onClick={copyPix}
-                className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-secondary/70"
-              >
-                <Copy className="h-3.5 w-3.5" /> Copiar código PIX
-              </button>
+              {hasPix ? (
+                qrDataUrl ? (
+                  <img src={qrDataUrl} alt="QR Code PIX" className="h-[176px] w-[176px] rounded-xl" />
+                ) : (
+                  <div className="flex h-[176px] w-[176px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
+                    <QrCode className="h-16 w-16 animate-pulse" />
+                  </div>
+                )
+              ) : (
+                <div className="flex h-[176px] w-[176px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
+                  <QrCode className="h-16 w-16 opacity-40" />
+                </div>
+              )}
+
+              {hasPix ? (
+                <>
+                  <p className="mt-3 text-center text-xs text-muted-foreground">
+                    Abra o app do seu banco e escaneie o QR Code,<br />ou copie o código PIX abaixo.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyPix}
+                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-secondary/70"
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? "Copiado!" : "Copiar código PIX"}
+                  </button>
+                </>
+              ) : (
+                <p className="mt-3 text-center text-xs text-muted-foreground">
+                  O profissional ainda não configurou uma chave PIX. Entre em contato para combinar o pagamento.
+                </p>
+              )}
             </div>
+
+            {/* Instrução comprovante (só se tem PIX e WA) */}
+            {hasPix && waComprovanteLink && (
+              <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-border/60 bg-secondary/40 px-4 py-3">
+                <p className="text-xs font-medium text-foreground">
+                  Após pagar, envie o comprovante para confirmarmos seu agendamento:
+                </p>
+                <a
+                  href={waComprovanteLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-sm"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Enviar comprovante pelo WhatsApp
+                </a>
+              </div>
+            )}
 
             {/* Aviso */}
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              {clientName?.split(" ")[0] || "Você"}, seu horário será confirmado automaticamente após o pagamento.
+              {firstName}, após enviar o comprovante seu agendamento será confirmado manualmente.
               Se o tempo expirar, o slot será liberado para outras pessoas.
             </p>
 
-            {/* CTA mock */}
-            <Button
-              onClick={simulatePaid}
-              disabled={processing || remaining === 0}
-              size="lg"
-              className="mt-5 h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60"
-            >
-              {processing ? (
-                <>Confirmando pagamento…</>
-              ) : (
-                <>
-                  <Check className="mr-2 h-5 w-5" /> Já paguei (simular)
-                </>
-              )}
-            </Button>
+            {/* CTA */}
+            {hasPix && (
+              <Button
+                onClick={handleConfirm}
+                disabled={processing || remaining === 0}
+                size="lg"
+                className="mt-5 h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60"
+              >
+                {processing ? "Registrando…" : <><Check className="mr-2 h-5 w-5" /> Já enviei o comprovante</>}
+              </Button>
+            )}
 
             <button
               type="button"

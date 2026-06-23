@@ -29,6 +29,16 @@ function sanitize(s: string, max: number) {
     .slice(0, max);
 }
 
+export function normalizePixKey(type: string, value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (type === "cpf" || type === "cnpj") return digits;
+  if (type === "telefone") {
+    if (!digits) return "";
+    return digits.length <= 11 ? `+55${digits}` : `+${digits}`;
+  }
+  return value.trim();
+}
+
 export type PixInput = {
   key: string; // chave Pix (CPF, e-mail, telefone, aleatória)
   name: string; // nome do recebedor

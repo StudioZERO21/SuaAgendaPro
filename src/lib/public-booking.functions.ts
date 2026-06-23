@@ -13,16 +13,18 @@ export async function getPublicProfile(slug: string): Promise<PublicData | null>
   if (error) console.error("[getPublicProfile]", error.message);
   if (!profile) return null;
 
-  const [{ data: services }, { data: wh }, { data: portfolio }, { data: reviews }, { data: statsRows }, { data: schedBlocks }] = await Promise.all([
+  const [{ data: services }, { data: wh }, { data: portfolio }, { data: reviews }, { data: statsRows }, { data: schedBlocks }, { data: paySettings }] = await Promise.all([
     supabase.from("services").select("id, name, description, duration_minutes, price_cents, category, category_label, image_url").eq("professional_id", profile.id).eq("is_active", true).order("name"),
     supabase.from("working_hours").select("day_of_week, is_open, start_time, end_time").eq("professional_id", profile.id),
     supabase.from("portfolio_items").select("id, image_url, title, description, order_index").eq("professional_id", profile.id).order("order_index", { ascending: true }),
     supabase.from("reviews").select("id, client_name, client_avatar_url, rating, message, is_anonymous, created_at").eq("professional_id", profile.id).eq("is_public", true).order("created_at", { ascending: false }),
     supabase.rpc("get_review_stats", { p_professional_id: profile.id }),
     supabase.from("schedule_blocks").select("id, start_date, end_date, reason, title").eq("professional_id", profile.id),
+    supabase.from("professional_payment_settings").select("pix_enabled, pix_key, pix_key_type, pix_beneficiary_name, pix_city").eq("user_id", profile.id).maybeSingle(),
   ]);
 
   const stats = (statsRows as { total_count: number; avg_rating: number }[] | null)?.[0];
+  const ps = paySettings as { pix_enabled: boolean; pix_key: string | null; pix_key_type: string; pix_beneficiary_name: string | null; pix_city: string | null } | null;
 
   return {
     profile: profile as PublicProfileRow,
@@ -33,6 +35,13 @@ export async function getPublicProfile(slug: string): Promise<PublicData | null>
     reviewTotalCount: stats?.total_count ?? 0,
     reviewAvgRating: stats?.avg_rating ?? 0,
     scheduleBlocks: (schedBlocks ?? []) as PublicScheduleBlock[],
+    pix: {
+      enabled: ps?.pix_enabled ?? false,
+      key: ps?.pix_key ?? null,
+      keyType: ps?.pix_key_type ?? "email",
+      beneficiaryName: ps?.pix_beneficiary_name ?? null,
+      city: ps?.pix_city ?? null,
+    },
   };
 }
 
@@ -113,6 +122,14 @@ export type PublicScheduleBlock = {
   title: string | null;
 };
 
+export type PublicPixSettings = {
+  enabled: boolean;
+  key: string | null;
+  keyType: string;
+  beneficiaryName: string | null;
+  city: string | null;
+};
+
 export type PublicData = {
   profile: PublicProfileRow;
   services: PublicServiceRow[];
@@ -122,6 +139,7 @@ export type PublicData = {
   reviewTotalCount: number;
   reviewAvgRating: number;
   scheduleBlocks: PublicScheduleBlock[];
+  pix: PublicPixSettings;
 };
 
 export type CreateBookingInput = {

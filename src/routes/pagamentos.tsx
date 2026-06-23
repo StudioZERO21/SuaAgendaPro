@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   Check,
   CheckCircle2,
@@ -82,23 +83,74 @@ export const Route = createFileRoute("/pagamentos")({
 });
 
 const PIX_TYPES: { value: PixKeyType; label: string; placeholder: string }[] = [
-  { value: "cpf", label: "CPF", placeholder: "000.000.000-00" },
-  { value: "cnpj", label: "CNPJ", placeholder: "00.000.000/0000-00" },
-  { value: "email", label: "E-mail", placeholder: "voce@exemplo.com" },
-  { value: "telefone", label: "Telefone", placeholder: "+5511999999999" },
-  { value: "aleatoria", label: "Aleatória", placeholder: "chave-aleatoria-uuid" },
+  { value: "cpf",      label: "CPF",       placeholder: "000.000.000-00" },
+  { value: "cnpj",     label: "CNPJ",      placeholder: "00.000.000/0000-00" },
+  { value: "email",    label: "E-mail",    placeholder: "voce@exemplo.com" },
+  { value: "telefone", label: "Telefone",  placeholder: "(11) 99999-9999" },
+  { value: "aleatoria",label: "Aleatória", placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
 ];
 
-function normalizeKey(type: PixKeyType, value: string) {
-  const v = value.trim();
-  if (type === "cpf" || type === "cnpj" || type === "telefone") {
-    const digits = v.replace(/\D/g, "");
-    if (type === "telefone" && digits.length > 0 && !v.startsWith("+")) {
-      return `+${digits}`;
+// ── Máscaras de entrada ───────────────────────────────────────
+
+function maskCpf(d: string) {
+  const v = d.replace(/\D/g, "").slice(0, 11);
+  if (v.length <= 3) return v;
+  if (v.length <= 6) return `${v.slice(0,3)}.${v.slice(3)}`;
+  if (v.length <= 9) return `${v.slice(0,3)}.${v.slice(3,6)}.${v.slice(6)}`;
+  return `${v.slice(0,3)}.${v.slice(3,6)}.${v.slice(6,9)}-${v.slice(9)}`;
+}
+
+function maskCnpj(d: string) {
+  const v = d.replace(/\D/g, "").slice(0, 14);
+  if (v.length <= 2) return v;
+  if (v.length <= 5) return `${v.slice(0,2)}.${v.slice(2)}`;
+  if (v.length <= 8) return `${v.slice(0,2)}.${v.slice(2,5)}.${v.slice(5)}`;
+  if (v.length <= 12) return `${v.slice(0,2)}.${v.slice(2,5)}.${v.slice(5,8)}/${v.slice(8)}`;
+  return `${v.slice(0,2)}.${v.slice(2,5)}.${v.slice(5,8)}/${v.slice(8,12)}-${v.slice(12)}`;
+}
+
+function maskPhone(d: string) {
+  const v = d.replace(/\D/g, "").slice(0, 11);
+  if (v.length <= 2) return v.length ? `(${v}` : "";
+  if (v.length <= 6) return `(${v.slice(0,2)}) ${v.slice(2)}`;
+  if (v.length <= 10) return `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`;
+  return `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+}
+
+function getDisplayKey(type: PixKeyType, key: string): string {
+  switch (type) {
+    case "cpf":      return maskCpf(key);
+    case "cnpj":     return maskCnpj(key);
+    case "telefone": {
+      const digits = key.replace(/\D/g, "");
+      // strip country code 55 if present
+      const local = digits.length >= 12 && digits.startsWith("55") ? digits.slice(2) : digits;
+      return maskPhone(local);
     }
-    return type === "telefone" ? (v.startsWith("+") ? "+" + digits : digits) : digits;
+    default: return key;
   }
-  return v;
+}
+
+function handleKeyInput(type: PixKeyType, inputValue: string): string {
+  if (type === "cpf" || type === "cnpj" || type === "telefone") {
+    return inputValue.replace(/\D/g, "");
+  }
+  return inputValue;
+}
+
+function isValidEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+}
+
+function normalizeKey(type: PixKeyType, value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (type === "cpf" || type === "cnpj") return digits;
+  if (type === "telefone") {
+    if (!digits) return "";
+    // local (10–11 digits) → add +55; already has country code (12–13) → keep
+    return digits.length <= 11 ? `+55${digits}` : `+${digits}`;
+  }
+  return value.trim();
 }
 
 function centsToCurrency(cents: number) {
@@ -156,6 +208,8 @@ function PagamentosPage() {
   const [extraAmount, setExtraAmount] = useState("");
   const [showClientList, setShowClientList] = useState(false);
   const [connectingMp, setConnectingMp] = useState(false);
+  const [pixConfirmOpen, setPixConfirmOpen] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [activeTransaction, setActiveTransaction] = useState<PaymentTransaction | null>(null);
   const { data: realClients = [] } = useClientes();
@@ -347,6 +401,15 @@ function PagamentosPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePixSaveClick = () => {
+    if (pix.keyType === "email" && pix.key && !isValidEmail(pix.key)) {
+      setEmailError("E-mail inválido. Verifique antes de salvar.");
+      return;
+    }
+    setEmailError("");
+    setPixConfirmOpen(true);
   };
 
   const connectMp = async () => {
@@ -831,7 +894,7 @@ function PagamentosPage() {
                 <Label>Tipo de chave</Label>
                 <Select
                   value={pix.keyType}
-                  onValueChange={(v: PixKeyType) => updatePix({ keyType: v, key: "" })}
+                  onValueChange={(v: PixKeyType) => { updatePix({ keyType: v, key: "" }); setEmailError(""); }}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -845,47 +908,66 @@ function PagamentosPage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="key">Chave</Label>
+                <Label htmlFor="pix-key">Chave</Label>
                 <Input
-                  id="key"
-                  value={pix.key}
-                  onChange={(e) => updatePix({ key: e.target.value })}
-                  placeholder={
-                    PIX_TYPES.find((t) => t.value === pix.keyType)?.placeholder
-                  }
+                  id="pix-key"
+                  inputMode={pix.keyType === "email" ? "email" : pix.keyType === "aleatoria" ? "text" : "tel"}
+                  value={getDisplayKey(pix.keyType, pix.key)}
+                  onChange={(e) => {
+                    setEmailError("");
+                    updatePix({ key: handleKeyInput(pix.keyType, e.target.value) });
+                  }}
+                  onBlur={() => {
+                    if (pix.keyType === "email" && pix.key && !isValidEmail(pix.key)) {
+                      setEmailError("E-mail inválido.");
+                    }
+                  }}
+                  placeholder={PIX_TYPES.find((t) => t.value === pix.keyType)?.placeholder}
+                  className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {emailError && <p className="text-[11px] text-destructive">{emailError}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="ben">Nome do recebedor</Label>
-                  <Input
-                    id="ben"
-                    maxLength={25}
-                    value={pix.beneficiaryName}
-                    onChange={(e) => updatePix({ beneficiaryName: e.target.value })}
-                    placeholder="Como aparece no banco"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">Cidade</Label>
-                  <Input
-                    id="city"
-                    maxLength={15}
-                    value={pix.city}
-                    onChange={(e) => updatePix({ city: e.target.value })}
-                    placeholder="Ex.: São Paulo"
-                  />
-                </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ben">Nome do recebedor</Label>
+                <Input id="ben" maxLength={25} value={pix.beneficiaryName}
+                  onChange={(e) => updatePix({ beneficiaryName: e.target.value })}
+                  placeholder="Exatamente como consta no banco" />
+                <p className="text-[11px] text-muted-foreground">
+                  Use o nome exatamente como cadastrado no seu banco.{" "}
+                  Limite de 25 caracteres definido pelo BACEN.{" "}
+                  <span className="font-semibold text-foreground">{pix.beneficiaryName.length}/25</span>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Cidade</Label>
+                <Input id="city" maxLength={15} value={pix.city}
+                  onChange={(e) => updatePix({ city: e.target.value })}
+                  placeholder="Ex.: São Paulo" />
+              </div>
+
+              {/* Aviso de responsabilidade */}
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <p className="text-[11px] leading-snug text-amber-800 dark:text-amber-300">
+                  <span className="font-bold">Atenção:</span> as informações de chave Pix são de exclusiva responsabilidade do profissional. Dados incorretos podem direcionar pagamentos de clientes para outra pessoa.
+                </p>
               </div>
 
               <div className="flex items-start gap-2 rounded-xl bg-secondary/60 p-3">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <p className="text-[11px] text-muted-foreground">
-                  O Access Token do Mercado Pago é salvo apenas no backend seguro. A chave Pix é usada para gerar o QR Code direto para sua conta.
+                  A chave Pix é usada apenas para gerar o QR Code direto para sua conta, sem taxas do app.
                 </p>
               </div>
-              <Button onClick={savePix} disabled={saving || loading} className="h-11 w-full rounded-2xl gradient-primary text-sm font-bold text-white shadow-glow">
+
+              <Button
+                onClick={handlePixSaveClick}
+                disabled={saving || loading}
+                className="h-11 w-full rounded-2xl gradient-primary text-sm font-bold text-white shadow-glow"
+              >
                 {saving ? "Salvando..." : "Salvar configurações"}
               </Button>
             </div>
@@ -919,6 +1001,57 @@ function PagamentosPage() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Confirmação de chave Pix */}
+      <AlertDialog open={pixConfirmOpen} onOpenChange={setPixConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" /> Confirmar dados da chave Pix
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-left">
+                <p className="text-sm text-muted-foreground">
+                  Verifique os dados abaixo. Pagamentos realizados pelos seus clientes serão direcionados para esta chave.
+                </p>
+                <div className="rounded-xl border border-border bg-secondary/50 p-3 space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">Tipo</span>
+                    <span className="font-semibold">{PIX_TYPES.find(t => t.value === pix.keyType)?.label}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">Chave</span>
+                    <span className="font-bold text-foreground break-all text-right">{getDisplayKey(pix.keyType, pix.key) || pix.key}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">Recebedor</span>
+                    <span className="font-semibold">{pix.beneficiaryName || "—"}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">Cidade</span>
+                    <span className="font-semibold">{pix.city || "—"}</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  <p className="text-[11px] leading-snug text-amber-800 dark:text-amber-300">
+                    Ao confirmar, você declara que as informações acima estão corretas e assume responsabilidade por eventuais pagamentos direcionados a esta chave.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Corrigir</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { setPixConfirmOpen(false); savePix(); }}
+              className="gradient-primary text-white shadow-glow"
+            >
+              Confirmar e salvar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Conexão Mercado Pago acontece via OAuth (redirect seguro) */}
 
