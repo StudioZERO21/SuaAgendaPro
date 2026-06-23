@@ -2,18 +2,23 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
+  CalendarCheck,
+  CalendarX,
   Check,
   CheckCircle2,
-  Clock,
   Copy,
+  CreditCard,
   ExternalLink,
+  Gift,
+  Heart,
   MessageCircle,
   RefreshCw,
+  RotateCcw,
   Send,
   Smartphone,
-  Trash2,
+  Sparkles,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
+  buildFullSystemMessage,
   buildWaLink,
   DEFAULT_WA_SETTINGS,
   getWhatsAppSettings,
@@ -69,7 +75,58 @@ function msgTypeLabel(type: WhatsAppMessage["message_type"]) {
   }
 }
 
-const TEMPLATE_VARS = "{{cliente_nome}}, {{servico}}, {{data}}, {{hora}}, {{profissional}}";
+const TEMPLATE_VARS = "{{cliente_nome}}, {{servico}}, {{data}}, {{hora}}, {{profissional}}, {{valor}}, {{link_avaliacao}}";
+
+// ── Message groups (mirrors notificacoes.tsx) ─────────────────
+
+type MsgKey = keyof Omit<WhatsAppSettings, "enabled" | "greeting">;
+
+type MsgDef = { key: MsgKey; label: string; emoji: string; desc: string };
+
+const MSG_GROUPS: { id: string; title: string; icon: React.ElementType; items: MsgDef[] }[] = [
+  {
+    id: "agendamentos",
+    title: "Agendamentos",
+    icon: CalendarCheck,
+    items: [
+      { key: "msgNewBooking",    label: "Novo agendamento",         emoji: "🆕", desc: "Alerta para você quando uma cliente agendar" },
+      { key: "msgConfirmation",  label: "Confirmação para a cliente", emoji: "✅", desc: "Enviada logo após o agendamento" },
+      { key: "msgReminder",      label: "Lembrete 24h antes",        emoji: "🔔", desc: "Lembrete antecipado para a cliente" },
+      { key: "msgReminder2h",    label: "Lembrete 2h antes",         emoji: "⏰", desc: "Segundo lembrete próximo do horário" },
+      { key: "msgReschedule",    label: "Reagendamento",             emoji: "📅", desc: "Quando um horário é alterado" },
+      { key: "msgCancellation",  label: "Cancelamento",              emoji: "❌", desc: "Quando um agendamento é cancelado" },
+      { key: "msgNoShow",        label: "No-show / falta",           emoji: "⚠️", desc: "Mensagem após a cliente faltar" },
+    ],
+  },
+  {
+    id: "pos",
+    title: "Pós-atendimento",
+    icon: Sparkles,
+    items: [
+      { key: "msgThanks",  label: "Agradecimento",      emoji: "💖", desc: "Mensagem após o atendimento" },
+      { key: "msgReview",  label: "Pedido de avaliação", emoji: "⭐", desc: "Convidar a cliente a avaliar" },
+    ],
+  },
+  {
+    id: "relacionamento",
+    title: "Relacionamento",
+    icon: Heart,
+    items: [
+      { key: "msgBirthday",   label: "Aniversário",          emoji: "🎂", desc: "Parabéns no dia do aniversário" },
+      { key: "msgComeback",   label: "Volte sempre",         emoji: "💕", desc: "Para clientes sem agendamento há muito tempo" },
+      { key: "msgPromotions", label: "Promoções e novidades", emoji: "🌟", desc: "Mensagens pontuais de marketing" },
+    ],
+  },
+  {
+    id: "pagamentos",
+    title: "Pagamentos",
+    icon: CreditCard,
+    items: [
+      { key: "msgPaymentReceived", label: "Pagamento recebido", emoji: "💰", desc: "Confirmação de pagamento para a cliente" },
+      { key: "msgPaymentPending",  label: "Pagamento pendente", emoji: "⏳", desc: "Cobrança / lembrete de pagamento" },
+    ],
+  },
+];
 
 // ── Page ─────────────────────────────────────────────────────
 
@@ -117,17 +174,6 @@ function WhatsAppPage() {
   const clientValid = clientDigits.length >= 10 && clientDigits.length <= 11;
   const clientWaLink = buildWaLink(clientDigits, clientMsg);
 
-  const previewConfirmation = useMemo(
-    () =>
-      interpolate(cfg.msgConfirmation, {
-        cliente_nome: "Ana Silva",
-        servico: "Escova progressiva",
-        data: "segunda, 23 de junho",
-        hora: "14:00",
-        profissional: prof?.display_name || "Studio",
-      }),
-    [cfg.msgConfirmation, prof?.display_name],
-  );
 
   async function handleSave() {
     setSaving(true);
@@ -163,6 +209,40 @@ function WhatsAppPage() {
   }
 
   const pendingCount = messages.filter((m) => m.status === "pending").length;
+  const [selectedSection, setSelectedSection] = useState(MSG_GROUPS[0].id);
+  const [previewKey, setPreviewKey] = useState<MsgKey>(MSG_GROUPS[0].items[0].key);
+
+  // Reset previewKey to first item of new section when section changes
+  useEffect(() => {
+    const group = MSG_GROUPS.find((g) => g.id === selectedSection);
+    if (group) setPreviewKey(group.items[0].key);
+  }, [selectedSection]);
+
+  const PREVIEW_VARS = {
+    cliente_nome: "Ana Silva",
+    servico: "Escova progressiva",
+    data: "segunda, 23 de junho",
+    hora: "14:00",
+    profissional: prof?.display_name ?? "Studio",
+    valor: "150,00",
+    link_avaliacao: "suaagenda.pro/avaliar/abc123",
+    mensagem: "15% de desconto na próxima visita! 🎉",
+  };
+
+  const fullPreview = buildFullSystemMessage(
+    cfg[previewKey],
+    { name: prof?.display_name ?? "Studio", phone: prof?.phone },
+    PREVIEW_VARS,
+  );
+
+  const previewProfName = prof?.display_name ?? "Studio";
+  const previewBodyText = interpolate(cfg[previewKey], PREVIEW_VARS);
+  const previewReplyLink = prof?.phone
+    ? buildWaLink(
+        prof.phone,
+        `Olá ${previewProfName}! Sou ${PREVIEW_VARS.cliente_nome} e recebi uma mensagem sobre ${PREVIEW_VARS.servico} em ${PREVIEW_VARS.data} às ${PREVIEW_VARS.hora}.`,
+      )
+    : "";
 
   return (
     <MobileShell>
@@ -368,49 +448,117 @@ function WhatsAppPage() {
           </TabsContent>
 
           {/* ── Templates ── */}
-          <TabsContent value="templates" className="space-y-5">
+          <TabsContent value="templates" className="space-y-4">
+            {/* Variáveis */}
             <section className="rounded-2xl border border-border bg-card p-3 shadow-card">
               <p className="text-[11px] text-muted-foreground">
-                <span className="font-semibold text-foreground">Variáveis disponíveis:</span>{" "}
+                <span className="font-semibold text-foreground">Variáveis:</span>{" "}
                 {TEMPLATE_VARS}
               </p>
             </section>
 
-            {(
-              [
-                { key: "msgConfirmation", label: "Confirmação de agendamento", emoji: "✅" },
-                { key: "msgReminder", label: "Lembrete 24h antes", emoji: "🔔" },
-                { key: "msgCancellation", label: "Cancelamento", emoji: "❌" },
-              ] as const
-            ).map(({ key, label, emoji }) => (
-              <div key={key} className="space-y-2">
-                <Label className="text-xs font-semibold">
-                  {emoji} {label}
-                </Label>
-                <Textarea
-                  value={cfg[key]}
-                  onChange={(e) => setCfg((c) => ({ ...c, [key]: e.target.value.slice(0, 500) }))}
-                  rows={4}
-                  className="resize-none text-xs"
-                />
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] text-muted-foreground">{cfg[key].length}/500</p>
+            {/* Seletor de seção */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {MSG_GROUPS.map((g) => {
+                const Icon = g.icon;
+                const active = selectedSection === g.id;
+                return (
                   <button
-                    type="button"
-                    onClick={() =>
-                      setCfg((c) => ({ ...c, [key]: DEFAULT_WA_SETTINGS[key] }))
-                    }
-                    className="text-[11px] font-semibold text-primary"
+                    key={g.id}
+                    onClick={() => setSelectedSection(g.id)}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                      active
+                        ? "gradient-primary text-white shadow-glow"
+                        : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                    }`}
                   >
-                    Restaurar padrão
+                    <Icon className="h-3.5 w-3.5" />
+                    {g.title}
                   </button>
-                </div>
+                );
+              })}
+            </div>
+
+            {/* Mensagens da seção selecionada */}
+            {MSG_GROUPS.filter((g) => g.id === selectedSection).map((g) => (
+              <div key={g.id} className="space-y-4">
+                {g.items.map(({ key, label, emoji, desc }) => (
+                  <div
+                    key={key}
+                    className={`space-y-2 rounded-2xl border bg-card p-4 shadow-card transition-all ${
+                      previewKey === key ? "border-primary/40 ring-1 ring-primary/20" : "border-border"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold">{emoji} {label}</p>
+                        <p className="text-[11px] text-muted-foreground">{desc}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCfg((c) => ({ ...c, [key]: DEFAULT_WA_SETTINGS[key] }))}
+                        className="flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-secondary/80"
+                        title="Restaurar mensagem padrão"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Padrão
+                      </button>
+                    </div>
+                    <Textarea
+                      value={cfg[key]}
+                      onFocus={() => setPreviewKey(key)}
+                      onChange={(e) => {
+                        setPreviewKey(key);
+                        setCfg((c) => ({ ...c, [key]: e.target.value.slice(0, 500) }));
+                      }}
+                      rows={4}
+                      className="resize-none text-xs"
+                    />
+                    <p className="text-right text-[11px] text-muted-foreground">{cfg[key].length}/500</p>
+                  </div>
+                ))}
               </div>
             ))}
 
+            {/* Preview dinâmico — mensagem completa como a cliente vai receber */}
             <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Preview — Confirmação</p>
-              <p className="mt-2 whitespace-pre-line text-xs leading-relaxed">{previewConfirmation}</p>
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-primary">
+                Preview — como a cliente recebe
+              </p>
+
+              {/* Bolha de mensagem estilo WhatsApp */}
+              <div className="rounded-2xl rounded-tl-none bg-white px-4 py-4 shadow-sm dark:bg-card space-y-0">
+                {/* Linha 1 — título */}
+                <p className="text-[12px] font-bold text-foreground">
+                  📱 Mensagem automática
+                </p>
+
+                {/* Linha 3 — identificação */}
+                <p className="pt-3 text-[11px] italic text-muted-foreground">
+                  {previewProfName} · via SuaAgenda.Pro
+                </p>
+
+                {/* Linha 5 — corpo da mensagem */}
+                <p className="whitespace-pre-wrap pt-3 text-[12px] leading-relaxed text-foreground/90">
+                  {previewBodyText}
+                </p>
+
+                {/* Botão de contato com espaço maior */}
+                {previewReplyLink && (
+                  <a
+                    href={previewReplyLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-6 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Falar com {previewProfName}
+                  </a>
+                )}
+              </div>
+
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Header e botão de contato são adicionados automaticamente pelo sistema.
+              </p>
             </div>
 
             <Button

@@ -222,6 +222,31 @@ function MaisPage() {
                 const hasLink = "to" in it;
                 const cls = `flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-secondary/60 ${i !== 0 ? "border-t border-border" : ""}`;
 
+                // ── Indicar para amigas ──────────────────────────
+                if (it.id === "share") {
+                  return (
+                    <div key={it.id} className={`${cls} justify-between`}>
+                      <button onClick={handleShare} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <p className="text-sm font-semibold">{it.label}</p>
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setRegraOpen(true)}
+                          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-secondary/80"
+                          aria-label="Ver regras"
+                        >
+                          <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: "2s" }} />
+                          <Info className="relative h-4 w-4" />
+                        </button>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  );
+                }
+
                 // ── Meu link público ─────────────────────────────
                 if (it.id === "link") {
                   return (
