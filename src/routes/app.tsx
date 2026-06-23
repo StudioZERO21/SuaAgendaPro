@@ -6,7 +6,6 @@ import {
   ListChecks, MessageCircle, MoreHorizontal, Plus, Sparkles, Check,
   Clock, X, Search, Loader2, User,
 } from "lucide-react";
-import { DayPicker } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { PhoneInputBR } from "@/components/ui/phone-input";
 import { Input } from "@/components/ui/input";
@@ -37,7 +36,8 @@ import {
 } from "@/hooks/useAgendamentos";
 import { useClientes, useCreateCliente, type UIClient } from "@/hooks/useClientes";
 import { useServices, formatPrice, formatDuration } from "@/hooks/useServicos";
-import { useWorkingHours, useBlockedDates } from "@/hooks/useHorarios";
+import { useWorkingHours, useScheduleBlocks } from "@/hooks/useHorarios";
+import { useProfile } from "@/hooks/usePerfil";
 import type { Service } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/app")({
@@ -78,6 +78,10 @@ function todayMonday() {
   return d;
 }
 
+function dateToStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
 // ── Lookup maps type ──────────────────────────────────────────
 
 type DataMaps = {
@@ -102,6 +106,7 @@ function AgendaPage() {
   const todayIdx       = (today.getDay() + 6) % 7;
   const [weekOffset, setWeekOffset]       = useState(0);
   const [activeDateIdx, setActiveDateIdx] = useState(todayIdx);
+  const [navMode, setNavMode]             = useState<"semana" | "mes">("semana");
 
   const monday = useMemo(() => {
     const d = todayMonday();
@@ -120,6 +125,8 @@ function AgendaPage() {
   const { data: appts   = [], isLoading: loadingAppts } = useAgendamentos();
   const { data: clients = [] }                           = useClientes();
   const { data: services = [] }                          = useServices();
+  const { data: scheduleBlocks = [] }                    = useScheduleBlocks();
+  const { data: profile }                                = useProfile();
 
   useAgendamentosRealtime();
 
@@ -180,9 +187,19 @@ function AgendaPage() {
                   </span>
                 )}
               </button>
-              <div className="flex h-11 w-11 items-center justify-center rounded-full gradient-primary text-sm font-bold text-white shadow-glow">
-                S
-              </div>
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.display_name}
+                  className="h-11 w-11 rounded-full object-cover shadow-glow ring-2 ring-primary/30"
+                />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-full gradient-primary text-sm font-bold text-white shadow-glow">
+                  {profile?.display_name
+                    ? profile.display_name.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join("")
+                    : "?"}
+                </div>
+              )}
             </div>
           </div>
 
@@ -222,28 +239,44 @@ function AgendaPage() {
         {/* Date strip */}
         <div className="mt-6 px-6">
           <div className="flex items-center gap-3">
-            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-card">
+            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-card px-2 py-2 shadow-card">
               <button
-                onClick={() => { setWeekOffset((w) => w - 1); setActiveDateIdx(0); }}
+                onClick={() => { setWeekOffset((w) => w - (navMode === "mes" ? 4 : 1)); setActiveDateIdx(0); }}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary active:scale-95"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
+              <div className="flex flex-1 flex-col items-center gap-1">
+                <button
+                  onClick={() => { setWeekOffset(0); setActiveDateIdx(todayIdx); setPeriod("dia"); }}
+                  className="flex items-center gap-1.5 text-sm font-bold leading-none"
+                >
+                  {weekOffset === 0 ? "Hoje" : (() => {
+                    const s = monday;
+                    const e = week[6];
+                    return s.getMonth() === e.getMonth()
+                      ? s.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+                      : `${s.toLocaleDateString("pt-BR", { month: "short" })} / ${e.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}`;
+                  })()}
+                  <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {(["semana", "mes"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setNavMode(m)}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition",
+                        navMode === m ? "gradient-primary text-white" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {m === "semana" ? "Sem." : "Mês"}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
-                onClick={() => { setWeekOffset(0); setActiveDateIdx(todayIdx); setPeriod("dia"); }}
-                className="flex flex-1 items-center justify-center gap-2 text-sm font-bold"
-              >
-                {weekOffset === 0 ? "Hoje" : (() => {
-                  const s = monday;
-                  const e = week[6];
-                  return s.getMonth() === e.getMonth()
-                    ? s.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
-                    : `${s.toLocaleDateString("pt-BR", { month: "short" })} / ${e.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}`;
-                })()}
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-              </button>
-              <button
-                onClick={() => { setWeekOffset((w) => w + 1); setActiveDateIdx(0); }}
+                onClick={() => { setWeekOffset((w) => w + (navMode === "mes" ? 4 : 1)); setActiveDateIdx(0); }}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary active:scale-95"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -261,23 +294,33 @@ function AgendaPage() {
           <div className="mt-5 grid grid-cols-7 gap-2">
             {week.map((d, i) => {
               const active = i === activeDateIdx;
-              const dayApptCount = appts.filter((a) => a.date === `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`).length;
+              const ds = dateToStr(d);
+              const dayApptCount = appts.filter((a) => a.date === ds).length;
+              const block = scheduleBlocks.find((b) => ds >= b.start_date && ds <= b.end_date);
               return (
                 <button
                   key={i}
                   onClick={() => { setActiveDateIdx(i); setPeriod("dia"); }}
                   className={cn(
                     "relative flex aspect-square flex-col items-center justify-center rounded-full text-center transition-all",
-                    active ? "gradient-primary text-white shadow-glow" : "border border-border bg-card/60 backdrop-blur-sm shadow-card",
+                    active
+                      ? "gradient-primary text-white shadow-glow"
+                      : block
+                      ? "border border-amber-200 bg-amber-50"
+                      : "border border-border bg-card/60 backdrop-blur-sm shadow-card",
                   )}
                 >
-                  <span className={cn("text-[9px] font-bold uppercase tracking-wider leading-none mb-[-2px]", active ? "text-white/80" : "text-muted-foreground")}>
-                    {weekdayLabels[i]}
+                  <span className={cn("text-[9px] font-bold uppercase tracking-wider leading-none mb-[-2px]",
+                    active ? "text-white/80" : block ? "text-amber-500" : "text-muted-foreground",
+                  )}>
+                    {block && !active ? (block.reason === "ferias" ? "Fér." : "Bloq.") : weekdayLabels[i]}
                   </span>
-                  <span className={cn("font-display text-2xl font-bold leading-none mt-[-2px]", active ? "text-white" : "text-foreground")}>
+                  <span className={cn("font-display text-2xl font-bold leading-none mt-[-2px]",
+                    active ? "text-white" : block ? "text-amber-600 line-through" : "text-foreground",
+                  )}>
                     {d.getDate()}
                   </span>
-                  {dayApptCount > 0 && (
+                  {dayApptCount > 0 && !block && (
                     <span className={cn("absolute bottom-1 h-1.5 w-1.5 rounded-full", active ? "bg-white/70" : "bg-primary")} />
                   )}
                 </button>
@@ -434,6 +477,7 @@ function AgendaPage() {
                   week={week}
                   activeDateIdx={activeDateIdx}
                   maps={maps}
+                  scheduleBlocks={scheduleBlocks}
                   onSelectDay={(i) => { setActiveDateIdx(i); }}
                   onChangePeriod={setPeriod}
                   onOpenAppointment={(a) => setDetailAppt(a)}
@@ -561,36 +605,41 @@ function Detail({ label, value, highlight }: { label: string; value: string; hig
 
 // ── Grade View ────────────────────────────────────────────────
 
+type BlockEntry = { start_date: string; end_date: string; reason: string };
+
 function GradeView({
-  appointments, period, week, activeDateIdx, maps, onSelectDay, onChangePeriod, onOpenAppointment,
+  appointments, period, week, activeDateIdx, maps, scheduleBlocks, onSelectDay, onChangePeriod, onOpenAppointment,
 }: {
   appointments: UIAppointment[];
   period: "dia" | "semana" | "mes";
   week: Date[];
   activeDateIdx: number;
   maps: DataMaps;
+  scheduleBlocks: BlockEntry[];
   onSelectDay: (i: number) => void;
   onChangePeriod: (p: "dia" | "semana" | "mes") => void;
   onOpenAppointment: (a: UIAppointment) => void;
 }) {
   const activeDate = week[activeDateIdx];
-  const activeDateStr = `${activeDate.getFullYear()}-${String(activeDate.getMonth()+1).padStart(2,"0")}-${String(activeDate.getDate()).padStart(2,"0")}`;
+  const activeDateStr = dateToStr(activeDate);
 
   return (
     <div className="space-y-4">
       {period === "semana" ? (
-        <WeekGrid appointments={appointments} week={week} activeDateIdx={activeDateIdx} maps={maps} onSelectDay={onSelectDay} onOpenAppointment={onOpenAppointment} />
+        <WeekGrid appointments={appointments} week={week} activeDateIdx={activeDateIdx} maps={maps} scheduleBlocks={scheduleBlocks} onSelectDay={onSelectDay} onOpenAppointment={onOpenAppointment} />
       ) : period === "mes" ? (
-        <MonthGrid appointments={appointments} onPickDay={(d) => { const idx = week.findIndex((w) => w.toDateString() === d.toDateString()); if (idx >= 0) onSelectDay(idx); onChangePeriod("dia"); }} />
+        <MonthGrid appointments={appointments} scheduleBlocks={scheduleBlocks} viewDate={week[0]} onPickDay={(d) => { const idx = week.findIndex((w) => w.toDateString() === d.toDateString()); if (idx >= 0) onSelectDay(idx); onChangePeriod("dia"); }} />
       ) : (
-        <DayGrid appointments={appointments.filter((a) => a.date === activeDateStr)} maps={maps} onOpenAppointment={onOpenAppointment} />
+        <DayGrid appointments={appointments.filter((a) => a.date === activeDateStr)} scheduleBlocks={scheduleBlocks} activeDate={activeDate} maps={maps} onOpenAppointment={onOpenAppointment} />
       )}
     </div>
   );
 }
 
 
-function DayGrid({ appointments, maps, onOpenAppointment }: { appointments: UIAppointment[]; maps: DataMaps; onOpenAppointment: (a: UIAppointment) => void }) {
+function DayGrid({ appointments, maps, scheduleBlocks, activeDate, onOpenAppointment }: { appointments: UIAppointment[]; maps: DataMaps; scheduleBlocks: BlockEntry[]; activeDate: Date; onOpenAppointment: (a: UIAppointment) => void }) {
+  const ds = dateToStr(activeDate);
+  const block = scheduleBlocks.find((b) => ds >= b.start_date && ds <= b.end_date);
   const startHour = 7; const endHour = 21;
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   const pxPerHour = 72;
@@ -604,54 +653,62 @@ function DayGrid({ appointments, maps, onOpenAppointment }: { appointments: UIAp
   });
 
   return (
-    <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-md p-3 shadow-card">
-      <div className="relative" style={{ height: hours.length * pxPerHour }}>
-        {hours.map((h, i) => (
-          <div key={h} className="absolute left-0 right-0 flex items-start gap-3" style={{ top: i * pxPerHour, height: pxPerHour }}>
-            <span className="w-10 shrink-0 text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{String(h).padStart(2,"0")}:00</span>
-            <div className="mt-1.5 h-px flex-1 bg-border/60" />
-          </div>
-        ))}
-        <div className="absolute inset-0 pl-[3.25rem] pr-1">
-          {items.map(({ a, top, height }, i) => {
-            const client  = maps.clientMap.get(a.clientId);
-            const service = maps.serviceMap.get(a.serviceId);
-            const meta    = statusMeta(a.status);
-            return (
-              <motion.button key={a.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                onClick={() => onOpenAppointment(a)}
-                className={cn("absolute left-0 right-0 cursor-pointer overflow-hidden rounded-lg border px-2.5 py-1.5 text-left shadow-card backdrop-blur-md transition-all active:scale-[0.98]", a.status === "concluido" ? "border-zinc-200/60 bg-white/30 opacity-55 saturate-50" : "border-white/40 bg-white/70")}
-                style={{ top, height }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={cn("w-1 shrink-0 rounded-full", meta.dot)} style={{ height: Math.max(20, height - 16) }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-[13px] font-bold leading-tight text-foreground truncate">{client?.name ?? "—"}</p>
-                    <p className="truncate text-[10px] font-semibold text-muted-foreground">{a.start}–{a.end} · {service?.name ?? "—"}</p>
-                  </div>
-                  <span className={cn("h-2 w-2 shrink-0 rounded-full", meta.dot)} />
-                </div>
-              </motion.button>
-            );
-          })}
+    <div className="space-y-3">
+      {block && (
+        <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+          <span className="text-sm font-semibold text-amber-700">
+            {block.reason === "ferias" ? "🏖 Férias" : block.reason === "feriado" ? "📅 Feriado" : "⛔ Agenda bloqueada"}
+            {" — "}nenhum horário disponível neste período.
+          </span>
         </div>
+      )}
+      <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-md p-3 shadow-card">
+        <div className="relative" style={{ height: hours.length * pxPerHour }}>
+          {hours.map((h, i) => (
+            <div key={h} className="absolute left-0 right-0 flex items-start gap-3" style={{ top: i * pxPerHour, height: pxPerHour }}>
+              <span className="w-10 shrink-0 text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{String(h).padStart(2,"0")}:00</span>
+              <div className="mt-1.5 h-px flex-1 bg-border/60" />
+            </div>
+          ))}
+          <div className="absolute inset-0 pl-[3.25rem] pr-1">
+            {items.map(({ a, top, height }, i) => {
+              const client  = maps.clientMap.get(a.clientId);
+              const service = maps.serviceMap.get(a.serviceId);
+              const meta    = statusMeta(a.status);
+              return (
+                <motion.button key={a.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                  onClick={() => onOpenAppointment(a)}
+                  className={cn("absolute left-0 right-0 cursor-pointer overflow-hidden rounded-lg border px-2.5 py-1.5 text-left shadow-card backdrop-blur-md transition-all active:scale-[0.98]", a.status === "concluido" ? "border-zinc-200/60 bg-white/30 opacity-55 saturate-50" : "border-white/40 bg-white/70")}
+                  style={{ top, height }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={cn("w-1 shrink-0 rounded-full", meta.dot)} style={{ height: Math.max(20, height - 16) }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-[13px] font-bold leading-tight text-foreground truncate">{client?.name ?? "—"}</p>
+                      <p className="truncate text-[10px] font-semibold text-muted-foreground">{a.start}–{a.end} · {service?.name ?? "—"}</p>
+                    </div>
+                    <span className={cn("h-2 w-2 shrink-0 rounded-full", meta.dot)} />
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+        {appointments.length === 0 && <p className="py-8 text-center text-xs font-semibold text-muted-foreground">Sem horários neste dia.</p>}
       </div>
-      {appointments.length === 0 && <p className="py-8 text-center text-xs font-semibold text-muted-foreground">Sem horários neste dia.</p>}
     </div>
   );
 }
 
-function WeekGrid({ appointments, week, activeDateIdx, maps, onSelectDay, onOpenAppointment }: {
+function WeekGrid({ appointments, week, activeDateIdx, maps, scheduleBlocks, onSelectDay, onOpenAppointment }: {
   appointments: UIAppointment[]; week: Date[]; activeDateIdx: number; maps: DataMaps;
+  scheduleBlocks: BlockEntry[];
   onSelectDay: (i: number) => void; onOpenAppointment: (a: UIAppointment) => void;
 }) {
   const today = new Date();
   const byDay: UIAppointment[][] = Array.from({ length: 7 }, () => []);
   appointments.forEach((a) => {
-    const idx = week.findIndex((w) => {
-      const ws = `${w.getFullYear()}-${String(w.getMonth()+1).padStart(2,"0")}-${String(w.getDate()).padStart(2,"0")}`;
-      return ws === a.date;
-    });
+    const idx = week.findIndex((w) => dateToStr(w) === a.date);
     if (idx >= 0) byDay[idx].push(a);
   });
   byDay.forEach((arr) => arr.sort((a, b) => a.start.localeCompare(b.start)));
@@ -662,20 +719,32 @@ function WeekGrid({ appointments, week, activeDateIdx, maps, onSelectDay, onOpen
         const dayAppts = byDay[i];
         const isToday  = d.toDateString() === today.toDateString();
         const isActive = i === activeDateIdx;
+        const ds       = dateToStr(d);
+        const block    = scheduleBlocks.find((b) => ds >= b.start_date && ds <= b.end_date);
         return (
           <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-            className={cn("overflow-hidden rounded-2xl border shadow-card backdrop-blur-md", isActive ? "border-primary/40 bg-white/70" : "border-border bg-card/60")}
+            className={cn("overflow-hidden rounded-2xl border shadow-card backdrop-blur-md",
+              isActive ? "border-primary/40 bg-white/70" :
+              block ? "border-amber-200 bg-amber-50/60" :
+              "border-border bg-card/60"
+            )}
           >
             <button onClick={() => onSelectDay(i)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
-              <div className={cn("flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl", isToday ? "gradient-primary text-white shadow-glow" : "bg-secondary text-foreground")}>
-                <span className={cn("text-[9px] font-bold uppercase tracking-wider leading-none", isToday ? "text-white/85" : "text-muted-foreground")}>{weekdayLabels[i]}</span>
+              <div className={cn("flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl", isToday ? "gradient-primary text-white shadow-glow" : block ? "bg-amber-100 text-amber-700" : "bg-secondary text-foreground")}>
+                <span className={cn("text-[9px] font-bold uppercase tracking-wider leading-none", isToday ? "text-white/85" : block ? "text-amber-500" : "text-muted-foreground")}>{weekdayLabels[i]}</span>
                 <span className="font-display text-base font-bold leading-none mt-0.5">{d.getDate()}</span>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-display text-sm font-bold text-foreground">{d.toLocaleDateString("pt-BR", { weekday: "long" })}</p>
-                <p className="text-[11px] font-semibold text-muted-foreground">{dayAppts.length === 0 ? "Sem agendamentos" : `${dayAppts.length} agendamento${dayAppts.length > 1 ? "s" : ""}`}</p>
+                {block ? (
+                  <p className="text-[11px] font-semibold text-amber-600">
+                    {block.reason === "ferias" ? "🏖 Férias" : block.reason === "feriado" ? "Feriado" : "Agenda bloqueada"}
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-semibold text-muted-foreground">{dayAppts.length === 0 ? "Sem agendamentos" : `${dayAppts.length} agendamento${dayAppts.length > 1 ? "s" : ""}`}</p>
+                )}
               </div>
-              {dayAppts.length > 0 && (
+              {dayAppts.length > 0 && !block && (
                 <div className="flex -space-x-1">
                   {dayAppts.slice(0, 3).map((a, k) => <span key={k} className={cn("h-2 w-2 rounded-full ring-2 ring-background", statusMeta(a.status).dot)} />)}
                 </div>
@@ -712,9 +781,15 @@ function WeekGrid({ appointments, week, activeDateIdx, maps, onSelectDay, onOpen
   );
 }
 
-function MonthGrid({ appointments, onPickDay }: { appointments: UIAppointment[]; onPickDay: (d: Date) => void }) {
+function MonthGrid({ appointments, scheduleBlocks, viewDate, onPickDay }: {
+  appointments: UIAppointment[];
+  scheduleBlocks: BlockEntry[];
+  viewDate: Date;
+  onPickDay: (d: Date) => void;
+}) {
   const today = new Date();
-  const year = today.getFullYear(); const month = today.getMonth();
+  const year  = viewDate.getFullYear();
+  const month = viewDate.getMonth();
   const first = new Date(year, month, 1);
   const startOffset = (first.getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -749,15 +824,31 @@ function MonthGrid({ appointments, onPickDay }: { appointments: UIAppointment[];
           const isLastCol = (i + 1) % 7 === 0;
           const isLastRow = i >= cells.length - 7;
           if (!d) return <div key={i} className={cn("h-16 bg-muted/20", !isLastCol && "border-r border-border/60", !isLastRow && "border-b border-border/60")} />;
-          const isToday   = d === today.getDate();
+          const isToday   = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
           const dayAppts  = byDate.get(d) ?? [];
           const dayCounts = statusOrder.map((s) => ({ s, n: dayAppts.filter((a) => a.status === s).length })).filter((x) => x.n > 0);
+          const dateStr   = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+          const block     = scheduleBlocks.find((b) => dateStr >= b.start_date && dateStr <= b.end_date);
           return (
             <button key={i} onClick={() => onPickDay(new Date(year, month, d))}
-              className={cn("relative flex h-16 flex-col justify-between p-1 text-left transition-all active:scale-[0.98]", !isLastCol && "border-r border-border/60", !isLastRow && "border-b border-border/60", isToday ? "bg-gradient-to-br from-primary via-primary-glow to-accent text-primary-foreground" : dayAppts.length > 0 ? "bg-white/60 hover:bg-white/90" : "bg-white/30 hover:bg-white/50")}
+              className={cn("relative flex h-16 flex-col justify-between p-1 text-left transition-all active:scale-[0.98]",
+                !isLastCol && "border-r border-border/60",
+                !isLastRow && "border-b border-border/60",
+                isToday ? "bg-gradient-to-br from-primary via-primary-glow to-accent text-primary-foreground" :
+                block ? "bg-amber-50/80 hover:bg-amber-100/80" :
+                dayAppts.length > 0 ? "bg-white/60 hover:bg-white/90" :
+                "bg-white/30 hover:bg-white/50"
+              )}
             >
-              <span className={cn("font-display text-2xl font-extrabold leading-none tracking-tight", isToday ? "text-white" : dayAppts.length > 0 ? "text-foreground" : "text-muted-foreground/50")}>{d}</span>
-              {dayAppts.length > 0 && (
+              <span className={cn("font-display text-2xl font-extrabold leading-none tracking-tight",
+                isToday ? "text-white" : block ? "text-amber-600" : dayAppts.length > 0 ? "text-foreground" : "text-muted-foreground/50"
+              )}>{d}</span>
+              {block && !isToday && (
+                <span className="text-[7px] font-bold uppercase tracking-widest text-amber-500 leading-none">
+                  {block.reason === "ferias" ? "Fér." : block.reason === "feriado" ? "Fer." : "Bloq."}
+                </span>
+              )}
+              {dayAppts.length > 0 && !block && (
                 <div className="flex flex-nowrap items-center gap-0.5">
                   {dayCounts.map(({ s, n }) => (
                     <Tooltip key={s}>
@@ -806,7 +897,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
   const { data: clients  = [] } = useClientes();
   const { data: services = [] } = useServices();
   const { data: whRows   = [] } = useWorkingHours();
-  const { data: blockedDates = [] } = useBlockedDates();
+  const { data: scheduleBlocks = [] } = useScheduleBlocks();
   const { data: appts    = [] } = useAgendamentos();
 
   const createCliente    = useCreateCliente();
@@ -839,12 +930,15 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
 
   // Disabled dates for calendar
   const openDows   = useMemo(() => new Set(whRows.filter((w) => w.is_open).map((w) => w.day_of_week)), [whRows]);
-  const blockedSet = useMemo(() => new Set(blockedDates.map((b) => b.blocked_date)), [blockedDates]);
+  const isInScheduleBlock = useMemo(
+    () => (ds: string) => scheduleBlocks.some((b) => ds >= b.start_date && ds <= b.end_date),
+    [scheduleBlocks],
+  );
 
   function isDateDisabled(date: Date): boolean {
     if (date < new Date(new Date().setHours(0,0,0,0))) return true;
     const ds = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
-    return !openDows.has(date.getDay()) || blockedSet.has(ds);
+    return !openDows.has(date.getDay()) || isInScheduleBlock(ds);
   }
 
   const canNext =
@@ -1016,30 +1110,11 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
               {step === 2 && (
                 <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                   <div className="rounded-2xl border border-border bg-card p-3 shadow-card">
-                    <DayPicker
-                      mode="single"
-                      selected={draft.date ?? undefined}
-                      onSelect={(d) => setDraft({ ...draft, date: d ?? null, time: null })}
-                      disabled={isDateDisabled}
-                      locale={undefined}
-                      classNames={{
-                        root:        "w-full",
-                        months:      "w-full",
-                        month:       "w-full",
-                        caption:     "flex items-center justify-between mb-3",
-                        caption_label:"font-display text-sm font-bold",
-                        nav:         "flex items-center gap-1",
-                        nav_button:  "h-7 w-7 flex items-center justify-center rounded-full bg-secondary text-foreground transition hover:bg-primary hover:text-white",
-                        table:       "w-full border-collapse",
-                        head_row:    "flex mb-1",
-                        head_cell:   "flex-1 text-center text-[11px] font-bold uppercase text-muted-foreground",
-                        row:         "flex mb-1",
-                        cell:        "flex-1",
-                        day:         "w-full aspect-square flex items-center justify-center rounded-xl text-sm font-semibold transition-all hover:bg-secondary",
-                        day_selected:"!gradient-primary !text-white !shadow-glow",
-                        day_disabled:"opacity-30 cursor-not-allowed",
-                        day_today:   "ring-2 ring-primary ring-offset-1",
-                      }}
+                    <MiniCalendar
+                      selected={draft.date ?? null}
+                      onSelect={(d) => setDraft({ ...draft, date: d, time: null })}
+                      isDisabled={isDateDisabled}
+                      scheduleBlocks={scheduleBlocks}
                     />
                   </div>
 
@@ -1125,6 +1200,99 @@ function SummaryItem({ label, value, highlight }: { label: string; value: string
     <div>
       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className={cn("mt-0.5 font-display text-sm font-bold", highlight ? "text-gradient" : "text-foreground")}>{value}</p>
+    </div>
+  );
+}
+
+// ── Mini Calendar ─────────────────────────────────────────────
+
+function MiniCalendar({
+  selected, onSelect, isDisabled, scheduleBlocks,
+}: {
+  selected: Date | null;
+  onSelect: (d: Date) => void;
+  isDisabled: (d: Date) => boolean;
+  scheduleBlocks: BlockEntry[];
+}) {
+  const now = useMemo(() => new Date(), []);
+  const [viewYear,  setViewYear]  = useState(selected ? selected.getFullYear()  : now.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selected ? selected.getMonth()     : now.getMonth());
+
+  const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const DAY_ABBR    = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+
+  const firstDay    = new Date(viewYear, viewMonth, 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const totalCells  = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+  const cells: (Date | null)[] = Array.from({ length: totalCells }, (_, i) => {
+    const n = i - startOffset + 1;
+    return n >= 1 && n <= daysInMonth ? new Date(viewYear, viewMonth, n) : null;
+  });
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear((y) => y - 1); setViewMonth(11); }
+    else setViewMonth((m) => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewYear((y) => y + 1); setViewMonth(0); }
+    else setViewMonth((m) => m + 1);
+  }
+
+  function getBlock(d: Date) {
+    const ds = dateToStr(d);
+    return scheduleBlocks.find((b) => ds >= b.start_date && ds <= b.end_date) ?? null;
+  }
+
+  return (
+    <div className="w-full">
+      <div className="mb-3 flex items-center justify-between">
+        <button type="button" onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary transition hover:bg-primary hover:text-white">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <p className="font-display text-sm font-bold">{MONTH_NAMES[viewMonth]} {viewYear}</p>
+        <button type="button" onClick={nextMonth} className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary transition hover:bg-primary hover:text-white">
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="mb-1 grid grid-cols-7">
+        {DAY_ABBR.map((d) => (
+          <div key={d} className="py-1 text-center text-[10px] font-bold uppercase text-muted-foreground">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-y-1">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const isSelected = selected && d.toDateString() === selected.toDateString();
+          const isToday    = d.toDateString() === now.toDateString();
+          const disabled   = isDisabled(d);
+          const block      = getBlock(d);
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => !disabled && onSelect(d)}
+              disabled={disabled}
+              className={cn(
+                "flex aspect-square w-full flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all",
+                isSelected && "gradient-primary text-white shadow-glow",
+                !isSelected && isToday && "ring-2 ring-primary ring-offset-1",
+                !isSelected && block && "cursor-not-allowed bg-amber-50 text-amber-600",
+                !isSelected && !block && !disabled && "hover:bg-secondary",
+                !isSelected && !block && disabled && "cursor-not-allowed opacity-30",
+              )}
+            >
+              <span>{d.getDate()}</span>
+              {block && !isSelected && (
+                <span className="text-[7px] font-bold leading-none text-amber-500">
+                  {block.reason === "ferias" ? "Fér." : block.reason === "feriado" ? "Fer." : "Bloq."}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
 import { useClientes, useCreateCliente, useUpdateCliente, type UIClient } from "@/hooks/useClientes";
@@ -34,11 +35,72 @@ export const Route = createFileRoute("/clientes")({
 
 type Tab = "todas" | "vip" | "novas";
 
+type VipType = "auto" | "manual" | "both" | null;
+
 type EnrichedClient = UIClient & {
   vip: boolean;
+  vipType: VipType;
   birthdayThisMonth: boolean;
   hasApptThisMonth: boolean;
 };
+
+function vipBadgeCls(type: VipType, size: "sm" | "lg" = "sm") {
+  const base = size === "sm" ? "h-4 w-4" : "h-6 w-6";
+  if (type === "manual" || type === "both")
+    return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full gradient-primary text-white shadow-glow`;
+  if (type === "auto")
+    return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-amber-400 text-amber-900`;
+  return "";
+}
+
+function VipBlock({
+  vipType, manualVip, editing, onChange,
+}: {
+  vipType: VipType;
+  manualVip: boolean;
+  editing: boolean;
+  onChange?: (v: boolean) => void;
+}) {
+  const isAuto   = vipType === "auto" || vipType === "both";
+  const isManual = vipType === "manual" || vipType === "both";
+  const isAny    = vipType !== null;
+
+  const iconCls = isManual
+    ? "gradient-primary text-white shadow-glow"
+    : isAuto
+    ? "bg-amber-400 text-amber-900"
+    : "bg-secondary text-muted-foreground";
+
+  const subtitle = isAuto && isManual
+    ? "Top 5% da base e seleção manual"
+    : isAuto
+    ? "Top 5% em gastos ou frequência"
+    : isManual
+    ? "Selecionado manualmente"
+    : "Marcar como VIP manualmente";
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2.5">
+      <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-all", iconCls)}>
+        <Crown className="h-4 w-4" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-bold leading-tight">Cliente VIP</p>
+        <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+      </div>
+      {editing ? (
+        <Switch checked={manualVip} onCheckedChange={onChange} />
+      ) : (
+        <span className={cn(
+          "text-[10px] font-bold uppercase tracking-wide",
+          isManual ? "text-primary" : isAuto ? "text-amber-500" : "text-muted-foreground/50",
+        )}>
+          {isAny ? "VIP" : "—"}
+        </span>
+      )}
+    </div>
+  );
+}
 
 // ── Page ─────────────────────────────────────────────────────
 
@@ -57,14 +119,38 @@ function ClientesPage() {
   const currentMonth = new Date().getMonth() + 1; // 1–12
 
   const enriched: EnrichedClient[] = useMemo(() => {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const active = clients.filter(
+      (c) => c.lastAppointmentAt && new Date(c.lastAppointmentAt) >= sixMonthsAgo,
+    );
+    const topN = Math.max(1, Math.ceil(active.length * 0.05));
+
+    const topSpendIds = new Set(
+      [...active].sort((a, b) => b.totalSpentCents - a.totalSpentCents).slice(0, topN).map((c) => c.id),
+    );
+    const topVisitIds = new Set(
+      [...active].sort((a, b) => b.totalAppointments - a.totalAppointments).slice(0, topN).map((c) => c.id),
+    );
+
     return clients.map((c) => {
       const hasApptThisMonth = c.lastAppointmentAt
         ? new Date(c.lastAppointmentAt).getMonth() + 1 === currentMonth
         : false;
+      let birthdayThisMonth = false;
+      if (c.birthDate) {
+        const month = parseInt(c.birthDate.split("-")[1], 10);
+        birthdayThisMonth = month === currentMonth;
+      }
+      const autoVip   = topSpendIds.has(c.id) || topVisitIds.has(c.id);
+      const manualVip = c.isVip;
+      const vipType: VipType = autoVip && manualVip ? "both" : autoVip ? "auto" : manualVip ? "manual" : null;
       return {
         ...c,
-        vip:               c.totalSpentCents >= 15000,
-        birthdayThisMonth: false, // birthday not in DB schema
+        vip: vipType !== null,
+        vipType,
+        birthdayThisMonth,
         hasApptThisMonth,
       };
     });
@@ -84,7 +170,7 @@ function ClientesPage() {
   const stats = {
     total:     enriched.length,
     vip:       enriched.filter((c) => c.vip).length,
-    birthdays: 0, // no birthday in DB
+    birthdays: enriched.filter((c) => c.birthdayThisMonth).length,
   };
 
   const selected = enriched.find((c) => c.id === selectedId) ?? null;
@@ -198,8 +284,8 @@ function ClientesPage() {
                       style={{ background: `linear-gradient(135deg, ${c.color}, var(--primary))` }}
                     >
                       {c.initials}
-                      {c.vip && (
-                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full gradient-primary text-white shadow-glow">
+                      {c.vipType && (
+                        <span className={vipBadgeCls(c.vipType, "sm")}>
                           <Crown className="h-2.5 w-2.5" />
                         </span>
                       )}
@@ -322,14 +408,26 @@ function ClientModal({
 }) {
   const updateCliente = useUpdateCliente();
 
+  // birth_date stored as YYYY-MM-DD; display as DD/MM
+  function toDisplay(iso: string | null | undefined) {
+    if (!iso) return "";
+    const [, m, d] = iso.split("-");
+    return `${d}/${m}`;
+  }
+  function toIso(ddmm: string): string | null {
+    const clean = ddmm.replace(/\D/g, "");
+    if (clean.length !== 4) return null;
+    return `2000-${clean.slice(2, 4)}-${clean.slice(0, 2)}`;
+  }
+
   const [form, setForm] = useState({
-    name:    client.name,
-    phone:   client.phone,
-    email:   client.email ?? "",
-    notes:   client.notes ?? "",
-    // UI-only (not in DB schema)
-    birthday: "" as string,
+    name:     client.name,
+    phone:    client.phone,
+    email:    client.email ?? "",
+    notes:    client.notes ?? "",
+    birthday: toDisplay(client.birthDate),
     address:  "" as string,
+    isVip:    client.isVip,
   });
   const [showAddress, setShowAddress] = useState(false);
 
@@ -340,11 +438,13 @@ function ClientModal({
   async function handleSave() {
     try {
       await updateCliente.mutateAsync({
-        id:    client.id,
-        name:  form.name,
-        phone: form.phone,
-        email: form.email || null,
-        notes: form.notes || null,
+        id:        client.id,
+        name:      form.name,
+        phone:     form.phone,
+        email:     form.email || null,
+        notes:     form.notes || null,
+        birthDate: toIso(form.birthday),
+        isVip:     form.isVip,
       });
       toast.success("Cliente atualizada");
       onSaved();
@@ -377,8 +477,13 @@ function ClientModal({
               style={{ background: `linear-gradient(135deg, ${client.color}, var(--primary))` }}
             >
               {client.initials}
-              {client.vip && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full gradient-primary text-white shadow-glow">
+              {client.vipType && (
+                <span className={cn(
+                  "absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full",
+                  client.vipType === "auto"
+                    ? "bg-amber-400 text-amber-900"
+                    : "gradient-primary text-white shadow-glow",
+                )}>
                   <Crown className="h-3.5 w-3.5" />
                 </span>
               )}
@@ -400,6 +505,17 @@ function ClientModal({
         <div className="space-y-3 border-t border-border px-5 py-4">
           <Field label="Telefone"  icon={Phone} value={editing ? form.phone  : client.phone} editing={editing} onChange={(v) => update("phone", v)} phone />
           <Field label="E-mail"    icon={Mail}  value={editing ? form.email  : client.email ?? ""} editing={editing} onChange={(v) => update("email", v)} />
+
+          <VipBlock
+            vipType={editing
+              ? (client.vipType === "auto" || client.vipType === "both"
+                  ? (form.isVip ? "both" : "auto")
+                  : form.isVip ? "manual" : null)
+              : client.vipType}
+            manualVip={form.isVip}
+            editing={editing}
+            onChange={(v) => update("isVip", v)}
+          />
         </div>
 
         {!editing && (
@@ -422,7 +538,15 @@ function ClientModal({
           {showFullDetails && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
               <div className="space-y-3 border-t border-border px-5 py-4">
-                <Field label="Aniversário" icon={Calendar}   value={form.birthday}       editing={editing} onChange={(v) => update("birthday", v)} />
+                <Field label="Aniversário" icon={Cake} value={form.birthday} editing={editing}
+                  onChange={(v) => {
+                    // enforce DD/MM mask
+                    const digits = v.replace(/\D/g, "").slice(0, 4);
+                    const masked = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+                    update("birthday", masked);
+                  }}
+                  placeholder="DD/MM"
+                />
                 {editing && (
                   <button type="button" onClick={() => setShowAddress((s) => { const next = !s; if (!next) update("address", ""); return next; })}
                     className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "gradient-primary border-transparent text-white shadow-glow" : "border-border bg-secondary/40 text-foreground")}
@@ -468,7 +592,7 @@ function ClientModal({
 // ── Field ─────────────────────────────────────────────────────
 
 function Field({
-  label, icon: Icon, value, editing, onChange, multiline, phone,
+  label, icon: Icon, value, editing, onChange, multiline, phone, placeholder,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -477,6 +601,7 @@ function Field({
   onChange: (v: string) => void;
   multiline?: boolean;
   phone?: boolean;
+  placeholder?: string;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -489,11 +614,11 @@ function Field({
           phone ? (
             <PhoneInputBR value={value} onChange={onChange} className="mt-1 h-9 text-sm [&>span]:text-xs [&>span]:px-2" />
           ) : multiline ? (
-            <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3}
+            <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder}
               className="mt-1 w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
             />
           ) : (
-            <Input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 h-9 rounded-xl border-border bg-secondary/50 text-sm" />
+            <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="mt-1 h-9 rounded-xl border-border bg-secondary/50 text-sm" />
           )
         ) : (
           <p className="mt-0.5 break-words text-sm font-semibold text-foreground">{value || <span className="text-muted-foreground">—</span>}</p>
@@ -507,11 +632,17 @@ function Field({
 
 function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const createCliente = useCreateCliente();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "", birthday: "", address: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "", birthday: "", address: "", isVip: false });
   const [showAddress, setShowAddress] = useState(false);
 
-  function update<K extends keyof typeof form>(k: K, v: string) {
+  function update<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  function toIso(ddmm: string): string | null {
+    const clean = ddmm.replace(/\D/g, "");
+    if (clean.length !== 4) return null;
+    return `2000-${clean.slice(2, 4)}-${clean.slice(0, 2)}`;
   }
 
   async function submit() {
@@ -519,10 +650,12 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
     if (!form.phone.trim()) return toast.error("Informe o WhatsApp");
     try {
       await createCliente.mutateAsync({
-        name:  form.name.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim() || null,
-        notes: form.notes.trim() || null,
+        name:      form.name.trim(),
+        phone:     form.phone.trim(),
+        email:     form.email.trim() || null,
+        notes:     form.notes.trim() || null,
+        birthDate: toIso(form.birthday),
+        isVip:     form.isVip,
       });
       toast.success("Cliente cadastrada ✨");
       onCreated();
@@ -557,7 +690,16 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
             <PhoneInputBR value={form.phone} onChange={(v) => update("phone", v)} />
           </div>
           <FormField label="E-mail"        value={form.email}    onChange={(v) => update("email", v)}    placeholder="email@exemplo.com" />
-          <FormField label="Aniversário"   value={form.birthday} onChange={(v) => update("birthday", v)} placeholder="DD/MM" />
+          <FormField
+            label="Aniversário"
+            value={form.birthday}
+            placeholder="DD/MM"
+            onChange={(v) => {
+              const digits = v.replace(/\D/g, "").slice(0, 4);
+              const masked = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+              update("birthday", masked);
+            }}
+          />
 
           <button type="button" onClick={() => { setShowAddress((s) => { const next = !s; if (!next) update("address", ""); return next; }); }}
             className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "gradient-primary border-transparent text-white shadow-glow" : "border-border bg-secondary/40 text-foreground")}
@@ -575,6 +717,13 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
           {showAddress && <FormField label="Endereço" value={form.address} onChange={(v) => update("address", v)} placeholder="Cidade, UF" />}
 
           <FormField label="Observações" value={form.notes} onChange={(v) => update("notes", v)} multiline />
+
+          <VipBlock
+            vipType={form.isVip ? "manual" : null}
+            manualVip={form.isVip}
+            editing={true}
+            onChange={(v) => update("isVip", v)}
+          />
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border bg-card px-5 py-3">

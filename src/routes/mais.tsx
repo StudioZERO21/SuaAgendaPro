@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Bell, CalendarDays, CreditCard, Globe, HelpCircle, History,
   Link as LinkIcon, LogOut, Palette, Share2, Sparkles,
-  Star, User, ChevronRight, Crown, MessageCircle, Loader2,
+  Star, User, ChevronRight, Crown, MessageCircle, Loader2, Info, Copy, Check, X,
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
@@ -12,7 +12,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { useClientes } from "@/hooks/useClientes";
 import { toast } from "sonner";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useReviews } from "@/hooks/useReviews";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/mais")({
   head: () => ({
@@ -34,7 +36,8 @@ const groups = [
       { id: "link",      label: "Meu link público",         icon: LinkIcon,    badge: true },
       { id: "tema",      label: "Personalização",           icon: Palette,     to: "/personalizacao" as const },
       { id: "horarios",  label: "Horários de atendimento",  icon: Globe,       to: "/horarios" as const },
-      { id: "portfolio", label: "Portfólio",                icon: Sparkles,    to: "/portfolio" as const },
+      { id: "portfolio",   label: "Portfólio",                icon: Sparkles,    to: "/portfolio" as const },
+      { id: "avaliacoes",  label: "Avaliações",               icon: Star,        to: "/avaliacoes" as const },
     ],
   },
   {
@@ -66,8 +69,13 @@ function MaisPage() {
   const { data: appts = [] }    = useAgendamentos();
   const { data: clients = [] }  = useClientes();
 
+  const { data: reviews = [] } = useReviews();
+
   const apptCount   = appts.filter((a) => a.status !== "cancelado").length;
   const clientCount = clients.length;
+  const avgRating   = reviews.length
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : "—";
 
   const publicSlug  = prof?.slug ?? "meu-link";
   const displayName = prof?.display_name ?? user?.email?.split("@")[0] ?? "Profissional";
@@ -80,6 +88,33 @@ function MaisPage() {
     if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }, [displayName]);
+
+  const [regraOpen, setRegraOpen]   = useState(false);
+  const [copied,    setCopied]      = useState(false);
+
+  const referralLink = typeof window !== "undefined"
+    ? `${window.location.origin}/cadastro?ref=${publicSlug}`
+    : "";
+
+  async function handleShare() {
+    const text = `Olá! Estou usando o SuaAgenda.Pro para gerenciar minha agenda. Cadastre-se pelo meu link e experimente grátis:\n${referralLink}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: "SuaAgenda.Pro — experimente grátis", text, url: referralLink }); }
+      catch { /* cancelado */ }
+    } else {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      toast.success("Link de indicação copiado!");
+      setTimeout(() => setCopied(false), 2500);
+    }
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    toast.success("Link copiado!");
+    setTimeout(() => setCopied(false), 2500);
+  }
 
   async function handleLogout() {
     await signOut();
@@ -95,7 +130,7 @@ function MaisPage() {
 
       {/* Profile card */}
       <section className="mt-5 px-5">
-        <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-glow" style={{ background: "linear-gradient(145deg,#ec4899 0%,#db2777 40%,#be185d 100%)" }}>
+        <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-glow" style={{ background: prof?.theme_color ? `linear-gradient(145deg, ${prof.theme_color} 0%, ${prof.gradient_color_2 ?? prof.theme_color}cc 60%, ${prof.theme_color}99 100%)` : "linear-gradient(145deg,#ec4899 0%,#db2777 40%,#be185d 100%)" }}>
           <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute -bottom-12 -left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
 
@@ -123,30 +158,58 @@ function MaisPage() {
           <div className="relative mt-6 grid grid-cols-3 gap-4 border-t border-white/15 pt-6 text-center">
             <Stat label="Agend."   value={String(apptCount)}   />
             <Stat label="Clientes" value={String(clientCount)} />
-            <Stat label="Avaliação" value="4.9"                />
+            <Stat label="Avaliação" value={String(avgRating)}    />
           </div>
         </div>
       </section>
 
-      {/* Upgrade banner */}
+      {/* Referral banner */}
       <section className="mt-5 px-5">
         <div className="flex items-center gap-3 rounded-2xl border border-primary/20 gradient-soft p-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl gradient-primary text-white shadow-glow">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl gradient-primary text-white shadow-glow">
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-display text-sm font-bold">Convide e ganhe 1 mês</p>
             <p className="text-xs text-muted-foreground">Indique uma amiga profissional ✨</p>
           </div>
-          <Button
-            onClick={() => toast.success("Link copiado!")}
-            size="sm"
-            className="h-9 rounded-full gradient-primary px-3 text-xs font-semibold shadow-glow"
-          >
-            Compartilhar
-          </Button>
+          <button onClick={() => setRegraOpen(true)} className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-secondary/80" aria-label="Ver regras">
+            <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: "2s" }} />
+            <Info className="relative h-4 w-4" />
+          </button>
+          <button onClick={handleShare} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full gradient-primary text-white shadow-glow" aria-label="Compartilhar">
+            {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+          </button>
         </div>
       </section>
+
+      {/* Dialog — regras de indicação */}
+      <Dialog open={regraOpen} onOpenChange={setRegraOpen}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" /> Regras do programa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            {[
+              { n: "1", text: "Compartilhe seu link exclusivo de indicação com outras profissionais." },
+              { n: "2", text: "Quando uma amiga se cadastrar pelo seu link e ativar uma assinatura paga, você ganha 1 mês grátis." },
+              { n: "3", text: "Não há limite de indicações — indique quantas quiser e acumule meses grátis." },
+              { n: "4", text: "O mês bônus é creditado automaticamente após a confirmação do pagamento da indicada." },
+              { n: "5", text: "O link de indicação é exclusivo e intransferível — não pode ser repassado para uso comercial." },
+            ].map(({ n, text }) => (
+              <div key={n} className="flex gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full gradient-primary text-[10px] font-bold text-white shadow-glow">{n}</span>
+                <p className="leading-snug">{text}</p>
+              </div>
+            ))}
+          </div>
+          <Button onClick={() => setRegraOpen(false)} className="mt-2 h-10 w-full rounded-2xl gradient-primary text-sm font-semibold shadow-glow">
+            Entendido
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Settings groups */}
       <main className="mt-6 flex-1 space-y-6 px-5 pb-6">

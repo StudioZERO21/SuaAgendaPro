@@ -3,8 +3,11 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type PublicProfileSettings = {
+  slug:                string;
+  bannerUrl:           string;
   businessName:        string;
   themeColor:          string;
+  gradientColor2:      string;
   showPrices:          boolean;
   showPortfolio:       boolean;
   acceptOnline:        boolean;
@@ -13,9 +16,12 @@ export type PublicProfileSettings = {
 };
 
 const DEFAULT_SETTINGS: PublicProfileSettings = {
+  slug:               "",
+  bannerUrl:          "",
   businessName:       "",
   themeColor:         "#ec4899",
-  showPrices:         true,
+  gradientColor2:     "",
+  showPrices:         false,
   showPortfolio:      true,
   acceptOnline:       true,
   cancellationPolicy: "",
@@ -23,8 +29,10 @@ const DEFAULT_SETTINGS: PublicProfileSettings = {
 };
 
 const schema = z.object({
+  bannerUrl:          z.string().default(""),
   businessName:       z.string().max(120).default(""),
   themeColor:         z.string().regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida"),
+  gradientColor2:     z.string().default(""),
   showPrices:         z.boolean(),
   showPortfolio:      z.boolean(),
   acceptOnline:       z.boolean(),
@@ -37,14 +45,17 @@ export const getPublicProfileSettings = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<PublicProfileSettings> => {
     const { data } = await context.supabase
       .from("profiles")
-      .select("business_name, theme_color, show_prices, show_portfolio, accept_online, cancellation_policy, welcome_message")
+      .select("slug, banner_url, business_name, theme_color, gradient_color_2, show_prices, show_portfolio, accept_online, cancellation_policy, welcome_message")
       .eq("id", context.userId)
       .maybeSingle();
 
     if (!data) return DEFAULT_SETTINGS;
     return {
-      businessName:       (data as any).business_name    ?? "",
+      slug:               data.slug                      ?? "",
+      bannerUrl:          data.banner_url                ?? "",
+      businessName:       data.business_name             ?? "",
       themeColor:         data.theme_color               ?? DEFAULT_SETTINGS.themeColor,
+      gradientColor2:     data.gradient_color_2          ?? "",
       showPrices:         data.show_prices               ?? DEFAULT_SETTINGS.showPrices,
       showPortfolio:      data.show_portfolio            ?? DEFAULT_SETTINGS.showPortfolio,
       acceptOnline:       data.accept_online             ?? DEFAULT_SETTINGS.acceptOnline,
@@ -60,16 +71,19 @@ export const savePublicProfileSettings = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("profiles")
       .update({
+        banner_url:          data.bannerUrl || null,
         business_name:       data.businessName || null,
         theme_color:         data.themeColor,
+        gradient_color_2:    data.gradientColor2 || null,
         show_prices:         data.showPrices,
         show_portfolio:      data.showPortfolio,
         accept_online:       data.acceptOnline,
         cancellation_policy: data.cancellationPolicy || null,
         welcome_message:     data.welcomeMessage || null,
-      } as any)
+      })
       .eq("id", context.userId);
 
     if (error) throw new Error(error.message);
-    return data;
+    const { data: prof } = await context.supabase.from("profiles").select("slug, banner_url, gradient_color_2").eq("id", context.userId).maybeSingle();
+    return { ...data, slug: prof?.slug ?? "", bannerUrl: prof?.banner_url ?? "", gradientColor2: prof?.gradient_color_2 ?? "" };
   });

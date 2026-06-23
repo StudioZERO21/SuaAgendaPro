@@ -21,12 +21,14 @@ export type AccentId = (typeof ACCENTS)[number]["id"];
 export type FontId = (typeof FONTS)[number]["id"];
 export type ThemeId = "light" | "dark" | "auto";
 
+export type LogoShape = "square" | "wide";
+
 export type Personalization = {
   theme: ThemeId;
   accent: AccentId;
   font: FontId;
   highContrast: boolean;
-  business: { name: string; logo: string };
+  business: { name: string; logo: string; logoShape: LogoShape };
 };
 
 export const DEFAULTS: Personalization = {
@@ -34,7 +36,7 @@ export const DEFAULTS: Personalization = {
   accent: "rose",
   font: "playfair",
   highContrast: false,
-  business: { name: "Studio Beleza", logo: "" },
+  business: { name: "Studio Beleza", logo: "", logoShape: "square" },
 };
 
 export function loadPersonalization(): Personalization {
@@ -46,7 +48,11 @@ export function loadPersonalization(): Personalization {
     return {
       ...DEFAULTS,
       ...parsed,
-      business: { ...DEFAULTS.business, ...(parsed.business ?? {}) },
+      business: {
+        ...DEFAULTS.business,
+        ...(parsed.business ?? {}),
+        logoShape: (parsed.business?.logoShape ?? "square") as LogoShape,
+      },
     };
   } catch {
     return DEFAULTS;

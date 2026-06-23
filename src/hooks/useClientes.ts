@@ -10,6 +10,8 @@ export type UIClient = {
   phone: string;
   email?: string | null;
   notes?: string | null;
+  birthDate?: string | null;
+  isVip: boolean;
   initials: string;
   color: string;
   totalAppointments: number;
@@ -45,6 +47,8 @@ export function adaptClient(row: Client): UIClient {
     phone:              row.phone ?? "",
     email:              row.email,
     notes:              row.notes,
+    birthDate:          row.birth_date,
+    isVip:              row.is_vip ?? false,
     initials:           makeInitials(row.name),
     color:              makeColor(row.id),
     totalAppointments:  row.total_appointments,
@@ -88,16 +92,25 @@ export function useClientes() {
 export function useCreateCliente() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { name: string; phone: string; email?: string | null; notes?: string | null }) => {
+    mutationFn: async (payload: {
+      name: string;
+      phone: string;
+      email?: string | null;
+      notes?: string | null;
+      birthDate?: string | null;
+      isVip?: boolean;
+    }) => {
       const id = await currentUid();
       const { data, error } = await supabase
         .from("clients")
         .insert({
           professional_id: id,
-          name:  payload.name.trim(),
-          phone: payload.phone.trim(),
-          email: payload.email?.trim() || null,
-          notes: payload.notes?.trim() || null,
+          name:       payload.name.trim(),
+          phone:      payload.phone.trim(),
+          email:      payload.email?.trim() || null,
+          notes:      payload.notes?.trim() || null,
+          birth_date: payload.birthDate || null,
+          is_vip:     payload.isVip ?? false,
         })
         .select()
         .single();
@@ -117,15 +130,19 @@ export function useUpdateCliente() {
       phone?: string;
       email?: string | null;
       notes?: string | null;
+      birthDate?: string | null;
+      isVip?: boolean;
     }) => {
       const { id, ...patch } = payload;
       const { error } = await supabase
         .from("clients")
         .update({
-          ...(patch.name  !== undefined && { name:  patch.name.trim() }),
-          ...(patch.phone !== undefined && { phone: patch.phone.trim() || undefined }),
-          ...(patch.email !== undefined && { email: patch.email?.trim() || null }),
-          ...(patch.notes !== undefined && { notes: patch.notes?.trim() || null }),
+          ...(patch.name      !== undefined && { name:       patch.name.trim() }),
+          ...(patch.phone     !== undefined && { phone:      patch.phone.trim() || undefined }),
+          ...(patch.email     !== undefined && { email:      patch.email?.trim() || null }),
+          ...(patch.notes     !== undefined && { notes:      patch.notes?.trim() || null }),
+          ...(patch.birthDate !== undefined && { birth_date: patch.birthDate || null }),
+          ...(patch.isVip     !== undefined && { is_vip:     patch.isVip }),
         })
         .eq("id", id);
       if (error) throw error;

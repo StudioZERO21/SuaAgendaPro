@@ -53,6 +53,56 @@ export function useUpdateProfile() {
 
 // ── Avatar upload ─────────────────────────────────────────────
 
+export function useUploadBanner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dataUrl: string): Promise<string> => {
+      const id = await uid();
+      const res  = await fetch(dataUrl);
+      const blob = await res.blob();
+      const path = `${id}/banner.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+      const { error: pErr } = await supabase
+        .from("profiles")
+        .update({ banner_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (pErr) throw pErr;
+      return publicUrl;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useUploadLogo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (dataUrl: string): Promise<string> => {
+      const id = await uid();
+      const res  = await fetch(dataUrl);
+      const blob = await res.blob();
+      const path = `${id}/logo.png`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, blob, { contentType: "image/png", upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+      const { error: pErr } = await supabase
+        .from("profiles")
+        .update({ cover_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (pErr) throw pErr;
+      return publicUrl;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
 export function useUploadAvatar() {
   const qc = useQueryClient();
   return useMutation({

@@ -1,15 +1,21 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   CalendarDays,
   Check,
   CheckCircle2,
   Clock,
   Info,
   Instagram,
+  Facebook,
+  Youtube,
+  Twitter,
+  Linkedin,
+  ExternalLink,
   MessageCircle,
   Phone,
   Share2,
@@ -48,13 +54,14 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PhoneInputBR } from "@/components/ui/phone-input";
 import {
-  fetchPublicProfile,
-  fetchPublicSlots,
+  getPublicProfile,
+  getPublicSlots,
   createPublicBooking,
   type PublicData,
 } from "@/lib/public-booking.functions";
 import { categoryMeta } from "@/lib/services-store";
 import type { ServiceCategory } from "@/lib/mock-data";
+import { formatDuration } from "@/hooks/useServicos";
 import { ImageOff } from "lucide-react";
 
 // ── Local types ────────────────────────────────────────────────
@@ -66,13 +73,16 @@ type PublicService = {
   price: number;
   price_cents: number;
   category: ServiceCategory;
+  categoryLabel: string;
+  imageUrl: string | null;
   description?: string;
 };
 
 type PublicReview = {
   id: string;
   name: string;
-  initials: string;
+  avatarUrl: string | null;
+  isAnonymous: boolean;
   rating: number;
   text: string;
   date: string;
@@ -90,48 +100,17 @@ const DOW_TO_PT = [
 import salonBannerUrl from "@/assets/salon-banner.png";
 
 export const Route = createFileRoute("/agendar/$slug")({
-  loader: async ({ params }) => {
-    const data = await fetchPublicProfile({ data: params.slug });
-    if (!data) throw notFound();
-    return data;
-  },
-  head: ({ params, loaderData }) => {
-    const p = loaderData?.profile;
-    const name = p?.display_name ?? "";
-    const title = p ? `${name} — Agendamento online` : "Agendar";
-    const desc = p
-      ? `${p.specialty ?? "Profissional"} em ${p.city ?? "sua cidade"}. Agende online em segundos.`
-      : "Página de agendamento.";
-    return {
-      meta: [
-        { title },
-        { name: "description", content: desc },
-        { property: "og:title", content: title },
-        { property: "og:description", content: desc },
-        { property: "og:type", content: "profile" },
-        { property: "og:url", content: `/agendar/${params.slug}` },
-      ],
-      links: [
-        { rel: "canonical", href: `/agendar/${params.slug}` },
-        { rel: "preload", as: "image", href: salonBannerUrl, fetchpriority: "high" } as const,
-        ...(p?.avatar_url
-          ? [{ rel: "preload", as: "image", href: p.avatar_url, fetchpriority: "high" } as const]
-          : []),
-      ],
-    };
-  },
+  head: ({ params }) => ({
+    meta: [
+      { title: "Agendamento online — SuaAgenda.Pro" },
+      { property: "og:url", content: `/agendar/${params.slug}` },
+    ],
+    links: [
+      { rel: "canonical", href: `/agendar/${params.slug}` },
+      { rel: "preload", as: "image", href: salonBannerUrl, fetchpriority: "high" } as const,
+    ],
+  }),
   component: PublicBookingPage,
-  notFoundComponent: () => (
-    <div className="flex min-h-screen items-center justify-center p-6 text-center">
-      <div>
-        <h1 className="font-display text-3xl font-bold">Página não encontrada</h1>
-        <p className="mt-2 text-muted-foreground">Este link de agendamento não existe.</p>
-        <Button asChild className="mt-6 rounded-2xl gradient-primary text-white">
-          <Link to="/">Voltar ao início</Link>
-        </Button>
-      </div>
-    </div>
-  ),
 });
 
 function formatPrice(v: number) {
@@ -160,11 +139,107 @@ function getOpenStatus(hours: { day: string; open: string; close: string; closed
   };
 }
 
-function PublicBookingPage() {
-  const loaderData = Route.useLoaderData() as PublicData;
+type PortfolioItem = { id: string; src: string; title: string; category: string; description: string };
 
-  // Derive UI shapes from DB data
-  const { profile, services, portfolio } = useMemo(() => {
+function PublicBookingPage() {
+  const { slug } = Route.useParams();
+  // ── All hooks first (Rules of Hooks) ─────────────────────────
+  const [loaderData, setLoaderData]     = useState<PublicData | null | undefined>(undefined);
+  const [open, setOpen]                 = useState(false);
+  const [ctaExpanded, setCtaExpanded]   = useState(false);
+  const [preselect, setPreselect]       = useState<PublicService | undefined>();
+  const [portfolioPreview, setPortfolioPreview] = useState<PortfolioItem | null>(null);
+  const [detailsService, setDetailsService]     = useState<PublicService | null>(null);
+  const [hoursOpen, setHoursOpen]       = useState(false);
+  const [mapOpen, setMapOpen]           = useState(false);
+  const avatarRef                       = useRef<HTMLImageElement>(null);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
+  const [visibleServices, setVisibleServices] = useState(9);
+  const [visibleReviews, setVisibleReviews]   = useState(3);
+
+  useEffect(() => { getPublicProfile(slug).then(setLoaderData); }, [slug]);
+  useEffect(() => { if (avatarRef.current?.complete) setAvatarLoaded(true); }, []);
+
+  // Inject professional's theme color into CSS vars so ALL primary-colored elements match
+  useEffect(() => {
+    const color = loaderData?.profile?.theme_color;
+    if (!color) return;
+    const root = document.documentElement;
+    root.style.setProperty("--primary", color);
+    root.style.setProperty("--accent", color);
+    root.style.setProperty("--ring", color);
+    root.style.setProperty("--primary-foreground", "#ffffff");
+    root.style.setProperty("--gradient-primary", `linear-gradient(135deg, ${color} 0%, ${color}99 100%)`);
+    root.style.setProperty("--shadow-glow", `0 10px 30px -10px ${color}73`);
+    return () => {
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--ring");
+      root.style.removeProperty("--primary-foreground");
+      root.style.removeProperty("--gradient-primary");
+      root.style.removeProperty("--shadow-glow");
+    };
+  }, [loaderData]);
+
+  // ── Early returns after all hooks ────────────────────────────
+  if (loaderData === undefined) {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Banner skeleton */}
+        <div className="h-[340px] w-full animate-pulse bg-secondary" />
+        <div className="mx-auto max-w-md px-5">
+          {/* Avatar skeleton */}
+          <div className="-mt-24 flex flex-col items-center">
+            <div className="h-48 w-48 animate-pulse rounded-full bg-secondary ring-4 ring-background" />
+            <div className="mt-5 h-6 w-40 animate-pulse rounded-full bg-secondary" />
+            <div className="mt-2 h-4 w-28 animate-pulse rounded-full bg-secondary" />
+            <div className="mt-3 h-6 w-32 animate-pulse rounded-full bg-secondary" />
+          </div>
+          {/* Services skeleton */}
+          <div className="mt-10 space-y-3">
+            <div className="h-7 w-24 animate-pulse rounded-full bg-secondary" />
+            <div className="grid grid-cols-3 gap-2">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div key={i} className="h-36 animate-pulse rounded-2xl bg-secondary" style={{ animationDelay: `${i * 50}ms` }} />
+              ))}
+            </div>
+          </div>
+          {/* Reviews skeleton */}
+          <div className="mt-10 space-y-3">
+            <div className="h-7 w-28 animate-pulse rounded-full bg-secondary" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex gap-3 rounded-2xl border border-border p-4" style={{ animationDelay: `${i * 80}ms` }}>
+                <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-secondary" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-1/3 animate-pulse rounded bg-secondary" />
+                  <div className="h-3 w-1/4 animate-pulse rounded bg-secondary" />
+                  <div className="h-3 w-full animate-pulse rounded bg-secondary" />
+                  <div className="h-3 w-2/3 animate-pulse rounded bg-secondary" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loaderData === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6 text-center">
+        <div>
+          <h1 className="font-display text-3xl font-bold">Página não encontrada</h1>
+          <p className="mt-2 text-muted-foreground">Este link de agendamento não existe.</p>
+          <Button asChild className="mt-6 rounded-2xl gradient-primary text-white">
+            <Link to="/">Voltar ao início</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Data derivation (regular code, loaderData is PublicData here) ──
+  const { profile, services, portfolio, reviews } = (() => {
     const p = loaderData.profile;
     const nameParts = p.display_name.trim().split(/\s+/).filter(Boolean);
     const initials =
@@ -178,6 +253,18 @@ function PublicBookingPage() {
     const coverGradient = `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}cc 60%, ${themeColor}88 100%)`;
     const cityState = [p.city, p.state].filter(Boolean).join(", ");
 
+    // Full address parts
+    const streetLine = [
+      p.street,
+      p.street_number,
+    ].filter(Boolean).join(", ");
+    const fullAddress = [streetLine, p.neighborhood, cityState].filter(Boolean).join(" — ");
+    const mapQuery = encodeURIComponent(fullAddress || cityState);
+
+    type SocialLinkEntry = { network: string; handle: string };
+    const socialLinks = (Array.isArray(p.social_links) ? (p.social_links as SocialLinkEntry[]) : [])
+      .filter((l) => l.handle?.trim());
+
     const hours = DOW_TO_PT.map((day, i) => {
       const wh = loaderData.workingHours.find((h) => h.day_of_week === i);
       if (!wh || !wh.is_open || !wh.start_time || !wh.end_time) {
@@ -186,15 +273,23 @@ function PublicBookingPage() {
       return { day, open: wh.start_time.slice(0, 5), close: wh.end_time.slice(0, 5) };
     });
 
-    const mappedServices: PublicService[] = loaderData.services.map((s) => ({
-      id: s.id,
-      name: s.name,
-      duration: s.duration_minutes,
-      price: s.price_cents / 100,
-      price_cents: s.price_cents,
-      category: "other" as ServiceCategory,
-      description: s.description ?? undefined,
-    }));
+    const mappedServices: PublicService[] = loaderData.services.map((s) => {
+      const dbCat = (s.category as ServiceCategory) || "other";
+      const catMeta = categoryMeta(dbCat);
+      const categoryLabel =
+        dbCat === "other" && s.category_label ? s.category_label : catMeta.label;
+      return {
+        id: s.id,
+        name: s.name,
+        duration: s.duration_minutes,
+        price: s.price_cents / 100,
+        price_cents: s.price_cents,
+        category: dbCat,
+        categoryLabel,
+        imageUrl: s.image_url || null,
+        description: s.description ?? undefined,
+      };
+    });
 
     const mappedPortfolio = loaderData.portfolio.map((item) => ({
       id: item.id,
@@ -203,6 +298,20 @@ function PublicBookingPage() {
       category: "Geral",
       description: item.description ?? "",
     }));
+
+    const mappedReviews: PublicReview[] = loaderData.reviews.map((r) => ({
+      id: r.id,
+      name: r.is_anonymous ? "Anônimo" : r.client_name,
+      avatarUrl: r.is_anonymous ? null : (r.client_avatar_url ?? null),
+      isAnonymous: r.is_anonymous,
+      rating: r.rating,
+      text: r.message,
+      date: new Date(r.created_at).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }),
+    }));
+
+    // Use stats from DB function (includes non-public reviews for total/avg)
+    const avgRating = loaderData.reviewAvgRating > 0 ? loaderData.reviewAvgRating : 5.0;
+    const totalReviewCount = loaderData.reviewTotalCount;
 
     return {
       profile: {
@@ -213,47 +322,67 @@ function PublicBookingPage() {
         bio: p.bio || "",
         city: cityState,
         address: cityState,
+        streetLine,
+        neighborhood: p.neighborhood || "",
+        fullAddress,
+        mapQuery,
         phone: p.phone || "",
+        socialLinks,
         instagram: "",
-        rating: 5.0,
-        reviewsCount: 0,
+        rating: avgRating,
+        reviewsCount: totalReviewCount,
+        themeColor,
+        gradientColor2: p.gradient_color_2 || "",
         coverGradient,
         initials,
         avatar: p.avatar_url ? { url: p.avatar_url, alt: p.display_name } : undefined,
-        businessName: p.business_name || p.specialty || "",
+        bannerUrl: p.banner_url || "",
+        logoUrl: p.cover_url || "",
+        businessName: p.specialty || p.display_name || "",
         hours,
         services: mappedServices,
-        reviews: [] as PublicReview[],
         highlights: [] as string[],
         show_prices: p.show_prices,
         accept_online: p.accept_online,
       },
       services: mappedServices,
       portfolio: mappedPortfolio,
+      reviews: mappedReviews,
     };
-  }, [loaderData]);
+  })();
 
-  const [open, setOpen] = useState(false);
-  const [ctaExpanded, setCtaExpanded] = useState(false);
-  const [preselect, setPreselect] = useState<PublicService | undefined>();
-  const [portfolioPreview, setPortfolioPreview] = useState<(typeof portfolio)[0] | null>(null);
-  const [detailsService, setDetailsService] = useState<PublicService | null>(null);
-  const [hoursOpen, setHoursOpen] = useState(false);
-  const [mapOpen, setMapOpen] = useState(false);
-  const avatarRef = useRef<HTMLImageElement>(null);
-  const [avatarLoaded, setAvatarLoaded] = useState(false);
-
-  useEffect(() => {
-    if (avatarRef.current?.complete) setAvatarLoaded(true);
-  }, []);
-  const openStatus = useMemo(() => getOpenStatus(profile.hours), [profile.hours]);
+  const openStatus = getOpenStatus(profile.hours);
   const phoneDigits = "55" + profile.phone.replace(/\D/g, "");
-  const instaHandle = profile.instagram.replace(/^@/, "");
-  const mapsQuery = encodeURIComponent(`${profile.address}, ${profile.city}`);
 
   function startBooking(s?: PublicService) {
     setPreselect(s);
     setOpen(true);
+  }
+
+  // ── Social network helper ────────────────────────────────────
+  function socialUrl(network: string, handle: string) {
+    const h = handle.replace(/^@/, "");
+    switch (network) {
+      case "instagram":  return `https://instagram.com/${h}`;
+      case "facebook":   return `https://facebook.com/${h}`;
+      case "youtube":    return `https://youtube.com/@${h}`;
+      case "twitter":    return `https://twitter.com/${h}`;
+      case "linkedin":   return `https://linkedin.com/in/${h}`;
+      case "tiktok":     return `https://tiktok.com/@${h}`;
+      case "pinterest":  return `https://pinterest.com/${h}`;
+      default:           return `https://${h}`;
+    }
+  }
+
+  function SocialIcon({ network }: { network: string }) {
+    switch (network) {
+      case "instagram": return <Instagram className="h-5 w-5" />;
+      case "facebook":  return <Facebook className="h-5 w-5" />;
+      case "youtube":   return <Youtube className="h-5 w-5" />;
+      case "twitter":   return <Twitter className="h-5 w-5" />;
+      case "linkedin":  return <Linkedin className="h-5 w-5" />;
+      default:          return <ExternalLink className="h-5 w-5" />;
+    }
   }
 
   function share() {
@@ -272,7 +401,7 @@ function PublicBookingPage() {
       <header className="relative overflow-hidden text-white">
         <div className="relative h-[340px] w-full sm:h-[420px]">
           <img
-            src={salonBannerUrl}
+            src={profile.bannerUrl || salonBannerUrl}
             alt={`Espaço ${profile.name}`}
             className="absolute inset-0 h-full w-full object-cover"
             loading="eager"
@@ -308,14 +437,20 @@ function PublicBookingPage() {
             </div>
           </div>
 
-          {/* Badge com nome do negócio (ou especialidade como fallback) */}
-          {profile.businessName && (
-            <div className="relative z-10 mx-auto mt-6 flex w-full max-w-md justify-center px-5">
+          {/* Logo ou badge de especialidade — centrado verticalmente no banner */}
+          <div className="absolute inset-x-0 z-10 flex justify-center px-5" style={{ top: "50%", transform: "translateY(-60%)" }}>
+            {profile.logoUrl ? (
+              <img
+                src={profile.logoUrl}
+                alt={profile.name}
+                className="max-h-[100px] max-w-[250px] w-auto object-contain drop-shadow-2xl"
+              />
+            ) : profile.businessName ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] backdrop-blur-md">
                 <Sparkles className="h-3 w-3" fill="currentColor" /> {profile.businessName}
               </span>
-            </div>
-          )}
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -329,11 +464,19 @@ function PublicBookingPage() {
             className="relative"
           >
             {/* Glow externo premium */}
-            <div className="pointer-events-none absolute -inset-4 rounded-full gradient-primary opacity-60 blur-2xl" />
-            <div className="pointer-events-none absolute -inset-1 rounded-full bg-gradient-to-tr from-primary/40 via-transparent to-accent/40 blur-md" />
+            <div className="pointer-events-none absolute -inset-4 rounded-full opacity-60 blur-2xl"
+              style={{ background: `radial-gradient(circle, ${profile.themeColor}99, transparent)` }} />
+            <div className="pointer-events-none absolute -inset-1 rounded-full blur-md"
+              style={{ background: `linear-gradient(135deg, ${profile.themeColor}66, transparent, ${profile.themeColor}44)` }} />
 
             {/* Anel externo gradiente + anel interno branco */}
-            <div className="relative h-48 w-48 rounded-full bg-gradient-to-br from-primary via-pink-400 to-accent p-[3px] shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.55)]">
+            <div
+              className="relative h-48 w-48 rounded-full p-[3px]"
+              style={{
+                background: `linear-gradient(135deg, ${profile.themeColor}, ${profile.themeColor}aa)`,
+                boxShadow: `0 20px 60px -15px ${profile.themeColor}99`,
+              }}
+            >
               <div className="relative h-full w-full overflow-hidden rounded-full bg-background p-[3px]">
                 {profile.avatar ? (
                   <div className="relative h-full w-full overflow-hidden rounded-full">
@@ -387,30 +530,16 @@ function PublicBookingPage() {
           </div>
         </Section>
 
-        {/* Portfólio — exibido sempre, com fallback quando não há fotos */}
-        <Section
+        {/* Portfólio — oculto quando não há fotos */}
+        {portfolio.length > 0 && <Section
           title="Portfólio"
           right={
-            portfolio.length > 0 ? (
-              <span className="text-xs text-muted-foreground">
-                {portfolio.length} {portfolio.length === 1 ? "foto" : "fotos"}
-              </span>
-            ) : undefined
+            <span className="text-xs text-muted-foreground">
+              {portfolio.length} {portfolio.length === 1 ? "foto" : "fotos"}
+            </span>
           }
         >
-          {portfolio.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-secondary/40 px-5 py-10 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background shadow-card">
-                <ImageOff className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">Nenhuma foto por aqui ainda</p>
-                <p className="text-xs text-muted-foreground">
-                  A profissional ainda não publicou trabalhos no portfólio.
-                </p>
-              </div>
-            </div>
-          ) : portfolio.length <= 3 ? (
+          {portfolio.length <= 3 ? (
             <div className={cn("grid gap-2.5", portfolio.length === 1 ? "grid-cols-1" : portfolio.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
               {portfolio.map((p, idx) => {
                 const priority = idx < 3;
@@ -482,53 +611,229 @@ function PublicBookingPage() {
               </div>
             </div>
           )}
-        </Section>
+        </Section>}
 
         {/* Services */}
-        <Section title="Serviços" right={<span className="text-xs text-muted-foreground">{profile.services.length}</span>}>
+        <Section
+          title="Serviços"
+          right={
+            profile.services.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {Math.min(visibleServices, profile.services.length)}/{profile.services.length}
+              </span>
+            )
+          }
+        >
           {profile.services.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-secondary/40 px-5 py-10 text-center">
               <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado ainda.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {profile.services.map((s) => {
-                const cat = categoryMeta(s.category);
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setDetailsService(s)}
-                    className="group relative flex h-40 flex-col overflow-hidden rounded-lg border border-border/60 bg-card p-3.5 text-left shadow-card transition hover:border-primary/40"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <h3 className="line-clamp-2 text-sm font-semibold leading-tight">{s.name}</h3>
-                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary">
-                        <span>{cat.emoji}</span> {cat.label}
-                      </span>
-                      {s.description && (
-                        <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
-                          {s.description}
-                        </p>
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                {profile.services.slice(0, visibleServices).map((s, idx) => {
+                  const cat = categoryMeta(s.category);
+                  return (
+                    <motion.button
+                      key={s.id}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.28, delay: (idx % 9) * 0.04, ease: "easeOut" }}
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => setDetailsService(s)}
+                      className="group relative flex h-36 w-full flex-col overflow-hidden rounded-2xl bg-card text-left shadow-sm ring-1 ring-border/40 transition-shadow duration-300 hover:shadow-md"
+                      style={{ ["--tw-ring-color" as string]: `${profile.themeColor}40` }}
+                    >
+                      {/* Background — imagem pré-processada ou gradiente suave */}
+                      {s.imageUrl ? (
+                        <img src={s.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                      ) : (
+                        <div
+                          className="absolute inset-0"
+                          style={{ background: `linear-gradient(145deg, ${profile.themeColor}10 0%, ${profile.themeColor}2a 100%)` }}
+                        />
                       )}
-                    </div>
-                    <div className="mt-2 flex h-7 w-7 items-center justify-center self-end rounded-full border border-border/60 text-muted-foreground transition group-hover:bg-secondary group-hover:text-primary">
-                      <Info className="h-3.5 w-3.5" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+
+                      {/* Overlay com gradiente da cor do tema */}
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background: `linear-gradient(to bottom, transparent 30%, ${profile.themeColor}28 75%, ${profile.themeColor}55 100%)`,
+                        }}
+                      />
+
+                      {/* Borda colorida no hover */}
+                      <div
+                        className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-border/30 transition-all duration-300 group-hover:ring-[2px]"
+                        style={{ ["--tw-ring-color" as string]: `${profile.themeColor}60` }}
+                      />
+
+                      {/* Conteúdo */}
+                      <div className="relative flex h-full flex-col justify-end p-2.5">
+                        {/* Nome + rodapé — alinhado na base */}
+                        <div>
+                          <h3 className="line-clamp-2 text-[11px] font-black uppercase tracking-wide leading-tight">
+                            {s.name}
+                          </h3>
+                          <div className="mt-1.5 flex items-center justify-between gap-1">
+                            <span className="truncate text-[9px] font-semibold text-muted-foreground">
+                              {formatDuration(s.duration)}
+                              {profile.show_prices && (
+                                <> · <span style={{ color: profile.themeColor }}>
+                                  R${s.price.toFixed(0)}
+                                </span></>
+                              )}
+                            </span>
+                            <div
+                              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
+                              style={{ background: profile.themeColor }}
+                            >
+                              <Info className="h-2.5 w-2.5" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {/* Ver mais / Ver menos */}
+              {profile.services.length > 9 && (
+                <div className="mt-5 flex flex-col items-center gap-2">
+                  {visibleServices < profile.services.length && (
+                    <button onClick={() => setVisibleServices((v) => v + 6)} className="flex items-center gap-1.5 py-1">
+                      <motion.div
+                        animate={{ y: [0, 4, 0] }}
+                        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <ChevronDown className="h-4 w-4" style={{ color: profile.themeColor }} />
+                      </motion.div>
+                      <motion.span
+                        className="text-[13px] font-semibold text-muted-foreground"
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        Ver mais serviços
+                      </motion.span>
+                    </button>
+                  )}
+                  {visibleServices > 9 && (
+                    <button
+                      onClick={() => setVisibleServices(9)}
+                      className="text-xs text-muted-foreground/50 underline-offset-4 hover:text-muted-foreground hover:underline transition-colors"
+                    >
+                      Ver menos
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </Section>
 
 
-        {/* Reviews — oculto até ter avaliações reais */}
+        {/* Avaliações */}
+        {reviews.length > 0 && (
+          <Section
+            title="Avaliações"
+            right={
+              <div className="flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 text-amber-400" fill="currentColor" />
+                <span className="text-xs font-semibold">{profile.rating.toFixed(1)}</span>
+                <span className="text-xs text-muted-foreground">({profile.reviewsCount})</span>
+              </div>
+            }
+          >
+            <div className="space-y-3">
+              {reviews.slice(0, visibleReviews).map((rev, idx) => (
+                <motion.div
+                  key={rev.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: (idx % 3) * 0.07, ease: "easeOut" }}
+                  className="flex gap-3 rounded-2xl border border-border bg-card p-4 shadow-card"
+                >
+                  {/* Avatar */}
+                  {rev.avatarUrl ? (
+                    <img
+                      src={rev.avatarUrl}
+                      alt={rev.name}
+                      className="h-10 w-10 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold"
+                      style={{ background: `linear-gradient(135deg, ${profile.themeColor} 0%, ${profile.themeColor}99 100%)` }}
+                    >
+                      {rev.isAnonymous ? <User className="h-4 w-4" /> : rev.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
 
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold">{rev.name}</p>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">{rev.date}</span>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={cn("h-3 w-3", i < rev.rating ? "text-amber-400" : "text-muted-foreground/30")}
+                          fill={i < rev.rating ? "currentColor" : "none"}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">{rev.text}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Ver mais / ver menos */}
+            {reviews.length > 3 && (
+              <div className="mt-5 flex flex-col items-center gap-2">
+                {visibleReviews < reviews.length && (
+                  <button onClick={() => setVisibleReviews((v) => v + 3)} className="flex items-center gap-1.5 py-1">
+                    <motion.div
+                      animate={{ scale: [1, 1.3, 1], rotate: [0, 15, -15, 0] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <Star className="h-3.5 w-3.5 fill-current" style={{ color: profile.themeColor }} />
+                    </motion.div>
+                    <motion.span
+                      className="text-[13px] font-semibold text-muted-foreground"
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      Ver mais avaliações
+                    </motion.span>
+                  </button>
+                )}
+                {visibleReviews > 3 && (
+                  <button
+                    onClick={() => setVisibleReviews(3)}
+                    className="text-xs text-muted-foreground/60 underline-offset-4 hover:text-muted-foreground hover:underline transition-colors"
+                  >
+                    Ver menos
+                  </button>
+                )}
+              </div>
+            )}
+          </Section>
+        )}
 
       </main>
 
       {/* Footer premium — colado no final da página */}
-      <footer className="relative mt-14 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80 text-primary-foreground shadow-2xl">
+      <footer
+        className="relative mt-14 overflow-hidden text-white shadow-2xl"
+        style={{
+          background: profile.gradientColor2
+            ? `linear-gradient(135deg, ${profile.themeColor} 0%, ${profile.gradientColor2} 100%)`
+            : `linear-gradient(135deg, ${profile.themeColor} 0%, ${profile.themeColor}88 100%)`,
+        }}
+      >
         <div
           className="pointer-events-none absolute inset-0 opacity-50"
           style={{ background: profile.coverGradient }}
@@ -540,25 +845,33 @@ function PublicBookingPage() {
             <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
               Siga
             </span>
-            <div className="flex items-center gap-3">
-              <a
-                href={`https://instagram.com/${instaHandle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="flex h-7 w-7 items-center justify-center text-primary-foreground/90 transition-all duration-300 hover:scale-125 hover:text-primary-foreground"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href={`https://wa.me/${phoneDigits}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="WhatsApp"
-                className="flex h-7 w-7 items-center justify-center text-primary-foreground/90 transition-all duration-300 hover:scale-125 hover:text-primary-foreground"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {profile.socialLinks.slice(0, 4).map(({ network, handle }) => (
+                <a
+                  key={network}
+                  href={socialUrl(network, handle)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={network}
+                  className="flex h-7 w-7 items-center justify-center text-white/90 transition-all duration-300 hover:scale-125 hover:text-white"
+                >
+                  <SocialIcon network={network} />
+                </a>
+              ))}
+              {profile.phone && (
+                <a
+                  href={`https://wa.me/${phoneDigits}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="WhatsApp"
+                  className="flex h-7 w-7 items-center justify-center text-white/90 transition-all duration-300 hover:scale-125 hover:text-white"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </a>
+              )}
+              {profile.socialLinks.length === 0 && !profile.phone && (
+                <span className="text-[11px] opacity-60">—</span>
+              )}
             </div>
           </div>
 
@@ -620,9 +933,21 @@ function PublicBookingPage() {
             <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
               Endereço
             </span>
-            <p className="line-clamp-2 max-w-[110px] text-[11px] font-medium leading-tight opacity-90">
-              {profile.address}
-            </p>
+            <div className="max-w-[110px] space-y-0.5 text-center">
+              {profile.streetLine && (
+                <p className="line-clamp-1 text-[11px] font-medium leading-tight opacity-90">
+                  {profile.streetLine}
+                </p>
+              )}
+              {profile.neighborhood && (
+                <p className="line-clamp-1 text-[11px] leading-tight opacity-75">
+                  {profile.neighborhood}
+                </p>
+              )}
+              <p className="line-clamp-1 text-[11px] font-medium leading-tight opacity-90">
+                {profile.city || "—"}
+              </p>
+            </div>
             <button
               onClick={() => setMapOpen(true)}
               className="group inline-flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-tight underline-offset-4 transition hover:underline"
@@ -679,14 +1004,19 @@ function PublicBookingPage() {
           <DialogHeader className="px-5 pt-5">
             <DialogTitle className="font-display text-xl">Como chegar</DialogTitle>
           </DialogHeader>
-          <div className="px-5 pt-2">
-            <p className="text-sm font-semibold">{profile.city}</p>
-            <p className="text-xs text-muted-foreground">{profile.address}</p>
+          <div className="px-5 pt-2 space-y-0.5">
+            {profile.streetLine && (
+              <p className="text-sm font-semibold">{profile.streetLine}</p>
+            )}
+            {profile.neighborhood && (
+              <p className="text-xs text-muted-foreground">{profile.neighborhood}</p>
+            )}
+            <p className="text-xs text-muted-foreground">{profile.city}</p>
           </div>
           <div className="mt-3 aspect-square w-full bg-secondary">
             <iframe
               title="Mapa da localização"
-              src={`https://www.google.com/maps?q=${mapsQuery}&output=embed`}
+              src={`https://www.google.com/maps?q=${profile.mapQuery}&output=embed`}
               className="h-full w-full border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
@@ -694,7 +1024,7 @@ function PublicBookingPage() {
           </div>
           <div className="p-4">
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+              href={`https://www.google.com/maps/search/?api=1&query=${profile.mapQuery}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl gradient-primary text-sm font-semibold text-white shadow-glow"
@@ -725,11 +1055,12 @@ function PublicBookingPage() {
             size="lg"
             aria-label="Agendar horário"
             className={cn(
-              "gradient-primary font-semibold text-white shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+              "font-semibold text-white shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
               ctaExpanded
                 ? "h-14 w-full rounded-2xl px-6 text-base"
                 : "flex h-14 w-14 items-center justify-center rounded-full p-0 text-sm"
             )}
+            style={{ background: profile.themeColor }}
           >
             {ctaExpanded ? (
               <>
@@ -756,6 +1087,7 @@ function PublicBookingPage() {
         professionalName={profile.name}
         professionalSlug={profile.slug}
         professionalId={profile.id}
+        scheduleBlocks={loaderData?.scheduleBlocks ?? []}
       />
 
       {/* Preview de foto do portfólio */}
@@ -799,8 +1131,11 @@ function PublicBookingPage() {
             return (
               <div className="space-y-5 pb-2">
                 <SheetHeader className="space-y-3 text-left">
-                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                    <span>{cat.emoji}</span> {cat.label}
+                  <span
+                    className="inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider"
+                    style={{ background: `${profile.themeColor}33`, color: profile.themeColor }}
+                  >
+                    <span>{cat.emoji}</span> {detailsService.categoryLabel}
                   </span>
                   <SheetTitle className="font-display text-2xl font-bold">
                     {detailsService.name}
@@ -905,6 +1240,7 @@ function BookingSheet({
   professionalName,
   professionalSlug,
   professionalId,
+  scheduleBlocks,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -913,6 +1249,7 @@ function BookingSheet({
   professionalName: string;
   professionalSlug: string;
   professionalId: string;
+  scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
 }) {
   const [step, setStep] = useState<Step>(preselect ? 2 : 1);
   const [service, setService] = useState<PublicService | undefined>(preselect);
@@ -942,9 +1279,7 @@ function BookingSheet({
     let cancelled = false;
     setLoadingSlots(true);
     setTime(undefined);
-    fetchPublicSlots({
-      data: { professionalId, dateStr: date, durationMin: service.duration },
-    })
+    getPublicSlots(professionalId, date, service.duration)
       .then((result) => {
         if (!cancelled) setSlots(result);
       })
@@ -1087,6 +1422,7 @@ function BookingSheet({
                       loadingSlots={loadingSlots}
                       onDate={setDate}
                       onTime={setTime}
+                      scheduleBlocks={scheduleBlocks}
                     />
                   )}
                   {step === 3 && (
@@ -1255,6 +1591,7 @@ function StepDateTime({
   loadingSlots,
   onDate,
   onTime,
+  scheduleBlocks,
 }: {
   days: ReturnType<typeof getNextDays>;
   date?: string;
@@ -1263,7 +1600,14 @@ function StepDateTime({
   loadingSlots: boolean;
   onDate: (k: string) => void;
   onTime: (t: string) => void;
+  scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
 }) {
+  function getBlock(dateStr: string) {
+    return scheduleBlocks.find((b) => dateStr >= b.start_date && dateStr <= b.end_date) ?? null;
+  }
+
+  const selectedBlock = date ? getBlock(date) : null;
+
   return (
     <div>
       <h3 className="font-display text-xl font-bold">Quando você quer vir?</h3>
@@ -1272,6 +1616,21 @@ function StepDateTime({
       <div className="mt-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {days.map((d) => {
           const selected = d.key === date;
+          const block = getBlock(d.key);
+          if (block) {
+            const abbr = block.reason === "ferias" ? "Fér." : block.reason === "feriado" ? "Fer." : "Bloq.";
+            return (
+              <div
+                key={d.key}
+                className="flex min-w-[56px] flex-col items-center gap-0.5 rounded-2xl border border-border/40 bg-secondary/40 px-2 py-3 text-center opacity-50"
+                title={`Agenda bloqueada: ${abbr}`}
+              >
+                <span className="text-[9px] font-semibold tracking-wider text-muted-foreground">{d.weekday}</span>
+                <span className="font-display text-xl font-bold leading-none line-through text-muted-foreground">{d.day}</span>
+                <span className="text-[7px] font-bold uppercase tracking-widest text-primary leading-none">{abbr}</span>
+              </div>
+            );
+          }
           return (
             <button
               key={d.key}
@@ -1294,7 +1653,14 @@ function StepDateTime({
       </div>
 
       <h4 className="mt-6 mb-3 text-sm font-semibold">Horários disponíveis</h4>
-      {loadingSlots ? (
+      {selectedBlock ? (
+        <div className="rounded-2xl border border-border bg-secondary/30 p-4 text-center">
+          <p className="text-sm font-semibold text-muted-foreground">
+            Agenda indisponível neste período ({selectedBlock.reason === "ferias" ? "Férias" : "Bloqueado"}).
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Por favor, selecione outra data.</p>
+        </div>
+      ) : loadingSlots ? (
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-12 animate-pulse rounded-2xl bg-secondary" />

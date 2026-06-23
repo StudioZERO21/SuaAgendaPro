@@ -1,6 +1,50 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 
+// ── Client-side public fetches (no server function needed) ────
+export async function getPublicProfile(slug: string): Promise<PublicData | null> {
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, slug, display_name, bio, phone, avatar_url, banner_url, cover_url, city, state, street, street_number, neighborhood, social_links, specialty, theme_color, gradient_color_2, show_prices, accept_online")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .single();
+
+  if (error) console.error("[getPublicProfile]", error.message);
+  if (!profile) return null;
+
+  const [{ data: services }, { data: wh }, { data: portfolio }, { data: reviews }, { data: statsRows }, { data: schedBlocks }] = await Promise.all([
+    supabase.from("services").select("id, name, description, duration_minutes, price_cents, category, category_label, image_url").eq("professional_id", profile.id).eq("is_active", true).order("name"),
+    supabase.from("working_hours").select("day_of_week, is_open, start_time, end_time").eq("professional_id", profile.id),
+    supabase.from("portfolio_items").select("id, image_url, title, description, order_index").eq("professional_id", profile.id).order("order_index", { ascending: true }),
+    supabase.from("reviews").select("id, client_name, client_avatar_url, rating, message, is_anonymous, created_at").eq("professional_id", profile.id).eq("is_public", true).order("created_at", { ascending: false }),
+    supabase.rpc("get_review_stats", { p_professional_id: profile.id }),
+    supabase.from("schedule_blocks").select("id, start_date, end_date, reason, title").eq("professional_id", profile.id),
+  ]);
+
+  const stats = (statsRows as { total_count: number; avg_rating: number }[] | null)?.[0];
+
+  return {
+    profile: profile as PublicProfileRow,
+    services: (services ?? []) as PublicServiceRow[],
+    workingHours: (wh ?? []) as PublicWorkingHoursRow[],
+    portfolio: (portfolio ?? []) as PublicPortfolioRow[],
+    reviews: (reviews ?? []) as PublicReviewRow[],
+    reviewTotalCount: stats?.total_count ?? 0,
+    reviewAvgRating: stats?.avg_rating ?? 0,
+    scheduleBlocks: (schedBlocks ?? []) as PublicScheduleBlock[],
+  };
+}
+
+export async function getPublicSlots(professionalId: string, dateStr: string, durationMin: number): Promise<string[]> {
+  const { data } = await supabase.rpc("get_available_slots", {
+    p_professional_id: professionalId,
+    p_date: dateStr,
+    p_duration_min: durationMin,
+  });
+  return (data ?? []).map((row: { slot_time: string }) => row.slot_time.slice(0, 5));
+}
+
 // ── Public types ──────────────────────────────────────────────
 
 export type PublicProfileRow = {
@@ -10,10 +54,16 @@ export type PublicProfileRow = {
   bio: string | null;
   phone: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
+  cover_url: string | null;
+  gradient_color_2: string | null;
   city: string | null;
   state: string | null;
+  street: string | null;
+  street_number: string | null;
+  neighborhood: string | null;
+  social_links: unknown;
   specialty: string | null;
-  business_name: string | null;
   theme_color: string;
   show_prices: boolean;
   accept_online: boolean;
@@ -25,6 +75,9 @@ export type PublicServiceRow = {
   description: string | null;
   duration_minutes: number;
   price_cents: number;
+  category: string | null;
+  category_label: string | null;
+  image_url: string | null;
 };
 
 export type PublicWorkingHoursRow = {
@@ -42,11 +95,33 @@ export type PublicPortfolioRow = {
   order_index: number;
 };
 
+export type PublicReviewRow = {
+  id: string;
+  client_name: string;
+  client_avatar_url: string | null;
+  rating: number;
+  message: string;
+  is_anonymous: boolean;
+  created_at: string;
+};
+
+export type PublicScheduleBlock = {
+  id: string;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  title: string | null;
+};
+
 export type PublicData = {
   profile: PublicProfileRow;
   services: PublicServiceRow[];
   workingHours: PublicWorkingHoursRow[];
   portfolio: PublicPortfolioRow[];
+  reviews: PublicReviewRow[];
+  reviewTotalCount: number;
+  reviewAvgRating: number;
+  scheduleBlocks: PublicScheduleBlock[];
 };
 
 export type CreateBookingInput = {
@@ -62,79 +137,6 @@ export type CreateBookingInput = {
 };
 
 // ── Server Functions ──────────────────────────────────────────
-
-export const fetchPublicProfile = createServerFn({ method: "GET" })
-  .inputValidator((slug: unknown): string => {
-    if (typeof slug !== "string" || !slug.trim()) throw new Error("Slug inválido");
-    return slug.trim();
-  })
-  .handler(async ({ data: slug }): Promise<PublicData | null> => {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select(
-        "id, slug, display_name, bio, phone, avatar_url, city, state, specialty, business_name, theme_color, show_prices, accept_online",
-      )
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .single();
-
-    if (!profile) return null;
-
-    const [{ data: services }, { data: wh }, { data: portfolio }] = await Promise.all([
-      supabase
-        .from("services")
-        .select("id, name, description, duration_minutes, price_cents")
-        .eq("professional_id", profile.id)
-        .eq("is_active", true)
-        .order("name"),
-      supabase
-        .from("working_hours")
-        .select("day_of_week, is_open, start_time, end_time")
-        .eq("professional_id", profile.id),
-      supabase
-        .from("portfolio_items")
-        .select("id, image_url, title, description, order_index")
-        .eq("professional_id", profile.id)
-        .order("order_index", { ascending: true }),
-    ]);
-
-    return {
-      profile: profile as PublicProfileRow,
-      services: (services ?? []) as PublicServiceRow[],
-      workingHours: (wh ?? []) as PublicWorkingHoursRow[],
-      portfolio: (portfolio ?? []) as PublicPortfolioRow[],
-    };
-  });
-
-export const fetchPublicSlots = createServerFn({ method: "GET" })
-  .inputValidator(
-    (
-      input: unknown,
-    ): { professionalId: string; dateStr: string; durationMin: number } => {
-      const i = input as Record<string, unknown>;
-      if (
-        typeof i?.professionalId !== "string" ||
-        typeof i?.dateStr !== "string" ||
-        typeof i?.durationMin !== "number"
-      ) {
-        throw new Error("Input inválido");
-      }
-      return i as { professionalId: string; dateStr: string; durationMin: number };
-    },
-  )
-  .handler(
-    async ({ data: { professionalId, dateStr, durationMin } }): Promise<string[]> => {
-      const { data } = await supabase.rpc("get_available_slots", {
-        p_professional_id: professionalId,
-        p_date: dateStr,
-        p_duration_min: durationMin,
-      });
-
-      return (data ?? []).map((row: { slot_time: string }) =>
-        row.slot_time.slice(0, 5),
-      );
-    },
-  );
 
 export const createPublicBooking = createServerFn({ method: "POST" })
   .inputValidator((input: unknown): CreateBookingInput => {

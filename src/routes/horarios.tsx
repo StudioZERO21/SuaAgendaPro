@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft, Save, Clock, Coffee, CalendarOff,
-  Plus, Trash2, Copy, Loader2,
+  Plus, Trash2, Copy, Loader2, Umbrella, Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/mobile-shell";
@@ -19,9 +19,10 @@ import {
 import { cn } from "@/lib/utils";
 import {
   useWorkingHours, useSaveWorkingHours,
-  useBlockedDates, useAddBlockedRange, useRemoveBlockedDate,
+  useScheduleBlocks, useAddScheduleBlock, useUpdateScheduleBlock, useRemoveScheduleBlock,
   buildDayMap, DAY_INFO,
 } from "@/hooks/useHorarios";
+import type { ScheduleBlock } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/horarios")({
   head: () => ({
@@ -68,34 +69,50 @@ const REASONS: { id: BlockReason; label: string }[] = [
 
 function fmtDate(iso: string) {
   if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
+  const [, m, d] = iso.split("-");
+  return `${d}/${m}/${iso.slice(0, 4)}`;
+}
+
+function reasonLabel(r: string) {
+  return REASONS.find((x) => x.id === r)?.label ?? r;
 }
 
 function HorariosPage() {
   const navigate = useNavigate();
 
   const { data: whRows = [], isLoading: loadingWH } = useWorkingHours();
-  const { data: blockedDates = [], isLoading: loadingBD } = useBlockedDates();
-  const saveWH     = useSaveWorkingHours();
-  const addBlock   = useAddBlockedRange();
-  const removeBlock = useRemoveBlockedDate();
+  const { data: scheduleBlocks = [], isLoading: loadingSB } = useScheduleBlocks();
+  const saveWH        = useSaveWorkingHours();
+  const addBlock      = useAddScheduleBlock();
+  const updateBlock   = useUpdateScheduleBlock();
+  const removeBlock   = useRemoveScheduleBlock();
 
-  // Local UI state — one entry per day-of-week (0..6)
   const [days, setDays] = useState<Record<number, DayState>>(() =>
     Object.fromEntries(DAY_INFO.map((d) => [d.dow, DEFAULT_DAY(d.dow >= 1 && d.dow <= 5)])),
   );
   const [mode, setMode]           = useState<"uniform" | "custom">("uniform");
   const [uniform, setUniform]     = useState({ start: "09:00", end: "18:00" });
   const [lunchAll, setLunchAll]   = useState({ enabled: true, start: "12:00", end: "13:00" });
-  const [blockOpen, setBlockOpen] = useState(false);
+  const [blockOpen, setBlockOpen]     = useState(false);
+  const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
   const [newBlock, setNewBlock]   = useState<NewBlock>({
     reason: "ferias", title: "",
     start: new Date().toISOString().slice(0, 10),
     end:   new Date().toISOString().slice(0, 10),
   });
 
-  // Populate from DB once loaded
+  function openNewBlock() {
+    setEditingBlock(null);
+    setNewBlock({ reason: "ferias", title: "", start: new Date().toISOString().slice(0, 10), end: new Date().toISOString().slice(0, 10) });
+    setBlockOpen(true);
+  }
+
+  function openEditBlock(b: ScheduleBlock) {
+    setEditingBlock(b);
+    setNewBlock({ reason: b.reason as BlockReason, title: b.title ?? "", start: b.start_date, end: b.end_date });
+    setBlockOpen(true);
+  }
+
   useEffect(() => {
     if (whRows.length === 0) return;
     const map = buildDayMap(whRows);
@@ -145,25 +162,19 @@ function HorariosPage() {
     for (const info of DAY_INFO) {
       const d = days[info.dow];
       if (!d.is_open) continue;
-      if (d.start_time >= d.end_time) {
-        toast.error(`Horário inválido em ${info.label}`);
-        return false;
-      }
+      if (d.start_time >= d.end_time) { toast.error(`Horário inválido em ${info.label}`); return false; }
       if (d.break_start && d.break_end && d.break_start >= d.break_end) {
-        toast.error(`Pausa inválida em ${info.label}`);
-        return false;
+        toast.error(`Pausa inválida em ${info.label}`); return false;
       }
     }
     if (!DAY_INFO.some((i) => days[i.dow].is_open)) {
-      toast.error("Ative ao menos um dia de atendimento.");
-      return false;
+      toast.error("Ative ao menos um dia de atendimento."); return false;
     }
     return true;
   }
 
   async function handleSave() {
     if (!validate()) return;
-
     const rows = DAY_INFO.map((info) => {
       const d = days[info.dow];
       return {
@@ -175,7 +186,6 @@ function HorariosPage() {
         break_end:    d.is_open ? d.break_end   : null,
       };
     });
-
     try {
       await saveWH.mutateAsync(rows);
       toast.success("Horários salvos!");
@@ -184,17 +194,40 @@ function HorariosPage() {
     }
   }
 
-  async function handleAddBlock() {
-    if (!newBlock.start || !newBlock.end) { toast.error("Informe as datas"); return; }
-    if (newBlock.start > newBlock.end)    { toast.error("Data final deve ser posterior"); return; }
-    const reason = REASONS.find((r) => r.id === newBlock.reason);
-    const label  = newBlock.title || reason?.label || "";
+  async function handleSaveBlock() {
+    if (!newBlock.start || !newBlock.end)  { toast.error("Informe as datas"); return; }
+    if (newBlock.start > newBlock.end)     { toast.error("Data final deve ser posterior"); return; }
     try {
-      await addBlock.mutateAsync({ start: newBlock.start, end: newBlock.end, reason: label });
+      if (editingBlock) {
+        await updateBlock.mutateAsync({
+          id:     editingBlock.id,
+          start:  newBlock.start,
+          end:    newBlock.end,
+          reason: newBlock.reason,
+          title:  newBlock.title,
+        });
+      } else {
+        await addBlock.mutateAsync({
+          start:  newBlock.start,
+          end:    newBlock.end,
+          reason: newBlock.reason,
+          title:  newBlock.title,
+        });
+      }
       setBlockOpen(false);
-      toast.success("Bloqueio salvo");
-    } catch {
-      toast.error("Erro ao salvar bloqueio.");
+      setEditingBlock(null);
+      toast.success(editingBlock ? "Bloqueio atualizado" : "Bloqueio salvo");
+    } catch (e: unknown) {
+      const msg = (e as Error).message ?? "";
+      if (msg.startsWith("CONFLICT:")) {
+        const n = Number(msg.split(":")[1]);
+        toast.error(
+          `Você possui ${n} agendamento${n > 1 ? "s" : ""} neste período. Reagende os clientes antes de bloquear estas datas ou escolha outras datas.`,
+          { duration: 7000 }
+        );
+      } else {
+        toast.error("Erro ao salvar bloqueio.");
+      }
     }
   }
 
@@ -208,7 +241,7 @@ function HorariosPage() {
   }
 
   const openCount = DAY_INFO.filter((i) => days[i.dow].is_open).length;
-  const loading   = loadingWH || loadingBD;
+  const loading   = loadingWH || loadingSB;
 
   return (
     <MobileShell>
@@ -296,7 +329,7 @@ function HorariosPage() {
             </div>
           </section>
 
-          {/* Uniform mode — weekdays */}
+          {/* Uniform mode */}
           {mode === "uniform" && (
             <>
               <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
@@ -334,11 +367,7 @@ function HorariosPage() {
                       <TimeField label="Fecha" value={days[6].end_time}   onChange={(v) => setDay(6, { end_time: v })}   />
                     </div>
                     <LunchBlock
-                      value={{
-                        enabled: Boolean(days[6].break_start),
-                        start:   days[6].break_start ?? "12:00",
-                        end:     days[6].break_end   ?? "13:00",
-                      }}
+                      value={{ enabled: Boolean(days[6].break_start), start: days[6].break_start ?? "12:00", end: days[6].break_end ?? "13:00" }}
                       onToggle={(en) => setDay(6, { break_start: en ? "12:00" : null, break_end: en ? "13:00" : null })}
                       onChange={(p)  => setDay(6, {
                         ...(p.start !== undefined && { break_start: p.start }),
@@ -367,11 +396,7 @@ function HorariosPage() {
                       <TimeField label="Fecha" value={d.end_time}   onChange={(v) => setDay(info.dow, { end_time: v })}   />
                     </div>
                     <LunchBlock
-                      value={{
-                        enabled: Boolean(d.break_start),
-                        start:   d.break_start ?? "12:00",
-                        end:     d.break_end   ?? "13:00",
-                      }}
+                      value={{ enabled: Boolean(d.break_start), start: d.break_start ?? "12:00", end: d.break_end ?? "13:00" }}
                       onToggle={(en) => setDay(info.dow, { break_start: en ? "12:00" : null, break_end: en ? "13:00" : null })}
                       onChange={(p)  => setDay(info.dow, {
                         ...(p.start !== undefined && { break_start: p.start }),
@@ -389,7 +414,7 @@ function HorariosPage() {
             </section>
           )}
 
-          {/* Blocked dates */}
+          {/* Schedule blocks */}
           <section className="space-y-3 rounded-3xl border border-border bg-card p-5 shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -398,14 +423,14 @@ function HorariosPage() {
               </div>
               <Button
                 size="sm"
-                onClick={() => setBlockOpen(true)}
+                onClick={openNewBlock}
                 className="h-9 rounded-full gradient-primary px-3 text-xs font-semibold text-white shadow-glow"
               >
                 <Plus className="mr-1 h-3.5 w-3.5" /> Novo
               </Button>
             </div>
 
-            {blockedDates.length === 0 ? (
+            {scheduleBlocks.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-6 text-center">
                 <CalendarOff className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
                 <p className="text-sm font-semibold">Nenhum bloqueio</p>
@@ -413,35 +438,57 @@ function HorariosPage() {
               </div>
             ) : (
               <ul className="space-y-2">
-                {blockedDates.map((b) => (
-                  <li key={b.id} className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/30 p-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-soft text-primary">
-                      <CalendarOff className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{fmtDate(b.blocked_date)}</p>
-                      {b.reason && <p className="text-[11px] text-muted-foreground">{b.reason}</p>}
-                    </div>
-                    <button
-                      onClick={() => handleRemoveBlock(b.id)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
-                      aria-label="Remover"
-                    >
-                      {removeBlock.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </button>
-                  </li>
-                ))}
+                {scheduleBlocks.map((b) => {
+                  const isSingleDay = b.start_date === b.end_date;
+                  const dateDisplay = isSingleDay
+                    ? fmtDate(b.start_date)
+                    : `${fmtDate(b.start_date)} – ${fmtDate(b.end_date)}`;
+                  const Icon = b.reason === "ferias" ? Umbrella : CalendarOff;
+
+                  return (
+                    <li key={b.id} className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/30 p-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{dateDisplay}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {b.title ? `${b.title} · ` : ""}{reasonLabel(b.reason)}
+                          {!isSingleDay && (() => {
+                            const ms = new Date(b.end_date + "T12:00:00").getTime() - new Date(b.start_date + "T12:00:00").getTime();
+                            const days = Math.round(ms / 86400000) + 1;
+                            return ` · ${days} dia${days > 1 ? "s" : ""}`;
+                          })()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => openEditBlock(b)}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary"
+                        aria-label="Editar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveBlock(b.id)}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"
+                        aria-label="Remover"
+                      >
+                        {removeBlock.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>
         </main>
       )}
 
-      {/* Sticky save button */}
+      {/* Sticky save */}
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-5 pb-5">
         <Button
           onClick={handleSave}
@@ -449,30 +496,26 @@ function HorariosPage() {
           size="lg"
           className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow"
         >
-          {saveWH.isPending ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-5 w-5" />
-          )}
+          {saveWH.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
           {saveWH.isPending ? "Salvando..." : "Salvar horários"}
         </Button>
       </div>
 
-      {/* Dialog — new block */}
-      <Dialog open={blockOpen} onOpenChange={(o) => { setBlockOpen(o); }}>
-        <DialogContent className="max-w-sm">
+      {/* Dialog — new / edit block */}
+      <Dialog open={blockOpen} onOpenChange={(o) => { setBlockOpen(o); if (!o) setEditingBlock(null); }}>
+        <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Bloquear agenda</DialogTitle>
+            <DialogTitle>{editingBlock ? "Editar bloqueio" : "Bloquear agenda"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Motivo</Label>
               <Select
                 value={newBlock.reason}
                 onValueChange={(v) => setNewBlock((s) => ({ ...s, reason: v as BlockReason }))}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-2xl">
                   {REASONS.map((r) => (
                     <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
                   ))}
@@ -485,27 +528,38 @@ function HorariosPage() {
                 value={newBlock.title}
                 placeholder="Ex.: Viagem de férias"
                 onChange={(e) => setNewBlock((s) => ({ ...s, title: e.target.value }))}
+                className="rounded-xl"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>De</Label>
-                <Input type="date" value={newBlock.start} onChange={(e) => setNewBlock((s) => ({ ...s, start: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="min-w-0 space-y-1.5">
+                <Label className="text-xs">De</Label>
+                <input
+                  type="date"
+                  value={newBlock.start}
+                  onChange={(e) => setNewBlock((s) => ({ ...s, start: e.target.value }))}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
               </div>
-              <div className="space-y-1.5">
-                <Label>Até</Label>
-                <Input type="date" value={newBlock.end}   onChange={(e) => setNewBlock((s) => ({ ...s, end: e.target.value }))}   />
+              <div className="min-w-0 space-y-1.5">
+                <Label className="text-xs">Até</Label>
+                <input
+                  type="date"
+                  value={newBlock.end}
+                  onChange={(e) => setNewBlock((s) => ({ ...s, end: e.target.value }))}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
               </div>
             </div>
           </div>
           <DialogFooter className="flex gap-2 sm:gap-2">
-            <Button variant="ghost" onClick={() => setBlockOpen(false)} className="flex-1">Cancelar</Button>
+            <Button variant="ghost" onClick={() => { setBlockOpen(false); setEditingBlock(null); }} className="flex-1 rounded-xl">Cancelar</Button>
             <Button
-              onClick={handleAddBlock}
-              disabled={addBlock.isPending}
-              className="flex-1 gradient-primary text-white shadow-glow"
+              onClick={handleSaveBlock}
+              disabled={addBlock.isPending || updateBlock.isPending}
+              className="flex-1 rounded-xl gradient-primary text-white shadow-glow"
             >
-              {addBlock.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+              {(addBlock.isPending || updateBlock.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : editingBlock ? "Atualizar" : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>

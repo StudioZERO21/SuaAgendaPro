@@ -33,11 +33,13 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as AvaliacoesRouteImport } from './routes/avaliacoes'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SuperLoginRouteImport } from './routes/super/login'
 import { Route as ServicoNovoRouteImport } from './routes/servico.novo'
 import { Route as ServicoIdRouteImport } from './routes/servico.$id'
+import { Route as AvaliarTokenRouteImport } from './routes/avaliar.$token'
 import { Route as AgendarSlugRouteImport } from './routes/agendar.$slug'
 import { Route as SuperAppRouteRouteImport } from './routes/super/_app/route'
 import { Route as SuperAppIndexRouteImport } from './routes/super/_app/index'
@@ -166,6 +168,11 @@ const CadastroRoute = CadastroRouteImport.update({
   path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AvaliacoesRoute = AvaliacoesRouteImport.update({
+  id: '/avaliacoes',
+  path: '/avaliacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -189,6 +196,11 @@ const ServicoNovoRoute = ServicoNovoRouteImport.update({
 const ServicoIdRoute = ServicoIdRouteImport.update({
   id: '/servico/$id',
   path: '/servico/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AvaliarTokenRoute = AvaliarTokenRouteImport.update({
+  id: '/avaliar/$token',
+  path: '/avaliar/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgendarSlugRoute = AgendarSlugRouteImport.update({
@@ -231,6 +243,7 @@ const ApiPublicMercadoPagoCallbackRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/avaliacoes': typeof AvaliacoesRoute
   '/cadastro': typeof CadastroRoute
   '/clientes': typeof ClientesRoute
   '/contato': typeof ContatoRoute
@@ -257,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/whatsapp': typeof WhatsappRoute
   '/super': typeof SuperAppRouteRouteWithChildren
   '/agendar/$slug': typeof AgendarSlugRoute
+  '/avaliar/$token': typeof AvaliarTokenRoute
   '/servico/$id': typeof ServicoIdRoute
   '/servico/novo': typeof ServicoNovoRoute
   '/super/login': typeof SuperLoginRoute
@@ -269,6 +283,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/avaliacoes': typeof AvaliacoesRoute
   '/cadastro': typeof CadastroRoute
   '/clientes': typeof ClientesRoute
   '/contato': typeof ContatoRoute
@@ -294,6 +309,7 @@ export interface FileRoutesByTo {
   '/transacoes': typeof TransacoesRoute
   '/whatsapp': typeof WhatsappRoute
   '/agendar/$slug': typeof AgendarSlugRoute
+  '/avaliar/$token': typeof AvaliarTokenRoute
   '/servico/$id': typeof ServicoIdRoute
   '/servico/novo': typeof ServicoNovoRoute
   '/super/login': typeof SuperLoginRoute
@@ -307,6 +323,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/avaliacoes': typeof AvaliacoesRoute
   '/cadastro': typeof CadastroRoute
   '/clientes': typeof ClientesRoute
   '/contato': typeof ContatoRoute
@@ -333,6 +350,7 @@ export interface FileRoutesById {
   '/whatsapp': typeof WhatsappRoute
   '/super/_app': typeof SuperAppRouteRouteWithChildren
   '/agendar/$slug': typeof AgendarSlugRoute
+  '/avaliar/$token': typeof AvaliarTokenRoute
   '/servico/$id': typeof ServicoIdRoute
   '/servico/novo': typeof ServicoNovoRoute
   '/super/login': typeof SuperLoginRoute
@@ -347,6 +365,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/avaliacoes'
     | '/cadastro'
     | '/clientes'
     | '/contato'
@@ -373,6 +392,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/super'
     | '/agendar/$slug'
+    | '/avaliar/$token'
     | '/servico/$id'
     | '/servico/novo'
     | '/super/login'
@@ -385,6 +405,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/avaliacoes'
     | '/cadastro'
     | '/clientes'
     | '/contato'
@@ -410,6 +431,7 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/whatsapp'
     | '/agendar/$slug'
+    | '/avaliar/$token'
     | '/servico/$id'
     | '/servico/novo'
     | '/super/login'
@@ -422,6 +444,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/avaliacoes'
     | '/cadastro'
     | '/clientes'
     | '/contato'
@@ -448,6 +471,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/super/_app'
     | '/agendar/$slug'
+    | '/avaliar/$token'
     | '/servico/$id'
     | '/servico/novo'
     | '/super/login'
@@ -461,6 +485,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
+  AvaliacoesRoute: typeof AvaliacoesRoute
   CadastroRoute: typeof CadastroRoute
   ClientesRoute: typeof ClientesRoute
   ContatoRoute: typeof ContatoRoute
@@ -487,6 +512,7 @@ export interface RootRouteChildren {
   WhatsappRoute: typeof WhatsappRoute
   SuperAppRouteRoute: typeof SuperAppRouteRouteWithChildren
   AgendarSlugRoute: typeof AgendarSlugRoute
+  AvaliarTokenRoute: typeof AvaliarTokenRoute
   ServicoIdRoute: typeof ServicoIdRoute
   ServicoNovoRoute: typeof ServicoNovoRoute
   SuperLoginRoute: typeof SuperLoginRoute
@@ -664,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/avaliacoes': {
+      id: '/avaliacoes'
+      path: '/avaliacoes'
+      fullPath: '/avaliacoes'
+      preLoaderRoute: typeof AvaliacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -697,6 +730,13 @@ declare module '@tanstack/react-router' {
       path: '/servico/$id'
       fullPath: '/servico/$id'
       preLoaderRoute: typeof ServicoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/avaliar/$token': {
+      id: '/avaliar/$token'
+      path: '/avaliar/$token'
+      fullPath: '/avaliar/$token'
+      preLoaderRoute: typeof AvaliarTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agendar/$slug': {
@@ -770,6 +810,7 @@ const SuperAppRouteRouteWithChildren = SuperAppRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
+  AvaliacoesRoute: AvaliacoesRoute,
   CadastroRoute: CadastroRoute,
   ClientesRoute: ClientesRoute,
   ContatoRoute: ContatoRoute,
@@ -796,6 +837,7 @@ const rootRouteChildren: RootRouteChildren = {
   WhatsappRoute: WhatsappRoute,
   SuperAppRouteRoute: SuperAppRouteRouteWithChildren,
   AgendarSlugRoute: AgendarSlugRoute,
+  AvaliarTokenRoute: AvaliarTokenRoute,
   ServicoIdRoute: ServicoIdRoute,
   ServicoNovoRoute: ServicoNovoRoute,
   SuperLoginRoute: SuperLoginRoute,

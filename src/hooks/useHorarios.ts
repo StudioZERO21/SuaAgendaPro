@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { WorkingHours, WorkingHoursInsert, BlockedDate } from "@/integrations/supabase/types";
+import type { WorkingHours, WorkingHoursInsert, ScheduleBlock } from "@/integrations/supabase/types";
 
 const WH_KEY = ["working_hours"] as const;
-const BD_KEY = ["blocked_dates"] as const;
+const SB_KEY = ["schedule_blocks"] as const;
 
 async function getCurrentUserId() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -44,82 +44,108 @@ export function useSaveWorkingHours() {
   });
 }
 
-// ── Blocked Dates ─────────────────────────────────────────────
+// ── Schedule Blocks ───────────────────────────────────────────
 
-export function useBlockedDates() {
+export function useScheduleBlocks() {
   return useQuery({
-    queryKey: BD_KEY,
+    queryKey: SB_KEY,
     queryFn: async () => {
       const uid = await getCurrentUserId();
       const { data, error } = await supabase
-        .from("blocked_dates")
+        .from("schedule_blocks")
         .select("*")
         .eq("professional_id", uid)
-        .order("blocked_date");
+        .order("start_date");
       if (error) throw error;
-      return (data ?? []) as BlockedDate[];
+      return (data ?? []) as ScheduleBlock[];
     },
   });
 }
 
-export function useAddBlockedDate() {
+export function useAddScheduleBlock() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ date, reason }: { date: string; reason?: string }) => {
+    mutationFn: async ({
+      start,
+      end,
+      reason,
+      title,
+    }: {
+      start: string;
+      end: string;
+      reason: string;
+      title?: string;
+    }) => {
       const uid = await getCurrentUserId();
-      const { error } = await supabase
-        .from("blocked_dates")
-        .insert({ professional_id: uid, blocked_date: date, reason: reason || null });
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: BD_KEY }),
-  });
-}
 
-export function useAddBlockedRange() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ start, end, reason }: { start: string; end: string; reason?: string }) => {
-      const uid = await getCurrentUserId();
-      // Expand range to individual dates
-      const dates: string[] = [];
-      const cur = new Date(start + "T12:00:00");
-      const endDate = new Date(end + "T12:00:00");
-      while (cur <= endDate) {
-        dates.push(cur.toISOString().slice(0, 10));
-        cur.setDate(cur.getDate() + 1);
+      // Check for existing appointments in the range
+      const { count } = await supabase
+        .from("appointments")
+        .select("*", { count: "exact", head: true })
+        .eq("professional_id", uid)
+        .gte("scheduled_at", `${start}T00:00:00`)
+        .lte("scheduled_at", `${end}T23:59:59`)
+        .not("status", "in", "(cancelled,no_show)");
+
+      if (count && count > 0) {
+        throw new Error(`CONFLICT:${count}`);
       }
-      const rows = dates.map((d) => ({
-        professional_id: uid,
-        blocked_date: d,
-        reason: reason || null,
-      }));
+
       const { error } = await supabase
-        .from("blocked_dates")
-        .upsert(rows, { onConflict: "professional_id,blocked_date" });
+        .from("schedule_blocks")
+        .insert({
+          professional_id: uid,
+          start_date: start,
+          end_date: end,
+          reason,
+          title: title?.trim() || null,
+        });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: BD_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: SB_KEY }),
   });
 }
 
-export function useRemoveBlockedDate() {
+export function useUpdateScheduleBlock() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({
+      id, start, end, reason, title,
+    }: { id: string; start: string; end: string; reason: string; title?: string }) => {
+      const uid = await getCurrentUserId();
+      // check conflicts excluding the current block's own dates
+      const { count } = await supabase
+        .from("appointments")
+        .select("*", { count: "exact", head: true })
+        .eq("professional_id", uid)
+        .gte("scheduled_at", `${start}T00:00:00`)
+        .lte("scheduled_at", `${end}T23:59:59`)
+        .not("status", "in", "(cancelled,no_show)");
+      if (count && count > 0) throw new Error(`CONFLICT:${count}`);
+
       const { error } = await supabase
-        .from("blocked_dates")
-        .delete()
+        .from("schedule_blocks")
+        .update({ start_date: start, end_date: end, reason, title: title?.trim() || null })
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: BD_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: SB_KEY }),
+  });
+}
+
+export function useRemoveScheduleBlock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("schedule_blocks").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: SB_KEY }),
   });
 }
 
 // ── Helpers ───────────────────────────────────────────────────
 
-/** Build a map of day_of_week → WorkingHours for easy access */
 export function buildDayMap(rows: WorkingHours[]) {
   return Object.fromEntries(rows.map((r) => [r.day_of_week, r])) as Record<number, WorkingHours>;
 }
