@@ -3,21 +3,23 @@
 
 import { getSuperToken } from "@/lib/super-auth";
 
-let _patched = false;
+const _MARK = "__superPatched";
 
 export function configureSuperFetch() {
-  if (typeof window === "undefined" || _patched) return;
+  if (typeof window === "undefined") return;
+  if ((window.fetch as any)[_MARK]) return;
+
   const original = window.fetch;
-  window.fetch = function (input, init) {
+  const patched = function (input: RequestInfo | URL, init?: RequestInit) {
     const token = getSuperToken();
     if (token) {
-      init = init ?? {};
-      init.headers = {
-        ...(init.headers as Record<string, string> ?? {}),
-        "x-super-token": token,
-      };
+      init = { ...(init ?? {}) };
+      const headers = new Headers(init.headers);
+      headers.set("x-super-token", token);
+      init.headers = headers;
     }
-    return original.call(this, input, init);
+    return original.call(window, input, init);
   };
-  _patched = true;
+  (patched as any)[_MARK] = true;
+  window.fetch = patched;
 }

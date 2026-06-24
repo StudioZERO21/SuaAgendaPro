@@ -37,7 +37,7 @@ function isPublicPath(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname)) return true;
   if (pathname.startsWith("/agendar/")) return true;
   if (pathname.startsWith("/perfil-publico")) return true;
-  if (pathname.startsWith("/super/")) return true;
+  if (pathname.startsWith("/super")) return true;
   return false;
 }
 
