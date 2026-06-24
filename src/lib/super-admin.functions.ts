@@ -9,7 +9,8 @@ import { verifySuperToken } from "@/lib/super-auth.server";
 async function requireSuperAuth() {
   const req = getRequest();
   const token = req?.headers.get("x-super-token") ?? null;
-  if (!verifySuperToken(token)) {
+  const ok = await verifySuperToken(token);
+  if (!ok) {
     throw new Error("Unauthorized: super admin token inválido ou expirado");
   }
 }
@@ -142,7 +143,7 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" }).handler(
 // ─── Ações admin ──────────────────────────────────────────────────────────────
 
 export const adminChangePlan = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input: unknown) =>
     z.object({ userId: z.string().uuid(), planId: z.string(), notes: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -159,7 +160,7 @@ export const adminChangePlan = createServerFn({ method: "POST" })
   });
 
 export const adminUnblockUser = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input: unknown) =>
     z.object({ userId: z.string().uuid(), notes: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -180,7 +181,7 @@ export const adminUnblockUser = createServerFn({ method: "POST" })
   });
 
 export const adminGrantSpecial = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input: unknown) =>
     z.object({ userId: z.string().uuid(), notes: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -202,7 +203,7 @@ export const adminGrantSpecial = createServerFn({ method: "POST" })
   });
 
 export const adminSuspendUser = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input: unknown) =>
     z.object({ userId: z.string().uuid(), notes: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -218,7 +219,7 @@ export const adminSuspendUser = createServerFn({ method: "POST" })
   });
 
 export const adminCancelSubscription = createServerFn({ method: "POST" })
-  .inputValidator((input) =>
+  .validator((input: unknown) =>
     z.object({ userId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data }) => {
