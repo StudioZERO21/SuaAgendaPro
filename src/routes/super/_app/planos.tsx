@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Clock,
   CheckCircle2,
@@ -11,6 +12,8 @@ import {
   Percent,
   TrendingUp,
 } from "lucide-react";
+import { getSuperAdminMetrics, type SuperMetrics } from "@/lib/super-admin.functions";
+import { configureSuperFetch } from "@/lib/super-client";
 import { motion } from "framer-motion";
 import {
   Area,
@@ -122,6 +125,21 @@ function toneClasses(tone: Metric["tone"]) {
 }
 
 function PlanosPage() {
+  const [metrics, setMetrics] = useState<SuperMetrics | null>(null);
+
+  useEffect(() => {
+    configureSuperFetch();
+    getSuperAdminMetrics().then(setMetrics).catch(console.error);
+  }, []);
+
+  const m = metrics;
+  const LIVE: Metric[] = [
+    { label: "Em trial",          value: m ? String(m.trialUsers)     : "—", delta: "", trend: "up"   as const, icon: Clock,        tone: "neutral", spark: [] },
+    { label: "Ativos (Premium)",  value: m ? String(m.activeUsers)    : "—", delta: "", trend: "up"   as const, icon: CheckCircle2, tone: "success", spark: [] },
+    { label: "Suspensos",         value: m ? String(m.suspendedUsers) : "—", delta: "", trend: "down" as const, icon: AlertTriangle, tone: "warning", spark: [] },
+    { label: "Churn mês",         value: m ? String(m.churnThisMonth) : "—", delta: "", trend: "down" as const, icon: UserMinus,    tone: "danger",  spark: [] },
+  ];
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -147,7 +165,7 @@ function PlanosPage() {
 
       {/* Métricas principais */}
       <section className="grid grid-cols-1 gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 xl:grid-cols-4">
-        {METRICS.map((m, i) => (
+        {LIVE.map((m, i) => (
           <MetricCard key={m.label} metric={m} index={i} />
         ))}
       </section>

@@ -94,12 +94,12 @@ export function SuperSidebar() {
       <SidebarFooter>
         <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:p-0">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-secondary-foreground">
-            {auth?.name?.[0]?.toUpperCase() ?? "S"}
+            S
           </div>
           <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-            <p className="truncate text-xs font-semibold">{auth?.name ?? "Super"}</p>
+            <p className="truncate text-xs font-semibold">Super Admin</p>
             <p className="truncate text-[10px] text-muted-foreground">
-              {auth?.email ?? "—"}
+              {auth ? "autenticado" : "—"}
             </p>
           </div>
           <button

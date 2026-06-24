@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { format, parse } from "date-fns";
 import {
   Search,
@@ -11,14 +11,12 @@ import {
   Phone,
   Calendar,
   Briefcase,
-  MapPin,
   Download,
   ChevronLeft,
   ChevronRight,
   History,
   User as UserIcon,
   CreditCard,
-  Hash,
   Clock,
   AlertTriangle,
   CalendarIcon,
@@ -49,6 +47,16 @@ import {
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  getSuperAdminUsers,
+  adminUnblockUser,
+  adminSuspendUser,
+  adminGrantSpecial,
+  adminCancelSubscription,
+  adminChangePlan,
+  type SuperUser,
+} from "@/lib/super-admin.functions";
+import { configureSuperFetch } from "@/lib/super-client";
 
 export const Route = createFileRoute("/super/_app/usuarios")({
   head: () => ({
@@ -60,7 +68,7 @@ export const Route = createFileRoute("/super/_app/usuarios")({
   component: UsuariosPage,
 });
 
-type Status = "ativo" | "inativo" | "pendente";
+type Status = "active" | "trial" | "suspended" | "cancelled" | "especial" | "overdue";
 
 type Pro = {
   id: string;
@@ -72,44 +80,54 @@ type Pro = {
   status: Status;
   joined: string;
   plan: string;
-  appointments: number;
-  revenue: number;
-  lastLogin: string;
-  document: string;
+  planId: string;
+  notes: string | null;
 };
 
 type AuditEntry = {
   id: string;
   proId: string;
   proName: string;
-  action: "desativacao" | "reativacao";
+  action: "desativacao" | "reativacao" | "especial" | "cancelamento";
   reason: string;
   actor: string;
   at: string;
 };
 
-const INITIAL: Pro[] = [
-  { id: "u1", name: "Camila Almeida", email: "camila@studio.com", phone: "(11) 98821-4422", niche: "Cabeleireira", city: "São Paulo, SP", status: "ativo", joined: "12/03/2025", plan: "Profissional", appointments: 248, revenue: 18420, lastLogin: "20/06/2026 14:32", document: "123.456.789-01" },
-  { id: "u2", name: "Bruno Reis", email: "bruno@lash.pro", phone: "(21) 99712-1190", niche: "Lash Designer", city: "Rio de Janeiro, RJ", status: "ativo", joined: "02/04/2025", plan: "Profissional", appointments: 132, revenue: 9870, lastLogin: "21/06/2026 09:11", document: "234.567.890-12" },
-  { id: "u3", name: "Maria Souza", email: "maria@nails.com", phone: "(31) 98455-7821", niche: "Manicure", city: "Belo Horizonte, MG", status: "pendente", joined: "18/05/2025", plan: "Trial", appointments: 12, revenue: 480, lastLogin: "19/06/2026 18:02", document: "345.678.901-23" },
-  { id: "u4", name: "Studio Glamour", email: "contato@glamour.com", phone: "(41) 99887-3321", niche: "Estética", city: "Curitiba, PR", status: "ativo", joined: "30/05/2025", plan: "Profissional", appointments: 312, revenue: 27110, lastLogin: "21/06/2026 11:45", document: "11.222.333/0001-44" },
-  { id: "u5", name: "Ana Paula", email: "ana@beauty.io", phone: "(51) 99221-7765", niche: "Maquiadora", city: "Porto Alegre, RS", status: "inativo", joined: "07/06/2025", plan: "Profissional", appointments: 87, revenue: 5430, lastLogin: "02/06/2026 10:18", document: "456.789.012-34" },
-  { id: "u6", name: "Diego Lima", email: "diego@barber.app", phone: "(11) 97755-8821", niche: "Barbeiro", city: "São Paulo, SP", status: "ativo", joined: "21/06/2026", plan: "Profissional", appointments: 45, revenue: 2210, lastLogin: "21/06/2026 13:02", document: "567.890.123-45" },
-  { id: "u7", name: "Renata Castro", email: "renata@spa.com", phone: "(48) 98712-3344", niche: "Massoterapeuta", city: "Florianópolis, SC", status: "ativo", joined: "11/01/2026", plan: "Profissional", appointments: 178, revenue: 14210, lastLogin: "20/06/2026 17:22", document: "678.901.234-56" },
-  { id: "u8", name: "Felipe Andrade", email: "felipe@tattoo.art", phone: "(61) 99332-7788", niche: "Tatuador", city: "Brasília, DF", status: "pendente", joined: "02/06/2026", plan: "Trial", appointments: 4, revenue: 320, lastLogin: "20/06/2026 22:01", document: "789.012.345-67" },
-  { id: "u9", name: "Letícia Borges", email: "leticia@brows.co", phone: "(85) 98123-9911", niche: "Designer de Sobrancelhas", city: "Fortaleza, CE", status: "ativo", joined: "14/02/2026", plan: "Profissional", appointments: 96, revenue: 6720, lastLogin: "21/06/2026 08:45", document: "890.123.456-78" },
-  { id: "u10", name: "Pedro Henrique", email: "pedro@barber.app", phone: "(11) 99001-2233", niche: "Barbeiro", city: "Campinas, SP", status: "ativo", joined: "20/04/2026", plan: "Profissional", appointments: 67, revenue: 3950, lastLogin: "20/06/2026 19:30", document: "901.234.567-89" },
-  { id: "u11", name: "Carolina Pires", email: "carol@nails.io", phone: "(11) 98221-4321", niche: "Manicure", city: "Santo André, SP", status: "ativo", joined: "05/03/2026", plan: "Profissional", appointments: 121, revenue: 7820, lastLogin: "21/06/2026 12:00", document: "012.345.678-90" },
-  { id: "u12", name: "Sandra Melo", email: "sandra@hair.pro", phone: "(31) 99887-1122", niche: "Cabeleireira", city: "Contagem, MG", status: "inativo", joined: "22/12/2025", plan: "Profissional", appointments: 54, revenue: 3010, lastLogin: "10/05/2026 14:00", document: "112.233.445-56" },
-  { id: "u13", name: "Otávio Mendes", email: "otavio@barber.app", phone: "(21) 98112-2233", niche: "Barbeiro", city: "Niterói, RJ", status: "ativo", joined: "30/03/2026", plan: "Profissional", appointments: 88, revenue: 4520, lastLogin: "21/06/2026 10:11", document: "223.344.556-67" },
-  { id: "u14", name: "Juliana Rocha", email: "ju@spa.io", phone: "(47) 98765-3344", niche: "Massoterapeuta", city: "Joinville, SC", status: "ativo", joined: "12/05/2026", plan: "Profissional", appointments: 39, revenue: 2980, lastLogin: "20/06/2026 16:00", document: "334.455.667-78" },
-  { id: "u15", name: "Marcos Vinícius", email: "marcos@tattoo.art", phone: "(11) 98000-1212", niche: "Tatuador", city: "Guarulhos, SP", status: "pendente", joined: "10/06/2026", plan: "Trial", appointments: 2, revenue: 0, lastLogin: "19/06/2026 21:00", document: "445.566.778-89" },
-];
+function superUserToPro(u: SuperUser): Pro {
+  const fmt = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
+  return {
+    id:     u.id,
+    name:   u.name  || u.email.split("@")[0] || "—",
+    email:  u.email,
+    phone:  u.phone || "—",
+    niche:  u.specialty || "—",
+    city:   "—",
+    status: u.status as Status,
+    joined: fmt(u.createdAt),
+    plan:   u.planName,
+    planId: u.planId,
+    notes:  u.notes,
+  };
+}
 
 const statusStyle: Record<Status, string> = {
-  ativo: "bg-emerald-100 text-emerald-700",
-  inativo: "bg-rose-100 text-rose-700",
-  pendente: "bg-amber-100 text-amber-700",
+  active:    "bg-emerald-100 text-emerald-700",
+  trial:     "bg-amber-100  text-amber-700",
+  suspended: "bg-rose-100   text-rose-700",
+  overdue:   "bg-orange-100 text-orange-700",
+  cancelled: "bg-zinc-100   text-zinc-500",
+  especial:  "bg-violet-100 text-violet-700",
+};
+
+const statusLabel: Record<Status, string> = {
+  active:    "Ativo",
+  trial:     "Trial",
+  suspended: "Suspenso",
+  overdue:   "Inadimplente",
+  cancelled: "Cancelado",
+  especial:  "Especial",
 };
 
 const PAGE_SIZE = 8;
@@ -140,10 +158,12 @@ function endOfDay(d: Date) {
 function UsuariosPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "todos">("todos");
-  const [users, setUsers] = useState<Pro[]>(INITIAL);
+  const [users, setUsers] = useState<Pro[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [viewing, setViewing] = useState<Pro | null>(null);
-  const [confirming, setConfirming] = useState<Pro | null>(null);
+  const [confirming, setConfirming] = useState<{ user: Pro; action: string } | null>(null);
   const [reason, setReason] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [page, setPage] = useState(1);
   const [auditOpen, setAuditOpen] = useState(false);
@@ -151,6 +171,49 @@ function UsuariosPage() {
   const [auditPage, setAuditPage] = useState(1);
   const [auditFrom, setAuditFrom] = useState<Date | undefined>();
   const [auditTo, setAuditTo] = useState<Date | undefined>();
+
+  const loadUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      configureSuperFetch();
+      const data = await getSuperAdminUsers();
+      setUsers(data.map(superUserToPro));
+    } catch (err: any) {
+      toast.error("Erro ao carregar usuários: " + (err?.message ?? ""));
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
+
+  useEffect(() => { loadUsers(); }, [loadUsers]);
+
+  async function executeAction(user: Pro, action: string, notes: string) {
+    setActionLoading(true);
+    try {
+      if (action === "desativar")    await adminSuspendUser({ data: { userId: user.id, notes } });
+      if (action === "reativar")     await adminUnblockUser({ data: { userId: user.id, notes } });
+      if (action === "especial")     await adminGrantSpecial({ data: { userId: user.id, notes } });
+      if (action === "cancelar")     await adminCancelSubscription({ data: { userId: user.id } });
+      if (action === "premium")      await adminChangePlan({ data: { userId: user.id, planId: "premium", notes } });
+      toast.success("Ação executada com sucesso");
+      const auditAction = action === "desativar" ? "desativacao" :
+                          action === "reativar"  ? "reativacao"  :
+                          action === "especial"  ? "especial"    : "cancelamento";
+      setAudit((prev) => [
+        { id: crypto.randomUUID(), proId: user.id, proName: user.name,
+          action: auditAction as AuditEntry["action"],
+          reason: notes || "(sem motivo)", actor: "admin", at: nowStamp() },
+        ...prev,
+      ]);
+      await loadUsers();
+    } catch (err: any) {
+      toast.error("Erro: " + (err?.message ?? "Tente novamente"));
+    } finally {
+      setActionLoading(false);
+      setConfirming(null);
+      setReason("");
+    }
+  }
 
   const filtered = useMemo(
     () =>
@@ -178,47 +241,19 @@ function UsuariosPage() {
     setAuditTo(undefined);
   }, [viewing?.id]);
 
-  function toggleStatus() {
+  function handleConfirmAction() {
     if (!confirming) return;
-    if (confirming.status === "ativo" && reason.trim().length < 5) {
+    if (confirming.action === "desativar" && reason.trim().length < 5) {
       toast.error("Informe um motivo (mín. 5 caracteres).");
       return;
     }
-    const action: AuditEntry["action"] =
-      confirming.status === "ativo" ? "desativacao" : "reativacao";
-    const newStatus: Status = confirming.status === "ativo" ? "inativo" : "ativo";
-
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === confirming.id ? { ...u, status: newStatus } : u,
-      ),
-    );
-    setAudit((prev) => [
-      {
-        id: `a${Date.now()}`,
-        proId: confirming.id,
-        proName: confirming.name,
-        action,
-        reason: reason.trim() || "—",
-        actor: "Super Admin",
-        at: nowStamp(),
-      },
-      ...prev,
-    ]);
-    toast.success(
-      action === "desativacao"
-        ? `${confirming.name} foi desativado.`
-        : `${confirming.name} foi reativado.`,
-    );
-    setConfirming(null);
-    setReason("");
+    executeAction(confirming.user, confirming.action, reason.trim());
   }
 
   function exportCSV() {
-    const headers = ["Nome", "E-mail", "Telefone", "Nicho", "Cidade", "Status", "Plano", "Desde", "Agendamentos", "Receita"];
+    const headers = ["Nome", "E-mail", "Telefone", "Nicho", "Status", "Plano", "Desde"];
     const rows = filtered.map((u) => [
-      u.name, u.email, u.phone, u.niche, u.city, u.status, u.plan, u.joined,
-      String(u.appointments), String(u.revenue),
+      u.name, u.email, u.phone, u.niche, u.status, u.plan, u.joined,
     ]);
     const csv = [headers, ...rows]
       .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
@@ -316,11 +351,11 @@ function UsuariosPage() {
             />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {(["todos", "ativo", "pendente", "inativo"] as const).map((s) => (
+            {(["todos", "active", "trial", "suspended", "cancelled", "especial"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => {
-                  setStatusFilter(s);
+                  setStatusFilter(s as any);
                   setPage(1);
                 }}
                 className={cn(
@@ -330,7 +365,7 @@ function UsuariosPage() {
                     : "bg-muted text-muted-foreground hover:bg-muted/70",
                 )}
               >
-                {s}
+                {s === "todos" ? "Todos" : statusLabel[s as Status]}
               </button>
             ))}
           </div>
@@ -359,16 +394,13 @@ function UsuariosPage() {
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize",
+                        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold",
                         statusStyle[u.status],
                       )}
                     >
-                      {u.status === "ativo" ? (
-                        <CheckCircle2 className="h-3 w-3" />
-                      ) : u.status === "inativo" ? (
-                        <XCircle className="h-3 w-3" />
-                      ) : null}
-                      {u.status}
+                      {u.status === "active"    ? <CheckCircle2 className="h-3 w-3" /> : null}
+                      {u.status === "suspended" ? <XCircle className="h-3 w-3" />      : null}
+                      {statusLabel[u.status]}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{u.joined}</td>
@@ -378,14 +410,18 @@ function UsuariosPage() {
                         <Eye className="mr-1.5 h-3.5 w-3.5" />
                         Ver mais
                       </Button>
-                      <Button
-                        size="sm"
-                        variant={u.status === "ativo" ? "destructive" : "default"}
-                        onClick={() => setConfirming(u)}
-                      >
-                        <Power className="mr-1.5 h-3.5 w-3.5" />
-                        {u.status === "ativo" ? "Desativar" : "Ativar"}
-                      </Button>
+                      {(u.status === "suspended" || u.status === "cancelled" || u.status === "overdue") && (
+                        <Button size="sm" variant="default" onClick={() => setConfirming({ user: u, action: "reativar" })}>
+                          <Power className="mr-1.5 h-3.5 w-3.5" />
+                          Reativar
+                        </Button>
+                      )}
+                      {(u.status === "active" || u.status === "trial") && (
+                        <Button size="sm" variant="destructive" onClick={() => setConfirming({ user: u, action: "desativar" })}>
+                          <Power className="mr-1.5 h-3.5 w-3.5" />
+                          Suspender
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -405,11 +441,11 @@ function UsuariosPage() {
                 </div>
                 <span
                   className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
+                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
                     statusStyle[u.status],
                   )}
                 >
-                  {u.status}
+                  {statusLabel[u.status]}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground">Desde {u.joined}</p>
@@ -418,21 +454,28 @@ function UsuariosPage() {
                   <Eye className="mr-1.5 h-3.5 w-3.5" />
                   Ver mais
                 </Button>
-                <Button
-                  size="sm"
-                  variant={u.status === "ativo" ? "destructive" : "default"}
-                  className="flex-1"
-                  onClick={() => setConfirming(u)}
-                >
-                  <Power className="mr-1.5 h-3.5 w-3.5" />
-                  {u.status === "ativo" ? "Desativar" : "Ativar"}
-                </Button>
+                {(u.status === "suspended" || u.status === "cancelled" || u.status === "overdue") ? (
+                  <Button size="sm" variant="default" className="flex-1" onClick={() => setConfirming({ user: u, action: "reativar" })}>
+                    <Power className="mr-1.5 h-3.5 w-3.5" />
+                    Reativar
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="destructive" className="flex-1" onClick={() => setConfirming({ user: u, action: "desativar" })}>
+                    <Power className="mr-1.5 h-3.5 w-3.5" />
+                    Suspender
+                  </Button>
+                )}
               </div>
             </li>
           ))}
         </ul>
 
-        {filtered.length === 0 && (
+        {loadingUsers && (
+          <p className="p-8 text-center text-sm text-muted-foreground">
+            Carregando usuários…
+          </p>
+        )}
+        {!loadingUsers && filtered.length === 0 && (
           <p className="p-8 text-center text-sm text-muted-foreground">
             Nenhum profissional encontrado.
           </p>
@@ -507,11 +550,11 @@ function UsuariosPage() {
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span
                         className={cn(
-                          "rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize",
+                          "rounded-full px-2 py-0.5 text-[11px] font-semibold",
                           statusStyle[viewing.status],
                         )}
                       >
-                        {viewing.status}
+                        {statusLabel[viewing.status]}
                       </span>
                       <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
                         {viewing.plan}
@@ -540,26 +583,15 @@ function UsuariosPage() {
                     <Row icon={Mail} label="E-mail" value={viewing.email} />
                     <Row icon={Phone} label="Telefone" value={viewing.phone} />
                     <Row icon={Briefcase} label="Nicho" value={viewing.niche} />
-                    <Row icon={MapPin} label="Cidade" value={viewing.city} />
-                    <Row icon={Hash} label="Documento" value={viewing.document} />
                     <Row icon={Calendar} label="Cadastrado em" value={viewing.joined} />
-                    <Row icon={Clock} label="Último acesso" value={viewing.lastLogin} />
                     <Row icon={CreditCard} label="Plano" value={viewing.plan} />
+                    {viewing.notes && <Row icon={Clock} label="Notas admin" value={viewing.notes} />}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="metricas" className="space-y-3 pt-4">
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    <Stat label="Agendamentos" value={viewing.appointments.toLocaleString("pt-BR")} />
-                    <Stat label="Receita total" value={formatBRL(viewing.revenue)} />
-                    <Stat
-                      label="Ticket médio"
-                      value={
-                        viewing.appointments > 0
-                          ? formatBRL(viewing.revenue / viewing.appointments)
-                          : "—"
-                      }
-                    />
+                  <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                    Métricas de agendamentos serão exibidas em breve.
                   </div>
                 </TabsContent>
 
@@ -697,20 +729,36 @@ function UsuariosPage() {
                 </TabsContent>
               </Tabs>
 
-              <DialogFooter className="gap-2">
+              <DialogFooter className="flex-wrap gap-2">
                 <Button variant="outline" onClick={() => setViewing(null)}>
                   Fechar
                 </Button>
-                <Button
-                  variant={viewing.status === "ativo" ? "destructive" : "default"}
-                  onClick={() => {
-                    setConfirming(viewing);
-                    setViewing(null);
-                  }}
-                >
-                  <Power className="mr-1.5 h-4 w-4" />
-                  {viewing.status === "ativo" ? "Desativar" : "Ativar"}
-                </Button>
+                {viewing.status !== "especial" && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => { setConfirming({ user: viewing, action: "especial" }); setViewing(null); }}
+                  >
+                    Conceder Especial
+                  </Button>
+                )}
+                {(viewing.status === "suspended" || viewing.status === "cancelled" || viewing.status === "overdue") && (
+                  <Button
+                    variant="default"
+                    onClick={() => { setConfirming({ user: viewing, action: "reativar" }); setViewing(null); }}
+                  >
+                    <Power className="mr-1.5 h-4 w-4" />
+                    Reativar
+                  </Button>
+                )}
+                {(viewing.status === "active" || viewing.status === "trial") && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => { setConfirming({ user: viewing, action: "desativar" }); setViewing(null); }}
+                  >
+                    <Power className="mr-1.5 h-4 w-4" />
+                    Suspender
+                  </Button>
+                )}
               </DialogFooter>
             </>
           )}
@@ -721,10 +769,7 @@ function UsuariosPage() {
       <Dialog
         open={!!confirming}
         onOpenChange={(o) => {
-          if (!o) {
-            setConfirming(null);
-            setReason("");
-          }
+          if (!o) { setConfirming(null); setReason(""); }
         }}
       >
         <DialogContent className="sm:max-w-md">
@@ -735,8 +780,10 @@ function UsuariosPage() {
                   <div
                     className={cn(
                       "grid h-10 w-10 shrink-0 place-items-center rounded-xl",
-                      confirming.status === "ativo"
+                      confirming.action === "desativar"
                         ? "bg-rose-100 text-rose-700"
+                        : confirming.action === "especial"
+                        ? "bg-violet-100 text-violet-700"
                         : "bg-emerald-100 text-emerald-700",
                     )}
                   >
@@ -744,47 +791,52 @@ function UsuariosPage() {
                   </div>
                   <div>
                     <DialogTitle>
-                      {confirming.status === "ativo"
-                        ? "Desativar profissional?"
-                        : "Reativar profissional?"}
+                      {confirming.action === "desativar" && "Suspender profissional?"}
+                      {confirming.action === "reativar"  && "Reativar profissional?"}
+                      {confirming.action === "especial"  && "Conceder plano Especial?"}
+                      {confirming.action === "cancelar"  && "Cancelar assinatura?"}
+                      {confirming.action === "premium"   && "Mudar para Premium?"}
                     </DialogTitle>
                     <DialogDescription>
-                      {confirming.status === "ativo"
-                        ? `${confirming.name} perderá acesso à plataforma. A ação será registrada na auditoria.`
-                        : `${confirming.name} voltará a ter acesso normal. A ação será registrada na auditoria.`}
+                      {confirming.action === "desativar"
+                        ? `${confirming.user.name} perderá acesso à plataforma imediatamente.`
+                        : confirming.action === "reativar"
+                        ? `${confirming.user.name} voltará a ter acesso por 30 dias.`
+                        : confirming.action === "especial"
+                        ? `${confirming.user.name} receberá acesso vitalício sem cobrança.`
+                        : `Ação sobre ${confirming.user.name}. A ação será auditada.`}
                     </DialogDescription>
                   </div>
                 </div>
               </DialogHeader>
 
-              {confirming.status === "ativo" && (
-                <div className="space-y-2">
-                  <Label htmlFor="reason">Motivo da desativação *</Label>
-                  <Textarea
-                    id="reason"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="Ex: Inadimplência, denúncia confirmada, solicitação do usuário…"
-                    rows={3}
-                  />
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="reason">
+                  Motivo / observação{confirming.action === "desativar" ? " *" : " (opcional)"}
+                </Label>
+                <Textarea
+                  id="reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Ex: solicitação do usuário, inadimplência confirmada…"
+                  rows={3}
+                />
+              </div>
 
               <DialogFooter>
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setConfirming(null);
-                    setReason("");
-                  }}
+                  disabled={actionLoading}
+                  onClick={() => { setConfirming(null); setReason(""); }}
                 >
                   Cancelar
                 </Button>
                 <Button
-                  variant={confirming.status === "ativo" ? "destructive" : "default"}
-                  onClick={toggleStatus}
+                  disabled={actionLoading}
+                  variant={confirming.action === "desativar" || confirming.action === "cancelar" ? "destructive" : "default"}
+                  onClick={handleConfirmAction}
                 >
-                  {confirming.status === "ativo" ? "Confirmar desativação" : "Confirmar ativação"}
+                  {actionLoading ? "Aguarde…" : "Confirmar"}
                 </Button>
               </DialogFooter>
             </>

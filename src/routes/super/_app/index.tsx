@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Users,
   Calendar,
@@ -8,7 +9,12 @@ import {
   ArrowDownRight,
   Activity,
   MoreHorizontal,
+  Clock,
+  ShieldOff,
+  Sparkles,
 } from "lucide-react";
+import { getSuperAdminMetrics, type SuperMetrics } from "@/lib/super-admin.functions";
+import { configureSuperFetch } from "@/lib/super-client";
 import { motion } from "framer-motion";
 import {
   Area,
@@ -122,6 +128,49 @@ const ACTIVITY = [
 ];
 
 function SuperDashboard() {
+  const [metrics, setMetrics] = useState<SuperMetrics | null>(null);
+
+  useEffect(() => {
+    configureSuperFetch();
+    getSuperAdminMetrics().then(setMetrics).catch(console.error);
+  }, []);
+
+  const m = metrics;
+  const LIVE_METRICS = [
+    {
+      label: "Profissionais ativos",
+      value: m ? String(m.activeUsers) : "—",
+      delta: m ? `+${m.trialUsers} trial` : "",
+      trend: "up" as const,
+      icon: Users,
+      spark: [0, 0, 0, m?.activeUsers ?? 0],
+    },
+    {
+      label: "Em trial",
+      value: m ? String(m.trialUsers) : "—",
+      delta: m ? `${m.totalUsers} total` : "",
+      trend: "up" as const,
+      icon: Clock,
+      spark: [0, 0, 0, m?.trialUsers ?? 0],
+    },
+    {
+      label: "MRR",
+      value: m ? `R$ ${m.mrr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—",
+      delta: m ? `${m.churnThisMonth} churn/mês` : "",
+      trend: "up" as const,
+      icon: DollarSign,
+      spark: [0, 0, 0, m?.mrr ?? 0],
+    },
+    {
+      label: "Suspensos",
+      value: m ? String(m.suspendedUsers) : "—",
+      delta: m ? `${m.cancelledUsers} cancelados` : "",
+      trend: "down" as const,
+      icon: ShieldOff,
+      spark: [0, 0, 0, m?.suspendedUsers ?? 0],
+    },
+  ];
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -155,7 +204,7 @@ function SuperDashboard() {
 
       {/* Metrics */}
       <section className="grid grid-cols-1 gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 xl:grid-cols-4">
-        {METRICS.map((m, idx) => (
+        {LIVE_METRICS.map((m, idx) => (
           <MetricCard key={m.label} metric={m} index={idx} />
         ))}
       </section>
