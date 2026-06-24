@@ -13,36 +13,34 @@ function getSecret(): string {
   return s;
 }
 
-// Lazy import do módulo crypto para não vazar no bundle do cliente
-async function getCrypto() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require("crypto") as typeof import("crypto");
-}
-
-function signTokenSync(payload: string, secret: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createHmac } = require("crypto") as typeof import("crypto");
+async function hmacSign(payload: string, secret: string): Promise<string> {
+  const { createHmac } = await import("node:crypto");
   return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 
 export async function createSuperToken(email: string): Promise<string> {
   const exp = Date.now() + TOKEN_TTL_MS;
   const payload = `${email}:${exp}`;
-  const sig = signTokenSync(payload, getSecret());
+  const sig = await hmacSign(payload, getSecret());
   return Buffer.from(`${payload}:${sig}`).toString("base64url");
 }
 
 export async function verifySuperToken(token: string | null | undefined): Promise<boolean> {
   if (!token) return false;
   try {
-    const { timingSafeEqual } = await getCrypto();
+    const { timingSafeEqual } = await import("node:crypto");
     const decoded = Buffer.from(token, "base64url").toString("utf8");
-    const parts = decoded.split(":");
-    if (parts.length !== 3) return false;
-    const [email, expStr, sig] = parts;
+    const lastColon = decoded.lastIndexOf(":");
+    if (lastColon < 0) return false;
+    const payloadPart = decoded.slice(0, lastColon);
+    const sig = decoded.slice(lastColon + 1);
+    // payloadPart = "email:exp"
+    const colonIdx = payloadPart.lastIndexOf(":");
+    if (colonIdx < 0) return false;
+    const expStr = payloadPart.slice(colonIdx + 1);
     const exp = parseInt(expStr, 10);
     if (isNaN(exp) || Date.now() > exp) return false;
-    const expected = signTokenSync(`${email}:${expStr}`, getSecret());
+    const expected = await hmacSign(payloadPart, getSecret());
     const sigBuf = Buffer.from(sig, "base64url");
     const expBuf = Buffer.from(expected, "base64url");
     if (sigBuf.length !== expBuf.length) return false;
@@ -59,7 +57,7 @@ export const superAdminLogin = createServerFn({ method: "POST" })
     z.object({ email: z.string().email(), password: z.string().min(1) }).parse(input),
   )
   .handler(async ({ data }): Promise<{ token: string }> => {
-    const { timingSafeEqual } = await getCrypto();
+    const { timingSafeEqual } = await import("node:crypto");
     const adminEmail = process.env.SUPER_ADMIN_EMAIL ?? "";
     const adminPass  = process.env.SUPER_ADMIN_PASSWORD ?? "";
 
@@ -68,7 +66,7 @@ export const superAdminLogin = createServerFn({ method: "POST" })
     }
 
     let emailOk = false;
-    let passOk = false;
+    let passOk  = false;
     try {
       const eBuf = Buffer.from(data.email.toLowerCase());
       const eExp = Buffer.from(adminEmail.toLowerCase());
@@ -78,7 +76,7 @@ export const superAdminLogin = createServerFn({ method: "POST" })
       const pExp = Buffer.from(adminPass);
       passOk = pBuf.length === pExp.length && timingSafeEqual(pBuf, pExp);
     } catch {
-      // length mismatch handled above
+      // comprimentos diferentes já retornam false acima
     }
 
     if (!emailOk || !passOk) {
