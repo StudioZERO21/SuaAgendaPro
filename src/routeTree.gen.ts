@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecursosRouteImport } from './routes/recursos'
 import { Route as PrecosRouteImport } from './routes/precos'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PlanoRouteImport } from './routes/plano'
 import { Route as PersonalizacaoRouteImport } from './routes/personalizacao'
 import { Route as PerfilPublicoRouteImport } from './routes/perfil-publico'
 import { Route as PerfilProfissionalRouteImport } from './routes/perfil-profissional'
@@ -86,6 +87,11 @@ const PrecosRoute = PrecosRouteImport.update({
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanoRoute = PlanoRouteImport.update({
+  id: '/plano',
+  path: '/plano',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonalizacaoRoute = PersonalizacaoRouteImport.update({
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/perfil-profissional': typeof PerfilProfissionalRoute
   '/perfil-publico': typeof PerfilPublicoRoute
   '/personalizacao': typeof PersonalizacaoRoute
+  '/plano': typeof PlanoRoute
   '/portfolio': typeof PortfolioRoute
   '/precos': typeof PrecosRoute
   '/recursos': typeof RecursosRoute
@@ -300,6 +307,7 @@ export interface FileRoutesByTo {
   '/perfil-profissional': typeof PerfilProfissionalRoute
   '/perfil-publico': typeof PerfilPublicoRoute
   '/personalizacao': typeof PersonalizacaoRoute
+  '/plano': typeof PlanoRoute
   '/portfolio': typeof PortfolioRoute
   '/precos': typeof PrecosRoute
   '/recursos': typeof RecursosRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/perfil-profissional': typeof PerfilProfissionalRoute
   '/perfil-publico': typeof PerfilPublicoRoute
   '/personalizacao': typeof PersonalizacaoRoute
+  '/plano': typeof PlanoRoute
   '/portfolio': typeof PortfolioRoute
   '/precos': typeof PrecosRoute
   '/recursos': typeof RecursosRoute
@@ -382,6 +391,7 @@ export interface FileRouteTypes {
     | '/perfil-profissional'
     | '/perfil-publico'
     | '/personalizacao'
+    | '/plano'
     | '/portfolio'
     | '/precos'
     | '/recursos'
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
     | '/perfil-profissional'
     | '/perfil-publico'
     | '/personalizacao'
+    | '/plano'
     | '/portfolio'
     | '/precos'
     | '/recursos'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/perfil-profissional'
     | '/perfil-publico'
     | '/personalizacao'
+    | '/plano'
     | '/portfolio'
     | '/precos'
     | '/recursos'
@@ -502,6 +514,7 @@ export interface RootRouteChildren {
   PerfilProfissionalRoute: typeof PerfilProfissionalRoute
   PerfilPublicoRoute: typeof PerfilPublicoRoute
   PersonalizacaoRoute: typeof PersonalizacaoRoute
+  PlanoRoute: typeof PlanoRoute
   PortfolioRoute: typeof PortfolioRoute
   PrecosRoute: typeof PrecosRoute
   RecursosRoute: typeof RecursosRoute
@@ -576,6 +589,13 @@ declare module '@tanstack/react-router' {
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plano': {
+      id: '/plano'
+      path: '/plano'
+      fullPath: '/plano'
+      preLoaderRoute: typeof PlanoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/personalizacao': {
@@ -827,6 +847,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilProfissionalRoute: PerfilProfissionalRoute,
   PerfilPublicoRoute: PerfilPublicoRoute,
   PersonalizacaoRoute: PersonalizacaoRoute,
+  PlanoRoute: PlanoRoute,
   PortfolioRoute: PortfolioRoute,
   PrecosRoute: PrecosRoute,
   RecursosRoute: RecursosRoute,

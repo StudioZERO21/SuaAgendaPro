@@ -1,38 +1,25 @@
-# Multi-stage build para otimizar tamanho
+# TanStack Start SSR — multi-stage build
+# ETAPA 9: revisar .output path conforme output do `npm run build`
+
+# Stage 1: build
 FROM node:20-alpine AS builder
-
 WORKDIR /app
-
-# Copiar dependências
-COPY package.json package-lock.json ./
-
-# Instalar
+COPY package*.json ./
 RUN npm ci
-
-# Copiar código
 COPY . .
-
-# Build
 RUN npm run build
 
-# ============================================================================
-# Stage 2: Runtime (Produção)
-FROM node:20-alpine
-
+# Stage 2: runtime (Node.js SSR)
+FROM node:20-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev
 
-# Instalar servidor estático
-RUN npm install -g serve
+EXPOSE 8080
 
-# Copiar build
-COPY --from=builder /app/dist ./dist
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/api/health',(r)=>{process.exit(r.statusCode===200?0:1)})"
 
-# Porta
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
-
-# Comando
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["node", ".output/server/index.mjs"]
