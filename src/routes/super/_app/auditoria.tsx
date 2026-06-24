@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { configureSuperFetch } from "@/lib/super-client";
+import { withSuperToken } from "@/lib/super-client";
 import { getAuditLog, type AuditLogEntry } from "@/lib/super-audit.functions";
 
 export const Route = createFileRoute("/super/_app/auditoria")({
@@ -46,8 +46,7 @@ function AuditoriaPage() {
 
   function load(p = 1) {
     setLoading(true);
-    configureSuperFetch();
-    getAuditLog({ data: { limit: PAGE_SIZE, offset: (p - 1) * PAGE_SIZE } })
+    getAuditLog({ data: withSuperToken({ limit: PAGE_SIZE, offset: (p - 1) * PAGE_SIZE }) })
       .then(({ entries: e, total: t }) => { setEntries(e); setTotal(t); })
       .catch((err) => toast.error(err.message))
       .finally(() => setLoading(false));

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { configureSuperFetch } from "@/lib/super-client";
+import { withSuperToken } from "@/lib/super-client";
 import { getSettings, updateSettings, testApiConnection } from "@/lib/super-settings.functions";
 
 export const Route = createFileRoute("/super/_app/configuracoes")({
@@ -49,13 +49,11 @@ function ConfiguracoesPage() {
   const [envStatus, setEnvStatus] = useState({ ASAAS_API_KEY: false, RESEND_API_KEY: false, EVOLUTION_API_URL: false, EVOLUTION_API_KEY: false });
 
   useEffect(() => {
-    configureSuperFetch();
-    getSettings()
+    getSettings({ data: withSuperToken() })
       .then((s) => { setSettings(s); setLoading(false); })
       .catch((e) => { toast.error(e.message); setLoading(false); });
-    // Probe env via infra stats
     import("@/lib/super-infra.functions").then(({ getInfraStats }) =>
-      getInfraStats().then((s) => setEnvStatus(s.envConfigured)).catch(() => {}),
+      getInfraStats({ data: withSuperToken() }).then((s) => setEnvStatus(s.envConfigured)).catch(() => {}),
     );
   }, []);
 
@@ -65,7 +63,7 @@ function ConfiguracoesPage() {
   async function save() {
     setSaving(true);
     try {
-      await updateSettings({ data: { settings } });
+      await updateSettings({ data: withSuperToken({ settings }) });
       toast.success("Configurações salvas com sucesso");
     } catch (e: any) {
       toast.error("Erro ao salvar: " + e.message);
@@ -75,7 +73,7 @@ function ConfiguracoesPage() {
   async function testApi(api: "asaas" | "resend" | "evolution") {
     setTesting((p) => ({ ...p, [api]: true }));
     try {
-      const r = await testApiConnection({ data: { api } });
+      const r = await testApiConnection({ data: withSuperToken({ api }) });
       if (r.ok) toast.success(r.message);
       else toast.error(r.message);
     } catch (e: any) {

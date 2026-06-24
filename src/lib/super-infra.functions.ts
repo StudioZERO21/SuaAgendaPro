@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSuperAuth } from "@/lib/super-auth.server";
 
 export type TableStat = { name: string; rows: number; sizeBytes: number; sizePretty: string };
@@ -19,12 +20,12 @@ const TRACKED_TABLES = [
   "services", "appointments", "clients",
 ];
 
-export const getInfraStats = createServerFn({ method: "GET" }).handler(
-  async (): Promise<InfraStats> => {
-    await requireSuperAuth();
+export const getInfraStats = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st: z.string().optional() }).parse(input ?? {}))
+  .handler(async ({ data }): Promise<InfraStats> => {
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Table row counts
     const tables = await Promise.all(
       TRACKED_TABLES.map(async (name) => {
         const { count, error } = await supabaseAdmin
@@ -34,25 +35,22 @@ export const getInfraStats = createServerFn({ method: "GET" }).handler(
       }),
     );
 
-    // Storage buckets
     const { data: buckets } = await supabaseAdmin.storage.listBuckets();
     const storageBuckets = (buckets ?? []).map((b) => b.name);
 
-    // Env vars
-    const asaasKey      = process.env.ASAAS_API_KEY        ?? "";
-    const resendKey     = process.env.RESEND_API_KEY        ?? "";
-    const evolutionUrl  = process.env.EVOLUTION_API_URL     ?? "";
-    const evolutionKey  = process.env.EVOLUTION_API_KEY     ?? "";
-    const asaasEnv      = process.env.ASAAS_ENV === "production" ? "production" : "sandbox";
+    const asaasKey     = process.env.ASAAS_API_KEY        ?? "";
+    const resendKey    = process.env.RESEND_API_KEY        ?? "";
+    const evolutionUrl = process.env.EVOLUTION_API_URL     ?? "";
+    const evolutionKey = process.env.EVOLUTION_API_KEY     ?? "";
+    const asaasEnv     = process.env.ASAAS_ENV === "production" ? "production" : "sandbox";
 
     const envConfigured = {
-      ASAAS_API_KEY:    !!asaasKey,
-      RESEND_API_KEY:   !!resendKey,
+      ASAAS_API_KEY:     !!asaasKey,
+      RESEND_API_KEY:    !!resendKey,
       EVOLUTION_API_URL: !!evolutionUrl,
       EVOLUTION_API_KEY: !!evolutionKey,
     };
 
-    // API health — lightweight probes
     let asaasStatus: ApiStatus = "unconfigured";
     if (asaasKey) {
       try {
@@ -67,45 +65,41 @@ export const getInfraStats = createServerFn({ method: "GET" }).handler(
     let evolutionStatus: ApiStatus = "unconfigured";
     if (evolutionUrl && evolutionKey) {
       try {
-        const r = await fetch(`${evolutionUrl}/instance/fetchInstances`, {
-          headers: { apikey: evolutionKey },
-        });
+        const r = await fetch(`${evolutionUrl}/instance/fetchInstances`, { headers: { apikey: evolutionKey } });
         evolutionStatus = r.ok ? "ok" : "error";
       } catch { evolutionStatus = "error"; }
     }
-
-    const resendStatus: "ok" | "unconfigured" = resendKey ? "ok" : "unconfigured";
 
     return {
       tables,
       totalDbBytes:   0,
       storageBytes:   0,
       storageBuckets,
-      apiHealth:      { asaas: asaasStatus, resend: resendStatus, evolution: evolutionStatus, supabase: "ok" },
+      apiHealth:      { asaas: asaasStatus, resend: resendKey ? "ok" : "unconfigured", evolution: evolutionStatus, supabase: "ok" },
       envConfigured,
     };
-  },
-);
+  });
 
 export type AuditEntry = {
   id: string;
   action: string;
   target_user_id: string | null;
   target_user_email: string | null;
-  details: Record<string, unknown>;
+  details: Record<string, any>;
   performed_at: string;
 };
 
-export const getRecentLogs = createServerFn({ method: "GET" }).handler(
-  async (): Promise<AuditEntry[]> => {
-    await requireSuperAuth();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+export const getRecentLogs = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st: z.string().optional() }).parse(input ?? {}))
+  .handler(async ({ data }): Promise<AuditEntry[]> => {
+    await requireSuperAuth(data._st ?? null);
+    const { supabaseAdmin: _sa } = await import("@/integrations/supabase/client.server");
+    const db = _sa as any;
+    const { data: rows, error } = await db
       .from("admin_audit_log")
       .select("*")
       .order("performed_at", { ascending: false })
       .limit(100);
     if (error) throw new Error(error.message);
-    return (data ?? []) as AuditEntry[];
-  },
-);
+    return (rows ?? []) as AuditEntry[];
+  });

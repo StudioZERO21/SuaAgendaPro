@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { DollarSign, TrendingDown, AlertTriangle, Users } from "lucide-react";
 import { motion } from "framer-motion";
-import { configureSuperFetch } from "@/lib/super-client";
+import { withSuperToken } from "@/lib/super-client";
 import { getSuperAdminMetrics, getSuperAdminUsers, type SuperMetrics, type SuperUser } from "@/lib/super-admin.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -41,10 +41,9 @@ function FinanceiroPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    configureSuperFetch();
     Promise.all([
-      getSuperAdminMetrics().catch((e) => { toast.error("Métricas: " + e.message); return null; }),
-      getSuperAdminUsers().catch((e)   => { toast.error("Usuários: "  + e.message); return []; }),
+      getSuperAdminMetrics({ data: withSuperToken() }).catch((e) => { toast.error("Métricas: " + e.message); return null; }),
+      getSuperAdminUsers({ data: withSuperToken() }).catch((e)   => { toast.error("Usuários: "  + e.message); return []; }),
     ]).then(([m, u]) => {
       if (m) setMetrics(m);
       setUsers((u ?? []).filter((u) => ["active", "overdue", "suspended"].includes(u.status)));

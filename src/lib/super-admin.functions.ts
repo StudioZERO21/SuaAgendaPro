@@ -1,7 +1,8 @@
-// Etapa 7 — Server functions do Super Admin com dados reais
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSuperAuth } from "@/lib/super-auth.server";
+
+const _st = z.string().optional();
 
 // ─── Métricas ─────────────────────────────────────────────────────────────────
 
@@ -12,43 +13,41 @@ export type SuperMetrics = {
   suspendedUsers: number;
   cancelledUsers: number;
   specialUsers:   number;
-  mrr:            number;  // em reais
+  mrr:            number;
   churnThisMonth: number;
 };
 
-export const getSuperAdminMetrics = createServerFn({ method: "GET" }).handler(
-  async (): Promise<SuperMetrics> => {
-    await requireSuperAuth();
+export const getSuperAdminMetrics = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st }).parse(input ?? {}))
+  .handler(async ({ data }): Promise<SuperMetrics> => {
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data, error } = await supabaseAdmin
+    const { data: rows, error } = await supabaseAdmin
       .from("subscriptions")
       .select("status, plan_id, cancelled_at, plans!inner(price_cents)");
 
     if (error) throw new Error(error.message);
-    const rows = data ?? [];
+    const subs = rows ?? [];
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    const counts = rows.reduce(
-      (acc, r) => {
-        acc[r.status] = (acc[r.status] ?? 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const counts = subs.reduce((acc, r) => {
+      acc[r.status] = (acc[r.status] ?? 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    const mrr = rows
+    const mrr = subs
       .filter((r) => r.status === "active")
       .reduce((sum, r) => sum + ((r.plans as any)?.price_cents ?? 0), 0) / 100;
 
-    const churnThisMonth = rows.filter(
+    const churnThisMonth = subs.filter(
       (r) => r.status === "cancelled" && r.cancelled_at && r.cancelled_at >= startOfMonth,
     ).length;
 
     return {
-      totalUsers:     rows.length,
+      totalUsers:     subs.length,
       activeUsers:    counts["active"]    ?? 0,
       trialUsers:     counts["trial"]     ?? 0,
       suspendedUsers: counts["suspended"] ?? 0,
@@ -57,8 +56,7 @@ export const getSuperAdminMetrics = createServerFn({ method: "GET" }).handler(
       mrr,
       churnThisMonth,
     };
-  },
-);
+  });
 
 // ─── Lista de usuários ────────────────────────────────────────────────────────
 
@@ -79,12 +77,13 @@ export type SuperUser = {
   notes:            string | null;
 };
 
-export const getSuperAdminUsers = createServerFn({ method: "GET" }).handler(
-  async (): Promise<SuperUser[]> => {
-    await requireSuperAuth();
+export const getSuperAdminUsers = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st }).parse(input ?? {}))
+  .handler(async ({ data }): Promise<SuperUser[]> => {
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data, error } = await supabaseAdmin
+    const { data: rows, error } = await supabaseAdmin
       .from("subscriptions")
       .select(`
         status, plan_id, trial_ends_at, current_period_end, cancelled_at, notes, created_at,
@@ -95,9 +94,8 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" }).handler(
 
     if (error) throw new Error(error.message);
 
-    const userIds = (data ?? []).map((r) => (r.profiles as any)?.id).filter(Boolean);
+    const userIds = (rows ?? []).map((r) => (r.profiles as any)?.id).filter(Boolean);
 
-    // Buscar emails em lote via admin auth
     const emailMap: Record<string, string> = {};
     await Promise.all(
       userIds.map(async (uid: string) => {
@@ -106,7 +104,7 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" }).handler(
       }),
     );
 
-    return (data ?? []).map((r) => {
+    return (rows ?? []).map((r) => {
       const p = r.profiles as any;
       return {
         id:               p?.id                     ?? "",
@@ -125,8 +123,7 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" }).handler(
         notes:            r.notes,
       };
     });
-  },
-);
+  });
 
 // ─── Ações admin ──────────────────────────────────────────────────────────────
 
@@ -147,10 +144,10 @@ async function auditLog(
 
 export const adminChangePlan = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), planId: z.string(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
+    z.object({ _st, userId: z.string().uuid(), planId: z.string(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
-    await requireSuperAuth();
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const newStatus = data.planId === "especial" ? "especial" : "active";
@@ -165,10 +162,10 @@ export const adminChangePlan = createServerFn({ method: "POST" })
 
 export const adminUnblockUser = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
+    z.object({ _st, userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
-    await requireSuperAuth();
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error } = await supabaseAdmin
@@ -187,20 +184,20 @@ export const adminUnblockUser = createServerFn({ method: "POST" })
 
 export const adminGrantSpecial = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
+    z.object({ _st, userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
-    await requireSuperAuth();
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({
-        plan_id:  "especial",
-        status:   "especial",
-        trial_ends_at: null,
+        plan_id:            "especial",
+        status:             "especial",
+        trial_ends_at:      null,
         current_period_end: null,
-        notes: data.notes ?? "Plano Especial concedido pelo admin",
+        notes:              data.notes ?? "Plano Especial concedido pelo admin",
       })
       .eq("user_id", data.userId);
 
@@ -210,10 +207,10 @@ export const adminGrantSpecial = createServerFn({ method: "POST" })
 
 export const adminSuspendUser = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
+    z.object({ _st, userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
-    await requireSuperAuth();
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error } = await supabaseAdmin
@@ -227,10 +224,10 @@ export const adminSuspendUser = createServerFn({ method: "POST" })
 
 export const adminCancelSubscription = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), userEmail: z.string().optional() }).parse(input),
+    z.object({ _st, userId: z.string().uuid(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
-    await requireSuperAuth();
+    await requireSuperAuth(data._st ?? null);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error } = await supabaseAdmin

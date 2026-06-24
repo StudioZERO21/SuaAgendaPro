@@ -50,28 +50,10 @@ export async function verifySuperToken(token: string | null | undefined): Promis
   }
 }
 
-// ─── requireSuperAuth (exportada para uso em todas as server functions) ────────
+// ─── Verificação de token para uso em handlers (token vem do input da função) ──
 
-function parseCookieToken(cookieHeader: string): string | null {
-  for (const part of cookieHeader.split(";")) {
-    const [rawKey, ...rawVal] = part.trim().split("=");
-    if (rawKey.trim() === "sa_super_token") {
-      try { return decodeURIComponent(rawVal.join("=")); } catch { return null; }
-    }
-  }
-  return null;
-}
-
-export async function requireSuperAuth(): Promise<void> {
-  const { getRequest } = await import("@tanstack/react-start/server");
-  const req = getRequest();
-  // Cookie (enviado automaticamente) tem prioridade; header como fallback
-  const cookieToken = parseCookieToken(req?.headers.get("cookie") ?? "");
-  const headerToken = req?.headers.get("x-super-token") ?? null;
-  const token = cookieToken ?? headerToken;
-  if (!await verifySuperToken(token)) {
-    throw new Error("Unauthorized");
-  }
+export async function requireSuperAuth(token: string | null | undefined): Promise<void> {
+  if (!await verifySuperToken(token)) throw new Error("Unauthorized");
 }
 
 // ─── Server Function ──────────────────────────────────────────────────────────

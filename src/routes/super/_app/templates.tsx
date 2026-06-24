@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { configureSuperFetch } from "@/lib/super-client";
+import { withSuperToken } from "@/lib/super-client";
 import {
   getTemplates, upsertTemplate, deleteTemplate, previewTemplate,
   type MessageTemplate,
@@ -38,8 +38,7 @@ function TemplatesPage() {
 
   function load() {
     setLoading(true);
-    configureSuperFetch();
-    getTemplates()
+    getTemplates({ data: withSuperToken() })
       .then(setTemplates)
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
@@ -55,7 +54,7 @@ function TemplatesPage() {
     setSaving(true);
     try {
       await upsertTemplate({
-        data: {
+        data: withSuperToken({
           id:        editing.id,
           name:      editing.name!,
           type:      editing.type as "email" | "whatsapp",
@@ -64,7 +63,7 @@ function TemplatesPage() {
           body:      editing.body!,
           variables: editing.variables ?? [],
           is_active: editing.is_active ?? true,
-        },
+        }),
       });
       toast.success(editing.id ? "Template atualizado" : "Template criado");
       setEditing(null);
@@ -77,7 +76,7 @@ function TemplatesPage() {
   async function del(id: string) {
     setDeleting(id);
     try {
-      await deleteTemplate({ data: { id } });
+      await deleteTemplate({ data: withSuperToken({ id }) });
       toast.success("Template excluído");
       load();
     } catch (e: any) {
@@ -88,7 +87,7 @@ function TemplatesPage() {
   async function showPreview(t: MessageTemplate) {
     const sampleVars = Object.fromEntries(t.variables.map((v) => [v, `[${v}]`]));
     try {
-      const { html } = await previewTemplate({ data: { body: t.body, variables: sampleVars } });
+      const { html } = await previewTemplate({ data: withSuperToken({ body: t.body, variables: sampleVars }) });
       setPreview({ body: t.body, html });
     } catch (e: any) { toast.error(e.message); }
   }

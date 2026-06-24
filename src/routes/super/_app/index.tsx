@@ -11,7 +11,8 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { getSuperAdminMetrics, type SuperMetrics } from "@/lib/super-admin.functions";
-import { configureSuperFetch } from "@/lib/super-client";
+import { getAuditLog } from "@/lib/super-audit.functions";
+import { withSuperToken } from "@/lib/super-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -79,13 +80,12 @@ function SuperDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      configureSuperFetch();
-      const [m, a] = await Promise.all([
-        getSuperAdminMetrics(),
-        fetchAuditLog(),
+      const [m, auditResult] = await Promise.all([
+        getSuperAdminMetrics({ data: withSuperToken() }),
+        getAuditLog({ data: withSuperToken({ limit: 20, offset: 0 }) }),
       ]);
       setMetrics(m);
-      setAudit(a);
+      setAudit(auditResult.entries);
       setLastRefresh(new Date());
     } catch (e) {
       console.error(e);
@@ -459,23 +459,3 @@ function SuperDashboard() {
   );
 }
 
-// ─── Fetch audit (direct supabase call since no server fn yet) ─────────────────
-// This will be replaced when super-audit.functions.ts is created
-async function fetchAuditLog(): Promise<AuditEntry[]> {
-  try {
-    // Dynamic import to avoid SSR issues
-    const { createClient } = await import("@supabase/supabase-js");
-    const url = import.meta.env.VITE_SUPABASE_URL as string;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    if (!url || !key) return [];
-    const sb = createClient(url, key);
-    const { data } = await sb
-      .from("admin_audit_log")
-      .select("id, action, target_user_email, details, performed_at")
-      .order("performed_at", { ascending: false })
-      .limit(20);
-    return (data ?? []) as AuditEntry[];
-  } catch {
-    return [];
-  }
-}

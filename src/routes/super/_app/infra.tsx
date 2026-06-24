@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Server, Database, CheckCircle2, XCircle, AlertCircle, RefreshCw, HardDrive } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { configureSuperFetch } from "@/lib/super-client";
+import { withSuperToken } from "@/lib/super-client";
 import { getInfraStats, type InfraStats } from "@/lib/super-infra.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -40,8 +40,7 @@ function InfraPage() {
 
   function load() {
     setLoading(true);
-    configureSuperFetch();
-    getInfraStats()
+    getInfraStats({ data: withSuperToken() })
       .then(setStats)
       .catch((e) => toast.error("Erro ao carregar infra: " + e.message))
       .finally(() => setLoading(false));

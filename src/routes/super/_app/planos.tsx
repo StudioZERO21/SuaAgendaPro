@@ -13,7 +13,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { getSuperAdminMetrics, type SuperMetrics } from "@/lib/super-admin.functions";
-import { configureSuperFetch } from "@/lib/super-client";
+import { withSuperToken } from "@/lib/super-client";
 import { motion } from "framer-motion";
 import {
   Area,
@@ -128,8 +128,7 @@ function PlanosPage() {
   const [metrics, setMetrics] = useState<SuperMetrics | null>(null);
 
   useEffect(() => {
-    configureSuperFetch();
-    getSuperAdminMetrics().then(setMetrics).catch(console.error);
+    getSuperAdminMetrics({ data: withSuperToken() }).then(setMetrics).catch(console.error);
   }, []);
 
   const m = metrics;

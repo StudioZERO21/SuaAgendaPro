@@ -56,7 +56,7 @@ import {
   adminChangePlan,
   type SuperUser,
 } from "@/lib/super-admin.functions";
-import { configureSuperFetch } from "@/lib/super-client";
+import { withSuperToken } from "@/lib/super-client";
 
 export const Route = createFileRoute("/super/_app/usuarios")({
   head: () => ({
@@ -175,8 +175,7 @@ function UsuariosPage() {
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      configureSuperFetch();
-      const data = await getSuperAdminUsers();
+      const data = await getSuperAdminUsers({ data: withSuperToken() });
       setUsers(data.map(superUserToPro));
     } catch (err: any) {
       toast.error("Erro ao carregar usuários: " + (err?.message ?? ""));
@@ -190,11 +189,11 @@ function UsuariosPage() {
   async function executeAction(user: Pro, action: string, notes: string) {
     setActionLoading(true);
     try {
-      if (action === "desativar")    await adminSuspendUser({ data: { userId: user.id, notes, userEmail: user.email } });
-      if (action === "reativar")     await adminUnblockUser({ data: { userId: user.id, notes, userEmail: user.email } });
-      if (action === "especial")     await adminGrantSpecial({ data: { userId: user.id, notes, userEmail: user.email } });
-      if (action === "cancelar")     await adminCancelSubscription({ data: { userId: user.id, userEmail: user.email } });
-      if (action === "premium")      await adminChangePlan({ data: { userId: user.id, planId: "premium", notes, userEmail: user.email } });
+      if (action === "desativar")    await adminSuspendUser({ data: withSuperToken({ userId: user.id, notes, userEmail: user.email }) });
+      if (action === "reativar")     await adminUnblockUser({ data: withSuperToken({ userId: user.id, notes, userEmail: user.email }) });
+      if (action === "especial")     await adminGrantSpecial({ data: withSuperToken({ userId: user.id, notes, userEmail: user.email }) });
+      if (action === "cancelar")     await adminCancelSubscription({ data: withSuperToken({ userId: user.id, userEmail: user.email }) });
+      if (action === "premium")      await adminChangePlan({ data: withSuperToken({ userId: user.id, planId: "premium", notes, userEmail: user.email }) });
       toast.success("Ação executada com sucesso");
       const auditAction = action === "desativar" ? "desativacao" :
                           action === "reativar"  ? "reativacao"  :
