@@ -1,12 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { verifySuperToken } from "@/lib/super-auth.server";
-
-async function requireSuperAuth() {
-  const req = getRequest();
-  const token = req?.headers.get("x-super-token") ?? null;
-  if (!await verifySuperToken(token)) throw new Error("Unauthorized");
-}
+import { requireSuperAuth } from "@/lib/super-auth.server";
 
 export type TableStat = { name: string; rows: number; sizeBytes: number; sizePretty: string };
 export type ApiStatus = "ok" | "error" | "unconfigured";

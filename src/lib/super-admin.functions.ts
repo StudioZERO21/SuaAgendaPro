@@ -1,19 +1,7 @@
 // Etapa 7 — Server functions do Super Admin com dados reais
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getRequest } from "@tanstack/react-start/server";
-import { verifySuperToken } from "@/lib/super-auth.server";
-
-// ─── Middleware de autenticação super admin ───────────────────────────────────
-
-async function requireSuperAuth() {
-  const req = getRequest();
-  const token = req?.headers.get("x-super-token") ?? null;
-  const ok = await verifySuperToken(token);
-  if (!ok) {
-    throw new Error("Unauthorized: super admin token inválido ou expirado");
-  }
-}
+import { requireSuperAuth } from "@/lib/super-auth.server";
 
 // ─── Métricas ─────────────────────────────────────────────────────────────────
 
