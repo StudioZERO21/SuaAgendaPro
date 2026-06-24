@@ -190,11 +190,11 @@ function UsuariosPage() {
   async function executeAction(user: Pro, action: string, notes: string) {
     setActionLoading(true);
     try {
-      if (action === "desativar")    await adminSuspendUser({ data: { userId: user.id, notes } });
-      if (action === "reativar")     await adminUnblockUser({ data: { userId: user.id, notes } });
-      if (action === "especial")     await adminGrantSpecial({ data: { userId: user.id, notes } });
-      if (action === "cancelar")     await adminCancelSubscription({ data: { userId: user.id } });
-      if (action === "premium")      await adminChangePlan({ data: { userId: user.id, planId: "premium", notes } });
+      if (action === "desativar")    await adminSuspendUser({ data: { userId: user.id, notes, userEmail: user.email } });
+      if (action === "reativar")     await adminUnblockUser({ data: { userId: user.id, notes, userEmail: user.email } });
+      if (action === "especial")     await adminGrantSpecial({ data: { userId: user.id, notes, userEmail: user.email } });
+      if (action === "cancelar")     await adminCancelSubscription({ data: { userId: user.id, userEmail: user.email } });
+      if (action === "premium")      await adminChangePlan({ data: { userId: user.id, planId: "premium", notes, userEmail: user.email } });
       toast.success("Ação executada com sucesso");
       const auditAction = action === "desativar" ? "desativacao" :
                           action === "reativar"  ? "reativacao"  :

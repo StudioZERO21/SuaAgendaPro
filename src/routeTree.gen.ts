@@ -45,7 +45,12 @@ import { Route as AgendarSlugRouteImport } from './routes/agendar.$slug'
 import { Route as SuperAppRouteRouteImport } from './routes/super/_app/route'
 import { Route as SuperAppIndexRouteImport } from './routes/super/_app/index'
 import { Route as SuperAppUsuariosRouteImport } from './routes/super/_app/usuarios'
+import { Route as SuperAppTemplatesRouteImport } from './routes/super/_app/templates'
 import { Route as SuperAppPlanosRouteImport } from './routes/super/_app/planos'
+import { Route as SuperAppInfraRouteImport } from './routes/super/_app/infra'
+import { Route as SuperAppFinanceiroRouteImport } from './routes/super/_app/financeiro'
+import { Route as SuperAppConfiguracoesRouteImport } from './routes/super/_app/configuracoes'
+import { Route as SuperAppAuditoriaRouteImport } from './routes/super/_app/auditoria'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as ApiPublicMercadoPagoCallbackRouteImport } from './routes/api/public/mercado-pago.callback'
 
@@ -229,9 +234,34 @@ const SuperAppUsuariosRoute = SuperAppUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => SuperAppRouteRoute,
 } as any)
+const SuperAppTemplatesRoute = SuperAppTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => SuperAppRouteRoute,
+} as any)
 const SuperAppPlanosRoute = SuperAppPlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
+  getParentRoute: () => SuperAppRouteRoute,
+} as any)
+const SuperAppInfraRoute = SuperAppInfraRouteImport.update({
+  id: '/infra',
+  path: '/infra',
+  getParentRoute: () => SuperAppRouteRoute,
+} as any)
+const SuperAppFinanceiroRoute = SuperAppFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => SuperAppRouteRoute,
+} as any)
+const SuperAppConfiguracoesRoute = SuperAppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => SuperAppRouteRoute,
+} as any)
+const SuperAppAuditoriaRoute = SuperAppAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
   getParentRoute: () => SuperAppRouteRoute,
 } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
@@ -282,7 +312,12 @@ export interface FileRoutesByFullPath {
   '/servico/novo': typeof ServicoNovoRoute
   '/super/login': typeof SuperLoginRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/super/auditoria': typeof SuperAppAuditoriaRoute
+  '/super/configuracoes': typeof SuperAppConfiguracoesRoute
+  '/super/financeiro': typeof SuperAppFinanceiroRoute
+  '/super/infra': typeof SuperAppInfraRoute
   '/super/planos': typeof SuperAppPlanosRoute
+  '/super/templates': typeof SuperAppTemplatesRoute
   '/super/usuarios': typeof SuperAppUsuariosRoute
   '/super/': typeof SuperAppIndexRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
@@ -322,7 +357,12 @@ export interface FileRoutesByTo {
   '/servico/novo': typeof ServicoNovoRoute
   '/super/login': typeof SuperLoginRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/super/auditoria': typeof SuperAppAuditoriaRoute
+  '/super/configuracoes': typeof SuperAppConfiguracoesRoute
+  '/super/financeiro': typeof SuperAppFinanceiroRoute
+  '/super/infra': typeof SuperAppInfraRoute
   '/super/planos': typeof SuperAppPlanosRoute
+  '/super/templates': typeof SuperAppTemplatesRoute
   '/super/usuarios': typeof SuperAppUsuariosRoute
   '/super': typeof SuperAppIndexRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
@@ -364,7 +404,12 @@ export interface FileRoutesById {
   '/servico/novo': typeof ServicoNovoRoute
   '/super/login': typeof SuperLoginRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/super/_app/auditoria': typeof SuperAppAuditoriaRoute
+  '/super/_app/configuracoes': typeof SuperAppConfiguracoesRoute
+  '/super/_app/financeiro': typeof SuperAppFinanceiroRoute
+  '/super/_app/infra': typeof SuperAppInfraRoute
   '/super/_app/planos': typeof SuperAppPlanosRoute
+  '/super/_app/templates': typeof SuperAppTemplatesRoute
   '/super/_app/usuarios': typeof SuperAppUsuariosRoute
   '/super/_app/': typeof SuperAppIndexRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
@@ -407,7 +452,12 @@ export interface FileRouteTypes {
     | '/servico/novo'
     | '/super/login'
     | '/api/public/mp-webhook'
+    | '/super/auditoria'
+    | '/super/configuracoes'
+    | '/super/financeiro'
+    | '/super/infra'
     | '/super/planos'
+    | '/super/templates'
     | '/super/usuarios'
     | '/super/'
     | '/api/public/mercado-pago/callback'
@@ -447,7 +497,12 @@ export interface FileRouteTypes {
     | '/servico/novo'
     | '/super/login'
     | '/api/public/mp-webhook'
+    | '/super/auditoria'
+    | '/super/configuracoes'
+    | '/super/financeiro'
+    | '/super/infra'
     | '/super/planos'
+    | '/super/templates'
     | '/super/usuarios'
     | '/super'
     | '/api/public/mercado-pago/callback'
@@ -488,7 +543,12 @@ export interface FileRouteTypes {
     | '/servico/novo'
     | '/super/login'
     | '/api/public/mp-webhook'
+    | '/super/_app/auditoria'
+    | '/super/_app/configuracoes'
+    | '/super/_app/financeiro'
+    | '/super/_app/infra'
     | '/super/_app/planos'
+    | '/super/_app/templates'
     | '/super/_app/usuarios'
     | '/super/_app/'
     | '/api/public/mercado-pago/callback'
@@ -787,11 +847,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAppUsuariosRouteImport
       parentRoute: typeof SuperAppRouteRoute
     }
+    '/super/_app/templates': {
+      id: '/super/_app/templates'
+      path: '/templates'
+      fullPath: '/super/templates'
+      preLoaderRoute: typeof SuperAppTemplatesRouteImport
+      parentRoute: typeof SuperAppRouteRoute
+    }
     '/super/_app/planos': {
       id: '/super/_app/planos'
       path: '/planos'
       fullPath: '/super/planos'
       preLoaderRoute: typeof SuperAppPlanosRouteImport
+      parentRoute: typeof SuperAppRouteRoute
+    }
+    '/super/_app/infra': {
+      id: '/super/_app/infra'
+      path: '/infra'
+      fullPath: '/super/infra'
+      preLoaderRoute: typeof SuperAppInfraRouteImport
+      parentRoute: typeof SuperAppRouteRoute
+    }
+    '/super/_app/financeiro': {
+      id: '/super/_app/financeiro'
+      path: '/financeiro'
+      fullPath: '/super/financeiro'
+      preLoaderRoute: typeof SuperAppFinanceiroRouteImport
+      parentRoute: typeof SuperAppRouteRoute
+    }
+    '/super/_app/configuracoes': {
+      id: '/super/_app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/super/configuracoes'
+      preLoaderRoute: typeof SuperAppConfiguracoesRouteImport
+      parentRoute: typeof SuperAppRouteRoute
+    }
+    '/super/_app/auditoria': {
+      id: '/super/_app/auditoria'
+      path: '/auditoria'
+      fullPath: '/super/auditoria'
+      preLoaderRoute: typeof SuperAppAuditoriaRouteImport
       parentRoute: typeof SuperAppRouteRoute
     }
     '/api/public/mp-webhook': {
@@ -812,13 +907,23 @@ declare module '@tanstack/react-router' {
 }
 
 interface SuperAppRouteRouteChildren {
+  SuperAppAuditoriaRoute: typeof SuperAppAuditoriaRoute
+  SuperAppConfiguracoesRoute: typeof SuperAppConfiguracoesRoute
+  SuperAppFinanceiroRoute: typeof SuperAppFinanceiroRoute
+  SuperAppInfraRoute: typeof SuperAppInfraRoute
   SuperAppPlanosRoute: typeof SuperAppPlanosRoute
+  SuperAppTemplatesRoute: typeof SuperAppTemplatesRoute
   SuperAppUsuariosRoute: typeof SuperAppUsuariosRoute
   SuperAppIndexRoute: typeof SuperAppIndexRoute
 }
 
 const SuperAppRouteRouteChildren: SuperAppRouteRouteChildren = {
+  SuperAppAuditoriaRoute: SuperAppAuditoriaRoute,
+  SuperAppConfiguracoesRoute: SuperAppConfiguracoesRoute,
+  SuperAppFinanceiroRoute: SuperAppFinanceiroRoute,
+  SuperAppInfraRoute: SuperAppInfraRoute,
   SuperAppPlanosRoute: SuperAppPlanosRoute,
+  SuperAppTemplatesRoute: SuperAppTemplatesRoute,
   SuperAppUsuariosRoute: SuperAppUsuariosRoute,
   SuperAppIndexRoute: SuperAppIndexRoute,
 }

@@ -5,6 +5,11 @@ import {
   LogOut,
   ShieldAlert,
   CreditCard,
+  DollarSign,
+  ClipboardList,
+  MessageSquare,
+  Settings,
+  Server,
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,10 +26,18 @@ import {
 import { clearSuperAuth, getSuperAuth } from "@/lib/super-auth";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { title: "Dashboard", to: "/super", icon: LayoutDashboard, exact: true },
-  { title: "Usuários", to: "/super/usuarios", icon: Users, exact: false },
-  { title: "Planos", to: "/super/planos", icon: CreditCard, exact: false },
+const NAV_PRINCIPAL = [
+  { title: "Dashboard",  to: "/super",           icon: LayoutDashboard, exact: true },
+  { title: "Usuários",   to: "/super/usuarios",  icon: Users,           exact: false },
+  { title: "Planos",     to: "/super/planos",    icon: CreditCard,      exact: false },
+  { title: "Financeiro", to: "/super/financeiro",icon: DollarSign,      exact: false },
+];
+
+const NAV_SISTEMA = [
+  { title: "Templates",    to: "/super/templates",    icon: MessageSquare,  exact: false },
+  { title: "Auditoria",    to: "/super/auditoria",    icon: ClipboardList,  exact: false },
+  { title: "Infra",        to: "/super/infra",        icon: Server,         exact: false },
+  { title: "Configurações",to: "/super/configuracoes",icon: Settings,       exact: false },
 ];
 
 export function SuperSidebar() {
@@ -60,24 +73,41 @@ export function SuperSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
+          <SidebarGroupLabel>Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map((item) => {
+              {NAV_PRINCIPAL.map((item) => {
                 const active = isActive(item.to, item.exact);
                 return (
                   <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      tooltip={item.title}
-                    >
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
                       <Link
                         to={item.to}
-                        className={cn(
-                          "flex items-center gap-2",
-                          active && "font-semibold",
-                        )}
+                        className={cn("flex items-center gap-2", active && "font-semibold")}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {NAV_SISTEMA.map((item) => {
+                const active = isActive(item.to, item.exact);
+                return (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+                      <Link
+                        to={item.to}
+                        className={cn("flex items-center gap-2", active && "font-semibold")}
                       >
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span>{item.title}</span>

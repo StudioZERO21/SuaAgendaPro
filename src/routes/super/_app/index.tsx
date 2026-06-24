@@ -1,38 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  Users,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-  Activity,
-  MoreHorizontal,
-  Clock,
-  ShieldOff,
-  Sparkles,
+  Users, DollarSign, ArrowUpRight, Activity, Clock,
+  ShieldOff, Sparkles, TrendingDown, RefreshCw, CheckCircle2,
+  AlertTriangle, XCircle, Shield, BarChart2,
 } from "lucide-react";
-import { getSuperAdminMetrics, type SuperMetrics } from "@/lib/super-admin.functions";
-import { configureSuperFetch } from "@/lib/super-client";
 import { motion } from "framer-motion";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  LabelList,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { getSuperAdminMetrics, type SuperMetrics } from "@/lib/super-admin.functions";
+import { configureSuperFetch } from "@/lib/super-client";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/super/_app/")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Dashboard — Super Admin" },
@@ -42,139 +26,128 @@ export const Route = createFileRoute("/super/_app/")({
   component: SuperDashboard,
 });
 
-type Metric = {
-  label: string;
-  value: string;
-  delta: string;
-  trend: "up" | "down";
-  icon: typeof Users;
-  spark: number[];
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AuditEntry = {
+  id: string;
+  action: string;
+  target_user_email: string | null;
+  details: Record<string, unknown>;
+  performed_at: string;
 };
 
-const METRICS: Metric[] = [
-  {
-    label: "Profissionais ativos",
-    value: "1.284",
-    delta: "+8,2%",
-    trend: "up",
-    icon: Users,
-    spark: [12, 18, 14, 22, 19, 28, 26, 32, 30, 38, 36, 44],
-  },
-  {
-    label: "Agendamentos (30d)",
-    value: "24.910",
-    delta: "+12,4%",
-    trend: "up",
-    icon: Calendar,
-    spark: [20, 24, 22, 30, 28, 34, 33, 40, 42, 48, 46, 54],
-  },
-  {
-    label: "Receita estimada",
-    value: "R$ 487k",
-    delta: "+5,1%",
-    trend: "up",
-    icon: DollarSign,
-    spark: [30, 28, 33, 31, 36, 34, 39, 37, 42, 40, 45, 47],
-  },
-  {
-    label: "Churn mensal",
-    value: "1,8%",
-    delta: "−0,3pp",
-    trend: "down",
-    icon: TrendingUp,
-    spark: [22, 20, 24, 19, 21, 18, 20, 17, 19, 16, 18, 15],
-  },
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const actionLabel: Record<string, string> = {
+  suspend_user:    "Suspendeu usuário",
+  unblock_user:    "Reativou usuário",
+  grant_especial:  "Concedeu Especial",
+  cancel_sub:      "Cancelou assinatura",
+  change_plan:     "Alterou plano",
+};
+
+const actionColor: Record<string, string> = {
+  suspend_user:   "bg-rose-100 text-rose-700",
+  unblock_user:   "bg-emerald-100 text-emerald-700",
+  grant_especial: "bg-violet-100 text-violet-700",
+  cancel_sub:     "bg-zinc-100 text-zinc-500",
+  change_plan:    "bg-blue-100 text-blue-700",
+};
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1)  return "agora";
+  if (m < 60) return `há ${m}min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h}h`;
+  return `há ${Math.floor(h / 24)}d`;
+}
+
+const STATUS_COLORS = [
+  "#7c3aed", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#d1d5db",
 ];
 
-const GROWTH = Array.from({ length: 30 }).map((_, i) => ({
-  d: `${i + 1}`,
-  contas: Math.round(120 + Math.sin(i / 2.6) * 30 + i * 4.2),
-  receita: Math.round(80 + Math.cos(i / 3.1) * 22 + i * 3.6),
-}));
-
-const SERVICES = [
-  { name: "Cabelo", v: 4820 },
-  { name: "Unhas", v: 3910 },
-  { name: "Estética", v: 3110 },
-  { name: "Barba", v: 2480 },
-  { name: "Massagem", v: 1720 },
-  { name: "Outros", v: 980 },
-];
-
-const NICHES = [
-  { name: "Cabelo", v: 412 },
-  { name: "Unhas", v: 318 },
-  { name: "Estética", v: 264 },
-  { name: "Barba", v: 158 },
-  { name: "Massagem", v: 92 },
-  { name: "Outros", v: 40 },
-];
-
-const NICHE_COLORS = [
-  "hsl(var(--foreground))",
-  "hsl(var(--muted-foreground))",
-  "hsl(var(--foreground) / 0.7)",
-  "hsl(var(--muted-foreground) / 0.7)",
-  "hsl(var(--foreground) / 0.45)",
-  "hsl(var(--muted-foreground) / 0.45)",
-];
-
-const ACTIVITY = [
-  { who: "Maria Souza", what: "criou uma conta", when: "há 2 min", tag: "novo" },
-  { who: "Studio Glamour", what: "publicou novo serviço", when: "há 14 min", tag: "serviço" },
-  { who: "Bruno R.", what: "atualizou permissões da equipe", when: "há 32 min", tag: "admin" },
-  { who: "Lash Studio", what: "completou onboarding", when: "há 1 h", tag: "onboarding" },
-  { who: "Camila A.", what: "fez upgrade para PRO", when: "há 2 h", tag: "upgrade" },
-];
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 
 function SuperDashboard() {
-  const [metrics, setMetrics] = useState<SuperMetrics | null>(null);
+  const [metrics, setMetrics]   = useState<SuperMetrics | null>(null);
+  const [audit,   setAudit]     = useState<AuditEntry[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  useEffect(() => {
-    configureSuperFetch();
-    getSuperAdminMetrics().then(setMetrics).catch(console.error);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      configureSuperFetch();
+      const [m, a] = await Promise.all([
+        getSuperAdminMetrics(),
+        fetchAuditLog(),
+      ]);
+      setMetrics(m);
+      setAudit(a);
+      setLastRefresh(new Date());
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, [load]);
+
   const m = metrics;
-  const LIVE_METRICS = [
+
+  const statusBreakdown = m ? [
+    { name: "Ativos",     v: m.activeUsers,    color: STATUS_COLORS[0] },
+    { name: "Trial",      v: m.trialUsers,     color: STATUS_COLORS[1] },
+    { name: "Suspensos",  v: m.suspendedUsers, color: STATUS_COLORS[2] },
+    { name: "Cancelados", v: m.cancelledUsers, color: STATUS_COLORS[3] },
+    { name: "Especial",   v: m.specialUsers,   color: STATUS_COLORS[4] },
+  ].filter((s) => s.v > 0) : [];
+
+  const CARDS = [
     {
-      label: "Profissionais ativos",
-      value: m ? String(m.activeUsers) : "—",
-      delta: m ? `+${m.trialUsers} trial` : "",
-      trend: "up" as const,
+      label: "Usuários ativos",
+      value: m ? m.activeUsers : null,
+      sub: m ? `${m.trialUsers} em trial` : null,
       icon: Users,
-      spark: [0, 0, 0, m?.activeUsers ?? 0],
-    },
-    {
-      label: "Em trial",
-      value: m ? String(m.trialUsers) : "—",
-      delta: m ? `${m.totalUsers} total` : "",
-      trend: "up" as const,
-      icon: Clock,
-      spark: [0, 0, 0, m?.trialUsers ?? 0],
+      tone: "text-primary",
     },
     {
       label: "MRR",
-      value: m ? `R$ ${m.mrr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—",
-      delta: m ? `${m.churnThisMonth} churn/mês` : "",
-      trend: "up" as const,
+      value: m ? `R$ ${m.mrr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : null,
+      sub: m ? `${m.churnThisMonth} churn este mês` : null,
       icon: DollarSign,
-      spark: [0, 0, 0, m?.mrr ?? 0],
+      tone: "text-emerald-600",
     },
     {
       label: "Suspensos",
-      value: m ? String(m.suspendedUsers) : "—",
-      delta: m ? `${m.cancelledUsers} cancelados` : "",
-      trend: "down" as const,
+      value: m ? m.suspendedUsers : null,
+      sub: m ? `${m.cancelledUsers} cancelados` : null,
       icon: ShieldOff,
-      spark: [0, 0, 0, m?.suspendedUsers ?? 0],
+      tone: "text-rose-600",
+    },
+    {
+      label: "Especial / Gratuito",
+      value: m ? m.specialUsers : null,
+      sub: "acesso vitalício",
+      icon: Sparkles,
+      tone: "text-violet-600",
     },
   ];
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
+      {/* Header */}
       <header className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
+        <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             Visão geral
           </p>
@@ -182,7 +155,7 @@ function SuperDashboard() {
             Dashboard
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Saúde da plataforma em tempo real — atualizado agora.
+            Atualizado às {lastRefresh.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -193,6 +166,9 @@ function SuperDashboard() {
             </span>
             Ao vivo
           </div>
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+          </Button>
           <Link
             to="/super/usuarios"
             className="inline-flex shrink-0 items-center gap-1.5 bg-foreground px-4 py-2 text-xs font-semibold uppercase tracking-wider text-background transition hover:bg-foreground/85"
@@ -202,379 +178,304 @@ function SuperDashboard() {
         </div>
       </header>
 
-      {/* Metrics */}
+      {/* Metric cards */}
       <section className="grid grid-cols-1 gap-px overflow-hidden border border-border bg-border sm:grid-cols-2 xl:grid-cols-4">
-        {LIVE_METRICS.map((m, idx) => (
-          <MetricCard key={m.label} metric={m} index={idx} />
+        {CARDS.map((c, i) => (
+          <motion.div
+            key={c.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: i * 0.06 }}
+            className="flex flex-col gap-4 bg-card p-5"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {c.label}
+              </p>
+              <c.icon className={cn("h-4 w-4", c.tone)} />
+            </div>
+            <div>
+              <p className="font-display text-3xl font-bold tabular-nums">
+                {c.value !== null ? String(c.value) : (
+                  <span className="animate-pulse text-muted-foreground">—</span>
+                )}
+              </p>
+              {c.sub && (
+                <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
+              )}
+            </div>
+          </motion.div>
         ))}
       </section>
 
-      {/* Charts row */}
+      {/* Charts + Audit */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Status breakdown bar chart */}
         <motion.article
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ duration: 0.5 }}
           className="border border-border bg-card p-5 shadow-sm lg:col-span-2"
         >
           <header className="mb-5 flex items-start justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Performance
+                Distribuição real
               </p>
               <h2 className="mt-1 font-display text-lg font-bold">
-                Crescimento de contas & receita
+                Usuários por status de assinatura
               </h2>
             </div>
-            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 bg-primary" /> Contas
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 bg-foreground/70" /> Receita
-              </span>
-            </div>
+            <BarChart2 className="h-4 w-4 text-muted-foreground" />
           </header>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={GROWTH} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gContas" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gReceita" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="d" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 0,
-                    fontSize: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="receita"
-                  stroke="hsl(var(--foreground))"
-                  strokeWidth={2}
-                  fill="url(#gReceita)"
-                  isAnimationActive
-                  animationDuration={1100}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="contas"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2.5}
-                  fill="url(#gContas)"
-                  isAnimationActive
-                  animationDuration={1400}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {statusBreakdown.length > 0 ? (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statusBreakdown} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--secondary))" }}
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 0, fontSize: 12 }}
+                  />
+                  <Bar dataKey="v" radius={[4, 4, 0, 0]} isAnimationActive animationDuration={900}>
+                    {statusBreakdown.map((s, i) => (
+                      <Cell key={i} fill={s.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+              {loading ? "Carregando…" : "Sem dados"}
+            </div>
+          )}
+          {statusBreakdown.length > 0 && (
+            <ul className="mt-4 flex flex-wrap gap-4">
+              {statusBreakdown.map((s) => (
+                <li key={s.name} className="flex items-center gap-1.5 text-xs">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />
+                  <span className="font-medium">{s.name}</span>
+                  <span className="font-mono text-muted-foreground">{s.v}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </motion.article>
 
+        {/* Pie: status share */}
         <motion.article
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
+          transition={{ duration: 0.5, delay: 0.05 }}
           className="border border-border bg-card p-5 shadow-sm"
         >
           <header className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Tempo real
+                Proporção
               </p>
-              <h2 className="mt-1 font-display text-lg font-bold">Atividade</h2>
+              <h2 className="mt-1 font-display text-lg font-bold">Mix de planos</h2>
             </div>
-            <button
-              aria-label="Mais"
-              className="grid h-8 w-8 place-items-center border border-border text-muted-foreground hover:bg-secondary"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
           </header>
-          <ul className="divide-y divide-border">
-            {ACTIVITY.map((a, i) => (
-              <motion.li
-                key={i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 + i * 0.07, duration: 0.35 }}
-                className="flex items-start gap-3 py-3"
-              >
-                <div className="grid h-9 w-9 shrink-0 place-items-center bg-secondary text-xs font-bold text-secondary-foreground">
-                  {a.who[0]}
+          {statusBreakdown.length > 0 ? (
+            <>
+              <div className="relative h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip
+                      formatter={(v: number, n: string) => [`${v}`, n]}
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 0, fontSize: 12 }}
+                    />
+                    <Pie data={statusBreakdown} dataKey="v" nameKey="name" innerRadius="52%" outerRadius="78%" paddingAngle={2} stroke="hsl(var(--card))" strokeWidth={2} isAnimationActive animationDuration={900}>
+                      {statusBreakdown.map((s, i) => (
+                        <Cell key={i} fill={s.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <p className="font-display text-2xl font-bold">{m?.totalUsers ?? "—"}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">total</p>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">
-                    <span className="font-semibold">{a.who}</span>{" "}
-                    <span className="text-muted-foreground">{a.what}</span>
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="border border-border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {a.tag}
-                    </span>
-                    <p className="text-[11px] text-muted-foreground">{a.when}</p>
-                  </div>
-                </div>
-              </motion.li>
-            ))}
-          </ul>
+              </div>
+              <ul className="mt-3 space-y-1.5">
+                {statusBreakdown.map((s) => {
+                  const pct = m?.totalUsers ? Math.round((s.v / m.totalUsers) * 100) : 0;
+                  return (
+                    <li key={s.name} className="flex items-center gap-2 text-[11px]">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: s.color }} />
+                      <span className="flex-1 font-medium">{s.name}</span>
+                      <span className="font-mono text-muted-foreground">{pct}%</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : (
+            <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
+              {loading ? "Carregando…" : "Sem dados"}
+            </div>
+          )}
         </motion.article>
       </section>
 
-      {/* Services + system */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+      {/* Audit feed + MRR box */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Audit feed */}
         <motion.article
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="border border-border bg-card p-5 shadow-sm lg:col-span-2"
         >
-          <header className="mb-5 flex items-start justify-between">
+          <header className="mb-4 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Distribuição
+                Auditoria
               </p>
-              <h2 className="mt-1 font-display text-lg font-bold">
-                Serviços mais agendados
-              </h2>
+              <h2 className="mt-1 font-display text-lg font-bold">Ações administrativas recentes</h2>
             </div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              30 dias
-            </span>
+            <Link
+              to="/super/auditoria"
+              className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+            >
+              Ver tudo <ArrowUpRight className="h-3 w-3" />
+            </Link>
           </header>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={SERVICES} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  cursor={{ fill: "hsl(var(--secondary))" }}
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 0,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar
-                  dataKey="v"
-                  fill="hsl(var(--primary))"
-                  isAnimationActive
-                  animationDuration={1100}
-                  radius={[4, 4, 0, 0]}
+          {audit.length === 0 ? (
+            <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+              <Shield className="h-8 w-8 opacity-30" />
+              {loading ? "Carregando auditoria…" : "Nenhuma ação registrada ainda."}
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {audit.slice(0, 8).map((a, i) => (
+                <motion.li
+                  key={a.id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.12 + i * 0.05 }}
+                  className="flex items-start gap-3 py-3"
                 >
-                  <LabelList
-                    dataKey="v"
-                    position="top"
-                    fill="hsl(var(--foreground))"
-                    style={{ fontSize: 11, fontWeight: 600 }}
-                    formatter={(value: number) => value.toLocaleString("pt-BR")}
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-secondary">
+                    <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                          actionColor[a.action] ?? "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {actionLabel[a.action] ?? a.action}
+                      </span>
+                    </p>
+                    {a.target_user_email && (
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        → {a.target_user_email}
+                      </p>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    {timeAgo(a.performed_at)}
+                  </span>
+                </motion.li>
+              ))}
+            </ul>
+          )}
         </motion.article>
 
+        {/* Quick stats */}
         <motion.article
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.12 }}
-          className="border border-border bg-card p-5 shadow-sm"
+          className="flex flex-col gap-4 border border-border bg-card p-5 shadow-sm"
         >
-          <header className="mb-3 flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Distribuição
-              </p>
-              <h2 className="mt-1 font-display text-lg font-bold">
-                Profissionais por nicho
-              </h2>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Saúde financeira
+            </p>
+            <h2 className="mt-1 font-display text-lg font-bold">Resumo do mês</h2>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-emerald-600" />
+                <span className="text-sm font-medium">MRR atual</span>
+              </div>
+              <span className="font-mono text-sm font-bold">
+                {m ? `R$ ${m.mrr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"}
+              </span>
             </div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Total
-            </span>
-          </header>
-          <div className="relative h-60 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Tooltip
-                  formatter={(value: number, name: string) => [`${value}`, name]}
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 0,
-                    fontSize: 12,
-                  }}
-                />
-                <Pie
-                  data={NICHES}
-                  dataKey="v"
-                  nameKey="name"
-                  innerRadius="52%"
-                  outerRadius="78%"
-                  paddingAngle={1.5}
-                  stroke="hsl(var(--card))"
-                  strokeWidth={2}
-                  isAnimationActive
-                  animationDuration={1100}
-                  label={{ fill: "hsl(var(--background))", fontSize: 10, fontWeight: 700 }}
-                  labelLine={{ stroke: "hsl(var(--background) / 0.6)" }}
-                >
-                  {NICHES.map((_, i) => (
-                    <Cell key={i} fill={NICHE_COLORS[i % NICHE_COLORS.length]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <p className="font-display text-2xl font-bold tabular-nums">
-                {NICHES.reduce((a, b) => a + b.v, 0).toLocaleString("pt-BR")}
-              </p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                profissionais
-              </p>
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Assinantes pagantes</span>
+              </div>
+              <span className="font-mono text-sm font-bold">{m?.activeUsers ?? "—"}</span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-amber-500" />
+                <span className="text-sm font-medium">Em trial</span>
+              </div>
+              <span className="font-mono text-sm font-bold">{m?.trialUsers ?? "—"}</span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-rose-500" />
+                <span className="text-sm font-medium">Churn este mês</span>
+              </div>
+              <span className="font-mono text-sm font-bold">{m?.churnThisMonth ?? "—"}</span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <span className="text-sm font-medium">Inadimplentes</span>
+              </div>
+              <span className="font-mono text-sm font-bold">{m?.suspendedUsers ?? "—"}</span>
             </div>
           </div>
-          <ul className="mt-4 grid grid-cols-2 gap-x-3 gap-y-1.5">
-            {NICHES.map((n, i) => (
-              <li key={n.name} className="flex items-center gap-2 text-[11px]">
-                <span
-                  className="h-2 w-2 shrink-0"
-                  style={{ background: NICHE_COLORS[i % NICHE_COLORS.length] }}
-                />
-                <span className="flex-1 truncate font-medium">{n.name}</span>
-                <span className="font-mono text-muted-foreground tabular-nums">{n.v}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.article>
 
-
-
-        <motion.article
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="border border-border bg-card p-5 shadow-sm"
-        >
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Sistema
-              </p>
-              <h2 className="mt-1 font-display text-lg font-bold">Saúde técnica</h2>
-            </div>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </header>
-          <ul className="space-y-4">
-            {[
-              { label: "API", value: 99.98, tone: "bg-emerald-500" },
-              { label: "Banco de dados", value: 99.82, tone: "bg-emerald-500" },
-              { label: "Pagamentos", value: 98.4, tone: "bg-amber-500" },
-              { label: "Notificações", value: 96.1, tone: "bg-amber-500" },
-            ].map((s, i) => (
-              <li key={s.label}>
-                <div className="mb-1.5 flex items-center justify-between text-xs">
-                  <span className="font-semibold">{s.label}</span>
-                  <span className="font-mono text-muted-foreground">{s.value}%</span>
-                </div>
-                <div className="h-1.5 w-full bg-secondary">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${s.value}%` }}
-                    transition={{ duration: 1.1, delay: 0.2 + i * 0.1, ease: "easeOut" }}
-                    className={`h-full ${s.tone}`}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          <Link
+            to="/super/financeiro"
+            className="mt-auto flex items-center justify-center gap-1.5 border border-border py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition hover:bg-secondary"
+          >
+            Ver financeiro <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
         </motion.article>
       </section>
     </div>
   );
 }
 
-function MetricCard({ metric, index }: { metric: Metric; index: number }) {
-  const Icon = metric.icon;
-  const max = Math.max(...metric.spark);
-  const min = Math.min(...metric.spark);
-  const range = max - min || 1;
-  const points = metric.spark
-    .map((v, i) => {
-      const x = (i / (metric.spark.length - 1)) * 100;
-      const y = 100 - ((v - min) / range) * 100;
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay: index * 0.06, ease: "easeOut" }}
-      className="group relative flex h-[158px] flex-col overflow-hidden bg-card p-5 transition-colors hover:bg-secondary/30"
-    >
-      <span className="absolute inset-x-0 top-0 h-px scale-x-0 bg-gradient-to-r from-transparent via-primary to-transparent transition-transform duration-500 group-hover:scale-x-100" />
-
-      {/* Background icon — cropped, anchored bottom-right */}
-      <div className="pointer-events-none absolute -bottom-5 -right-5 text-foreground/[0.05]">
-        <Icon className="h-36 w-36 stroke-1" />
-      </div>
-
-      {/* Label */}
-      <p className="relative z-10 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-        {metric.label}
-      </p>
-
-      {/* Value */}
-      <div className="relative z-10 flex flex-1 items-center justify-center py-1">
-        <p className="text-center font-display text-5xl font-bold tracking-tight tabular-nums">
-          {metric.value}
-        </p>
-      </div>
-
-      {/* Footer: trend + sparkline */}
-      <div className="relative z-10 mt-auto flex h-[17px] items-start justify-between border-t border-border pt-[2px]">
-        <span
-          className={`inline-flex items-center gap-1 text-[11px] font-semibold leading-none ${
-            metric.trend === "up" ? "text-emerald-600" : "text-rose-600"
-          }`}
-        >
-          {metric.trend === "up" ? (
-            <ArrowUpRight className="h-3 w-3" />
-          ) : (
-            <ArrowDownRight className="h-3 w-3" />
-          )}
-          {metric.delta}
-        </span>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute bottom-0 right-0 h-4 w-20 opacity-70">
-          <motion.polyline
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 1.2, delay: 0.2 + index * 0.08, ease: "easeOut" }}
-            fill="none"
-            stroke="hsl(var(--primary))"
-            strokeWidth="2.5"
-            strokeLinecap="square"
-            points={points}
-          />
-        </svg>
-      </div>
-    </motion.article>
-  );
+// ─── Fetch audit (direct supabase call since no server fn yet) ─────────────────
+// This will be replaced when super-audit.functions.ts is created
+async function fetchAuditLog(): Promise<AuditEntry[]> {
+  try {
+    // Dynamic import to avoid SSR issues
+    const { createClient } = await import("@supabase/supabase-js");
+    const url = import.meta.env.VITE_SUPABASE_URL as string;
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    if (!url || !key) return [];
+    const sb = createClient(url, key);
+    const { data } = await sb
+      .from("admin_audit_log")
+      .select("id, action, target_user_email, details, performed_at")
+      .order("performed_at", { ascending: false })
+      .limit(20);
+    return (data ?? []) as AuditEntry[];
+  } catch {
+    return [];
+  }
 }

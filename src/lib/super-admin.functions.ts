@@ -142,9 +142,24 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" }).handler(
 
 // ─── Ações admin ──────────────────────────────────────────────────────────────
 
+async function auditLog(
+  supabaseAdmin: any,
+  action: string,
+  userId: string,
+  email: string,
+  details: Record<string, unknown> = {},
+) {
+  await supabaseAdmin.from("admin_audit_log").insert({
+    action,
+    target_user_id:    userId,
+    target_user_email: email,
+    details,
+  });
+}
+
 export const adminChangePlan = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), planId: z.string(), notes: z.string().optional() }).parse(input),
+    z.object({ userId: z.string().uuid(), planId: z.string(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
     await requireSuperAuth();
@@ -157,11 +172,12 @@ export const adminChangePlan = createServerFn({ method: "POST" })
       .eq("user_id", data.userId);
 
     if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "change_plan", data.userId, data.userEmail ?? "", { planId: data.planId, notes: data.notes });
   });
 
 export const adminUnblockUser = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), notes: z.string().optional() }).parse(input),
+    z.object({ userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
     await requireSuperAuth();
@@ -178,11 +194,12 @@ export const adminUnblockUser = createServerFn({ method: "POST" })
       .eq("user_id", data.userId);
 
     if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "unblock_user", data.userId, data.userEmail ?? "", { notes: data.notes });
   });
 
 export const adminGrantSpecial = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), notes: z.string().optional() }).parse(input),
+    z.object({ userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
     await requireSuperAuth();
@@ -200,11 +217,12 @@ export const adminGrantSpecial = createServerFn({ method: "POST" })
       .eq("user_id", data.userId);
 
     if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "grant_especial", data.userId, data.userEmail ?? "", { notes: data.notes });
   });
 
 export const adminSuspendUser = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid(), notes: z.string().optional() }).parse(input),
+    z.object({ userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
     await requireSuperAuth();
@@ -216,11 +234,12 @@ export const adminSuspendUser = createServerFn({ method: "POST" })
       .eq("user_id", data.userId);
 
     if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "suspend_user", data.userId, data.userEmail ?? "", { notes: data.notes });
   });
 
 export const adminCancelSubscription = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ userId: z.string().uuid() }).parse(input),
+    z.object({ userId: z.string().uuid(), userEmail: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
     await requireSuperAuth();
@@ -232,4 +251,5 @@ export const adminCancelSubscription = createServerFn({ method: "POST" })
       .eq("user_id", data.userId);
 
     if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "cancel_subscription", data.userId, data.userEmail ?? "");
   });

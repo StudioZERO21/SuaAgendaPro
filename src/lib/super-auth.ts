@@ -1,34 +1,21 @@
-export const SUPER_AUTH_KEY = "sa.super.auth";
+export const SUPER_AUTH_KEY = "sa.super.token";
 
-export type SuperAuth = {
-  email: string;
-  name: string;
-  role: "super_admin";
-  loggedAt: string;
-};
-
-export function getSuperAuth(): SuperAuth | null {
+export function getSuperToken(): string | null {
   if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SUPER_AUTH_KEY);
-    return raw ? (JSON.parse(raw) as SuperAuth) : null;
-  } catch {
-    return null;
-  }
+  return localStorage.getItem(SUPER_AUTH_KEY);
 }
 
-export function setSuperAuth(email: string) {
+export function setSuperToken(token: string) {
   if (typeof window === "undefined") return;
-  const auth: SuperAuth = {
-    email,
-    name: email.split("@")[0] || "Super Admin",
-    role: "super_admin",
-    loggedAt: new Date().toISOString(),
-  };
-  localStorage.setItem(SUPER_AUTH_KEY, JSON.stringify(auth));
+  localStorage.setItem(SUPER_AUTH_KEY, token);
 }
 
 export function clearSuperAuth() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(SUPER_AUTH_KEY);
+}
+
+// Mantido para compatibilidade com route.tsx existente
+export function getSuperAuth() {
+  return getSuperToken() ? { role: "super_admin" as const } : null;
 }

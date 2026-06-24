@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { getSuperAuth, setSuperAuth } from "@/lib/super-auth";
+import { getSuperAuth, setSuperToken } from "@/lib/super-auth";
+import { superAdminLogin } from "@/lib/super-auth.server";
 import logoUrl from "@/assets/logo-suaagenda.png";
 
 export const Route = createFileRoute("/super/login")({
@@ -32,19 +33,23 @@ function SuperLoginPage() {
     }
   }, [navigate]);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error("Informe e-mail e senha");
       return;
     }
     setLoading(true);
-    // Mock auth: aceita qualquer combinação.
-    setTimeout(() => {
-      setSuperAuth(email.trim());
-      toast.success("Bem-vindo ao painel Super");
+    try {
+      const { token } = await superAdminLogin({ data: { email: email.trim(), password } });
+      setSuperToken(token);
+      toast.success("Bem-vindo ao painel Super Admin");
       navigate({ to: "/super", replace: true });
-    }, 600);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Credenciais inválidas");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -140,7 +145,7 @@ function SuperLoginPage() {
             </Button>
 
             <p className="pt-1 text-center text-[11px] text-muted-foreground">
-              Demo: qualquer e-mail e senha são aceitos.
+              Acesso restrito · Todas as ações são auditadas
             </p>
           </form>
         </div>
