@@ -286,11 +286,38 @@ function RootComponent() {
     [session, user, isLoading, authActions],
   );
 
+  // 1. Aplica tema do localStorage imediatamente (sem flash)
   useEffect(() => {
     import("../lib/personalization").then((m) => {
       m.applyPersonalization(m.loadPersonalization());
     });
   }, []);
+
+  // 2. Quando autenticado, busca ui_settings do Supabase e sobrescreve localStorage
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("profiles")
+      .select("ui_settings")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data?.ui_settings) return;
+        import("../lib/personalization").then((m) => {
+          const local = m.loadPersonalization();
+          const ui = data.ui_settings as { accent?: string; font?: string; theme?: string; highContrast?: boolean };
+          const merged = {
+            ...local,
+            accent:      (ui.accent      as m.AccentId) ?? local.accent,
+            font:        (ui.font        as m.FontId)   ?? local.font,
+            theme:       (ui.theme       as m.ThemeId)  ?? local.theme,
+            highContrast: ui.highContrast               ?? local.highContrast,
+          };
+          m.savePersonalization(merged);
+          m.applyPersonalization(merged);
+        });
+      });
+  }, [user?.id]);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {

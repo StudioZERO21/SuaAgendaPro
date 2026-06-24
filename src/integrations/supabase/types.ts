@@ -377,6 +377,7 @@ export type Database = {
       }
       professional_payment_settings: {
         Row: {
+          active_payment_method: string | null
           created_at: string
           id: string
           mercado_pago_account_email: string | null
@@ -391,6 +392,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_payment_method?: string | null
           created_at?: string
           id?: string
           mercado_pago_account_email?: string | null
@@ -405,6 +407,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          active_payment_method?: string | null
           created_at?: string
           id?: string
           mercado_pago_account_email?: string | null
@@ -449,6 +452,7 @@ export type Database = {
           street: string | null
           street_number: string | null
           theme_color: string
+          ui_settings: Json | null
           updated_at: string
           welcome_message: string | null
           whatsapp_enabled: boolean
@@ -486,6 +490,7 @@ export type Database = {
           street?: string | null
           street_number?: string | null
           theme_color?: string
+          ui_settings?: Json | null
           updated_at?: string
           welcome_message?: string | null
           whatsapp_enabled?: boolean
@@ -523,6 +528,7 @@ export type Database = {
           street?: string | null
           street_number?: string | null
           theme_color?: string
+          ui_settings?: Json | null
           updated_at?: string
           welcome_message?: string | null
           whatsapp_enabled?: boolean

@@ -53,6 +53,7 @@ export const Route = createFileRoute("/api/public/mercado-pago/callback")({
           clientSecret: creds.clientSecret,
           code,
           redirectUri: verified.redirectUri,
+          codeVerifier: verified.pkceVerifier,
         });
         if (!token?.access_token) return fail(attemptId, "exchange_failed");
 

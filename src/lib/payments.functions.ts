@@ -6,7 +6,9 @@ import type { Tables } from "@/integrations/supabase/types";
 export type PixKeyType = "cpf" | "cnpj" | "email" | "telefone" | "aleatoria";
 export type PaymentStatus = "pending" | "paid" | "failed" | "cancelled" | "refunded";
 export type PaymentMethod = "pix_manual" | "mercado_pago";
+export type ActivePaymentMethod = "pix" | "mercado_pago" | null;
 export type PaymentSettings = {
+  activePaymentMethod: ActivePaymentMethod;
   mercadoPago: {
     connected: boolean;
     accountEmail: string;
@@ -26,6 +28,7 @@ const pixKeyTypeSchema = z.enum(["cpf", "cnpj", "email", "telefone", "aleatoria"
 const paymentStatusSchema = z.enum(["pending", "paid", "failed", "cancelled", "refunded"]);
 
 export const EMPTY_PAYMENT_SETTINGS: PaymentSettings = {
+  activePaymentMethod: null,
   mercadoPago: { connected: false, accountEmail: "", publicKey: "" },
   pix: {
     enabled: false,
@@ -37,6 +40,7 @@ export const EMPTY_PAYMENT_SETTINGS: PaymentSettings = {
 };
 
 const settingsSchema = z.object({
+  activePaymentMethod: z.enum(["pix", "mercado_pago"]).nullable(),
   mercadoPago: z.object({
     connected: z.boolean(),
     accountEmail: z.string().trim().email().max(255).or(z.literal("")),
@@ -75,6 +79,7 @@ const updateTransactionSchema = z.object({
 function toSettings(row: Tables<"professional_payment_settings"> | null): PaymentSettings {
   if (!row) return EMPTY_PAYMENT_SETTINGS;
   return {
+    activePaymentMethod: (row.active_payment_method as ActivePaymentMethod) ?? null,
     mercadoPago: {
       connected: row.mercado_pago_connected,
       accountEmail: row.mercado_pago_account_email ?? "",
@@ -128,7 +133,7 @@ export const getPaymentSettings = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("professional_payment_settings")
-      .select("*")
+      .select("*, active_payment_method")
       .eq("user_id", context.userId)
       .maybeSingle();
 
@@ -142,6 +147,7 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const payload = {
       user_id: context.userId,
+      active_payment_method: data.activePaymentMethod,
       mercado_pago_connected: data.mercadoPago.connected,
       mercado_pago_account_email: data.mercadoPago.accountEmail || null,
       mercado_pago_public_key: data.mercadoPago.publicKey || null,
@@ -155,7 +161,7 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
     const { data: row, error } = await context.supabase
       .from("professional_payment_settings")
       .upsert(payload, { onConflict: "user_id" })
-      .select("*")
+      .select("*, active_payment_method")
       .single();
 
     if (error) throw new Error(error.message);
@@ -190,7 +196,7 @@ export const connectMercadoPago = createServerFn({ method: "POST" })
         },
         { onConflict: "user_id" },
       )
-      .select("*")
+      .select("*, active_payment_method")
       .single();
 
     if (error) throw new Error(error.message);
@@ -203,9 +209,8 @@ export const startMercadoPagoOAuth = createServerFn({ method: "POST" })
     z.object({ origin: z.string().trim().url().max(255) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { getMpOAuthCredentials, createOAuthState, buildAuthorizationUrl } = await import(
-      "@/lib/mp-oauth.server"
-    );
+    const { getMpOAuthCredentials, createOAuthState, buildAuthorizationUrl, generatePkce, isPkceEnabled } =
+      await import("@/lib/mp-oauth.server");
     const creds = getMpOAuthCredentials();
     const redirectUri = `${data.origin}/api/public/mercado-pago/callback`;
 
@@ -228,8 +233,16 @@ export const startMercadoPagoOAuth = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "not_configured" as const };
     }
 
-    const state = createOAuthState(context.userId, redirectUri, attempt.id);
-    const url = buildAuthorizationUrl({ clientId: creds.clientId, redirectUri, state });
+    // PKCE (obrigatório na versão atual da API MP)
+    const pkce = isPkceEnabled() ? generatePkce() : null;
+
+    const state = createOAuthState(context.userId, redirectUri, attempt.id, pkce?.verifier);
+    const url = buildAuthorizationUrl({
+      clientId: creds.clientId,
+      redirectUri,
+      state,
+      codeChallenge: pkce?.challenge,
+    });
     return { ok: true as const, url };
   });
 
@@ -252,6 +265,15 @@ export const disconnectMercadoPago = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("mercado_pago_account_secrets").delete().eq("user_id", context.userId);
 
+    // Verifica se MP era o método ativo para não desativar o PIX por engano
+    const { data: current } = await context.supabase
+      .from("professional_payment_settings")
+      .select("active_payment_method")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    const clearActive = current?.active_payment_method === "mercado_pago";
+
     const { data: row, error } = await context.supabase
       .from("professional_payment_settings")
       .upsert(
@@ -260,10 +282,11 @@ export const disconnectMercadoPago = createServerFn({ method: "POST" })
           mercado_pago_connected: false,
           mercado_pago_account_email: null,
           mercado_pago_public_key: null,
+          ...(clearActive ? { active_payment_method: null } : {}),
         },
         { onConflict: "user_id" },
       )
-      .select("*")
+      .select("*, active_payment_method")
       .single();
 
     if (error) throw new Error(error.message);

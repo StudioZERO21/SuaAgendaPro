@@ -20,11 +20,21 @@ export async function getPublicProfile(slug: string): Promise<PublicData | null>
     supabase.from("reviews").select("id, client_name, client_avatar_url, rating, message, is_anonymous, created_at").eq("professional_id", profile.id).eq("is_public", true).order("created_at", { ascending: false }),
     supabase.rpc("get_review_stats", { p_professional_id: profile.id }),
     supabase.from("schedule_blocks").select("id, start_date, end_date, reason, title").eq("professional_id", profile.id),
-    supabase.from("professional_payment_settings").select("pix_enabled, pix_key, pix_key_type, pix_beneficiary_name, pix_city").eq("user_id", profile.id).maybeSingle(),
+    supabase.from("professional_payment_settings").select("pix_enabled, pix_key, pix_key_type, pix_beneficiary_name, pix_city, mercado_pago_connected, active_payment_method").eq("user_id", profile.id).maybeSingle(),
   ]);
 
   const stats = (statsRows as { total_count: number; avg_rating: number }[] | null)?.[0];
-  const ps = paySettings as { pix_enabled: boolean; pix_key: string | null; pix_key_type: string; pix_beneficiary_name: string | null; pix_city: string | null } | null;
+  const ps = paySettings as {
+    pix_enabled: boolean;
+    pix_key: string | null;
+    pix_key_type: string;
+    pix_beneficiary_name: string | null;
+    pix_city: string | null;
+    mercado_pago_connected: boolean;
+    active_payment_method: string | null;
+  } | null;
+
+  const activeMethod = ps?.active_payment_method ?? null;
 
   return {
     profile: profile as PublicProfileRow,
@@ -35,13 +45,15 @@ export async function getPublicProfile(slug: string): Promise<PublicData | null>
     reviewTotalCount: stats?.total_count ?? 0,
     reviewAvgRating: stats?.avg_rating ?? 0,
     scheduleBlocks: (schedBlocks ?? []) as PublicScheduleBlock[],
+    // Só expõe dados do método que está ativo — nunca os dois ao mesmo tempo
     pix: {
-      enabled: ps?.pix_enabled ?? false,
-      key: ps?.pix_key ?? null,
+      enabled: activeMethod === "pix" && (ps?.pix_enabled ?? false),
+      key: activeMethod === "pix" ? (ps?.pix_key ?? null) : null,
       keyType: ps?.pix_key_type ?? "email",
       beneficiaryName: ps?.pix_beneficiary_name ?? null,
       city: ps?.pix_city ?? null,
     },
+    mpConnected: activeMethod === "mercado_pago" && (ps?.mercado_pago_connected ?? false),
   };
 }
 
@@ -140,6 +152,7 @@ export type PublicData = {
   reviewAvgRating: number;
   scheduleBlocks: PublicScheduleBlock[];
   pix: PublicPixSettings;
+  mpConnected: boolean;
 };
 
 export type CreateBookingInput = {
@@ -280,4 +293,122 @@ export const createPublicBooking = createServerFn({ method: "POST" })
     } catch {}
 
     return { appointmentId: appt.id };
+  });
+
+// ── Mercado Pago: cria agendamento + preferência de pagamento ──
+
+export type CreateMpBookingInput = CreateBookingInput & {
+  depositCents: number;
+  slug: string;
+  origin: string;
+};
+
+export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown): CreateMpBookingInput => {
+    const i = input as Record<string, unknown>;
+    if (!i?.professionalId || !i?.serviceId || !i?.scheduledAt || !i?.clientName || !i?.clientPhone) {
+      throw new Error("Dados incompletos");
+    }
+    return input as CreateMpBookingInput;
+  })
+  .handler(async ({ data }): Promise<{ appointmentId: string; initPoint: string }> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. Garantir cliente
+    const phone = data.clientPhone.replace(/\D/g, "");
+    const { data: existing } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .eq("professional_id", data.professionalId)
+      .eq("phone", phone)
+      .maybeSingle();
+
+    let clientId: string;
+    if (existing) {
+      clientId = existing.id;
+    } else {
+      const { data: newClient, error: cErr } = await supabaseAdmin
+        .from("clients")
+        .insert({ professional_id: data.professionalId, name: data.clientName.trim(), phone, email: data.clientEmail || null })
+        .select("id")
+        .single();
+      if (cErr || !newClient) throw new Error("Erro ao registrar cliente");
+      clientId = newClient.id;
+    }
+
+    // 2. Criar agendamento (status pending — confirmado pelo webhook MP)
+    const { data: appt, error: aErr } = await supabaseAdmin
+      .from("appointments")
+      .insert({
+        professional_id: data.professionalId,
+        client_id: clientId,
+        service_id: data.serviceId,
+        scheduled_at: data.scheduledAt,
+        duration_minutes: data.durationMinutes,
+        price_cents: data.priceCents,
+        deposit_cents: data.depositCents,
+        status: "pending",
+        notes: data.notes || null,
+      })
+      .select("id")
+      .single();
+    if (aErr || !appt) throw new Error("Erro ao criar agendamento");
+
+    // 3. Buscar access_token do profissional
+    const { data: secret } = await supabaseAdmin
+      .from("mercado_pago_account_secrets")
+      .select("access_token")
+      .eq("user_id", data.professionalId)
+      .maybeSingle();
+    if (!secret?.access_token) throw new Error("Mercado Pago não conectado");
+
+    // 4. Criar preferência de checkout
+    const isSandbox = secret.access_token.startsWith("TEST");
+    const backUrl = `${data.origin}/agendar/${data.slug}?mp=done&appointment_id=${appt.id}`;
+    const { data: svcRow } = await supabaseAdmin
+      .from("services")
+      .select("name")
+      .eq("id", data.serviceId)
+      .maybeSingle();
+
+    const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret.access_token}` },
+      body: JSON.stringify({
+        items: [{
+          title: `Sinal — ${svcRow?.name ?? "Serviço"}`,
+          quantity: 1,
+          unit_price: Math.round(data.depositCents) / 100,
+          currency_id: "BRL",
+        }],
+        external_reference: appt.id,
+        back_urls: { success: backUrl, failure: backUrl, pending: backUrl },
+        auto_return: "approved",
+      }),
+    });
+
+    if (!prefRes.ok) {
+      // Limpar agendamento criado em caso de falha
+      await supabaseAdmin.from("appointments").delete().eq("id", appt.id);
+      throw new Error(`Falha ao criar preferência MP: ${prefRes.status}`);
+    }
+
+    const pref = (await prefRes.json()) as { id: string; init_point: string; sandbox_init_point: string };
+    const initPoint = isSandbox ? pref.sandbox_init_point : pref.init_point;
+
+    // 5. Notificação para o profissional
+    try {
+      const dt = new Date(data.scheduledAt);
+      const datePt = dt.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+      const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      await supabaseAdmin.from("notifications").insert({
+        user_id: data.professionalId,
+        type: "new_appointment",
+        title: "Novo agendamento aguardando pagamento 🎉",
+        body: `${data.clientName} agendou para ${datePt} às ${timePt}. Aguardando pagamento via Mercado Pago.`,
+        appointment_id: appt.id,
+      });
+    } catch {}
+
+    return { appointmentId: appt.id, initPoint };
   });

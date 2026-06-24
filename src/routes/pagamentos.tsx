@@ -389,13 +389,44 @@ function PagamentosPage() {
   const updatePix = (patch: Partial<PaymentSettings["pix"]>) =>
     setCfg((c) => ({ ...c, pix: { ...c.pix, ...patch } }));
 
+  const activateMethod = async (method: "pix" | "mercado_pago") => {
+    setSaving(true);
+    try {
+      const saved = await persistSettings({ data: { ...cfg, activePaymentMethod: method } });
+      setCfg(saved);
+      toast.success(
+        method === "pix"
+          ? "PIX pessoal ativado como método de pagamento."
+          : "Mercado Pago ativado como método de pagamento.",
+      );
+    } catch {
+      toast.error("Não foi possível salvar. Verifique se você está logada.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deactivateMethod = async () => {
+    setSaving(true);
+    try {
+      const saved = await persistSettings({ data: { ...cfg, activePaymentMethod: null } });
+      setCfg(saved);
+      toast.success("Método de pagamento desativado.");
+    } catch {
+      toast.error("Não foi possível salvar.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const savePix = async () => {
     setSaving(true);
     try {
-      const saved = await persistSettings({ data: cfg });
+      // pix.enabled = true sempre que há dados de PIX (o Switch foi removido)
+      const data = { ...cfg, pix: { ...cfg.pix, enabled: !!(cfg.pix.key && cfg.pix.beneficiaryName && cfg.pix.city) } };
+      const saved = await persistSettings({ data });
       setCfg(saved);
-      toast.success("Configurações salvas.");
+      toast.success("Dados do PIX salvos.");
     } catch {
       toast.error("Não foi possível salvar. Verifique se você está logada.");
     } finally {
@@ -785,81 +816,122 @@ function PagamentosPage() {
           </TabsContent>
 
           <TabsContent value="config" className="mt-5 space-y-6">
+
+        {/* ── Banner: método ativo ── */}
+        {(() => {
+          const active = cfg.activePaymentMethod;
+          const pixReady = !!(pix.key && pix.beneficiaryName && pix.city);
+          const mpReady = mp.connected;
+          if (!active) {
+            return (
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                <div>
+                  <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Nenhum método ativo</p>
+                  <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
+                    {pixReady || mpReady
+                      ? "Configure e ative um método abaixo para que clientes consigam pagar o sinal online."
+                      : "Configure o PIX pessoal ou conecte o Mercado Pago para receber sinais de agendamento."}
+                  </p>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                <Check className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Método ativo</p>
+                <p className="font-display text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                  {active === "pix" ? "PIX pessoal" : "Mercado Pago"}
+                </p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                  {active === "pix"
+                    ? "Confirmação manual — o cliente envia o comprovante pelo WhatsApp."
+                    : "Confirmação automática — o sistema aprova o agendamento assim que o pagamento é confirmado."}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" disabled={saving} onClick={deactivateMethod}
+                className="h-8 shrink-0 rounded-full border-emerald-300 text-xs text-emerald-700 hover:bg-emerald-100">
+                Desativar
+              </Button>
+            </div>
+          );
+        })()}
+
         {/* Status da conta */}
         <AccountStatusCard
           connected={mp.connected}
           email={mp.accountEmail}
-          pixEnabled={pix.enabled}
+          pixEnabled={!!(pix.key && pix.beneficiaryName && pix.city)}
           lastAttempt={attempts[0] ?? null}
         />
 
-        {/* Mercado Pago */}
+        {/* ── Mercado Pago ── */}
         <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           <div className="flex items-center gap-3 p-4">
-            <div
-              className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
-              style={{ background: "linear-gradient(135deg,#00b1ea,#009ee3)" }}
-            >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: "linear-gradient(135deg,#00b1ea,#009ee3)" }}>
               <CreditCard className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-display text-sm font-bold">Mercado Pago</p>
-              <p className="text-xs text-muted-foreground">
-                Receba por cartão, boleto e Pix integrados ao app.
-              </p>
+              <p className="text-xs text-muted-foreground">Receba por cartão, boleto e Pix — aprovação automática.</p>
             </div>
-            {mp.connected ? (
+            {cfg.activePaymentMethod === "mercado_pago" ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                <Check className="h-3 w-3" /> Conectado
+                <Check className="h-3 w-3" /> Ativo
               </span>
+            ) : mp.connected ? (
+              <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-sky-700">Conectado</span>
             ) : (
-              <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Desativado
-              </span>
+              <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Inativo</span>
             )}
+          </div>
+          <div className="flex items-start gap-2 border-t border-border bg-sky-50/60 px-4 py-2.5 dark:bg-sky-950/20">
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600" />
+            <p className="text-[11px] text-sky-700 dark:text-sky-400">
+              <span className="font-bold">Aprovação automática:</span> quando o cliente paga pelo Mercado Pago, o sistema confirma o agendamento sozinho, sem ação manual.
+            </p>
           </div>
           <div className="border-t border-border bg-secondary/40 p-3">
             {mp.connected ? (
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate text-xs text-muted-foreground">
-                  {mp.accountEmail || "Conta conectada"}
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={saving}
-                      className="h-9 rounded-full text-xs"
-                    >
-                      <Unlink className="mr-1 h-3.5 w-3.5" /> Desconectar
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Desconectar Mercado Pago?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        A credencial OAuth será apagada do servidor. Você pode reconectar a qualquer momento.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={disconnectMp}
-                        className="bg-destructive text-white hover:bg-destructive/90"
-                      >
-                        Desconectar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-xs text-muted-foreground">{mp.accountEmail || "Conta conectada"}</p>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" disabled={saving} className="h-9 shrink-0 rounded-full text-xs">
+                        <Unlink className="mr-1 h-3.5 w-3.5" /> Desconectar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Desconectar Mercado Pago?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          A credencial OAuth será apagada. Se este era o método ativo, os clientes não conseguirão mais pagar pelo Mercado Pago.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={disconnectMp} className="bg-destructive text-white hover:bg-destructive/90">
+                          Desconectar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+                {cfg.activePaymentMethod !== "mercado_pago" && (
+                  <Button onClick={() => activateMethod("mercado_pago")} disabled={saving}
+                    className="h-10 w-full rounded-full bg-[#009EE3] text-sm font-semibold text-white hover:bg-[#0082bd]">
+                    <Check className="mr-2 h-4 w-4" /> Ativar Mercado Pago
+                  </Button>
+                )}
               </div>
             ) : (
-              <Button
-                onClick={connectMp}
-                disabled={connectingMp}
-                className="h-10 w-full rounded-full gradient-primary text-sm font-semibold text-white shadow-glow"
-              >
+              <Button onClick={connectMp} disabled={connectingMp}
+                className="h-10 w-full rounded-full gradient-primary text-sm font-semibold text-white shadow-glow">
                 <Link2 className="mr-2 h-4 w-4" />
                 {connectingMp ? "Redirecionando..." : "Conectar com Mercado Pago"}
               </Button>
@@ -870,108 +942,99 @@ function PagamentosPage() {
         {/* Histórico de tentativas OAuth */}
         <AttemptsLog attempts={attempts} />
 
-        {/* Pix */}
+        {/* ── PIX pessoal ── */}
         <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           <div className="flex items-center gap-3 p-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-soft text-primary">
               <QrCode className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-display text-sm font-bold">Chave Pix pessoal</p>
-              <p className="text-xs text-muted-foreground">
-                Gera QR Code direto para sua conta — sem taxas do app.
-              </p>
+              <p className="font-display text-sm font-bold">Chave PIX pessoal</p>
+              <p className="text-xs text-muted-foreground">QR Code direto para sua conta — sem taxas do app.</p>
             </div>
-            <Switch
-              checked={pix.enabled}
-              onCheckedChange={(v) => updatePix({ enabled: v })}
-            />
+            {cfg.activePaymentMethod === "pix" ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                <Check className="h-3 w-3" /> Ativo
+              </span>
+            ) : pix.key && pix.beneficiaryName ? (
+              <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Configurado</span>
+            ) : (
+              <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Inativo</span>
+            )}
           </div>
 
-          {pix.enabled && (
-            <div className="space-y-3 border-t border-border p-4">
-              <div className="space-y-2">
-                <Label>Tipo de chave</Label>
-                <Select
-                  value={pix.keyType}
-                  onValueChange={(v: PixKeyType) => { updatePix({ keyType: v, key: "" }); setEmailError(""); }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PIX_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="flex items-start gap-2 border-t border-border bg-amber-50/60 px-4 py-2.5 dark:bg-amber-950/20">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+            <p className="text-[11px] text-amber-700 dark:text-amber-400">
+              <span className="font-bold">Aprovação manual:</span> você confirma o agendamento após verificar o comprovante enviado pelo cliente no WhatsApp.
+            </p>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="pix-key">Chave</Label>
-                <Input
-                  id="pix-key"
-                  inputMode={pix.keyType === "email" ? "email" : pix.keyType === "aleatoria" ? "text" : "tel"}
-                  value={getDisplayKey(pix.keyType, pix.key)}
-                  onChange={(e) => {
-                    setEmailError("");
-                    updatePix({ key: handleKeyInput(pix.keyType, e.target.value) });
-                  }}
-                  onBlur={() => {
-                    if (pix.keyType === "email" && pix.key && !isValidEmail(pix.key)) {
-                      setEmailError("E-mail inválido.");
-                    }
-                  }}
-                  placeholder={PIX_TYPES.find((t) => t.value === pix.keyType)?.placeholder}
-                  className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
-                />
-                {emailError && <p className="text-[11px] text-destructive">{emailError}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ben">Nome do recebedor</Label>
-                <Input id="ben" maxLength={25} value={pix.beneficiaryName}
-                  onChange={(e) => updatePix({ beneficiaryName: e.target.value })}
-                  placeholder="Exatamente como consta no banco" />
-                <p className="text-[11px] text-muted-foreground">
-                  Use o nome exatamente como cadastrado no seu banco.{" "}
-                  Limite de 25 caracteres definido pelo BACEN.{" "}
-                  <span className="font-semibold text-foreground">{pix.beneficiaryName.length}/25</span>
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="city">Cidade</Label>
-                <Input id="city" maxLength={15} value={pix.city}
-                  onChange={(e) => updatePix({ city: e.target.value })}
-                  placeholder="Ex.: São Paulo" />
-              </div>
-
-              {/* Aviso de responsabilidade */}
-              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                <p className="text-[11px] leading-snug text-amber-800 dark:text-amber-300">
-                  <span className="font-bold">Atenção:</span> as informações de chave Pix são de exclusiva responsabilidade do profissional. Dados incorretos podem direcionar pagamentos de clientes para outra pessoa.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-2 rounded-xl bg-secondary/60 p-3">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <p className="text-[11px] text-muted-foreground">
-                  A chave Pix é usada apenas para gerar o QR Code direto para sua conta, sem taxas do app.
-                </p>
-              </div>
-
-              <Button
-                onClick={handlePixSaveClick}
-                disabled={saving || loading}
-                className="h-11 w-full rounded-2xl gradient-primary text-sm font-bold text-white shadow-glow"
-              >
-                {saving ? "Salvando..." : "Salvar configurações"}
-              </Button>
+          <div className="space-y-3 border-t border-border p-4">
+            <div className="space-y-2">
+              <Label>Tipo de chave</Label>
+              <Select value={pix.keyType} onValueChange={(v: PixKeyType) => { updatePix({ keyType: v, key: "" }); setEmailError(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PIX_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
+
+            <div className="space-y-2">
+              <Label htmlFor="pix-key">Chave</Label>
+              <Input
+                id="pix-key"
+                inputMode={pix.keyType === "email" ? "email" : pix.keyType === "aleatoria" ? "text" : "tel"}
+                value={getDisplayKey(pix.keyType, pix.key)}
+                onChange={(e) => { setEmailError(""); updatePix({ key: handleKeyInput(pix.keyType, e.target.value) }); }}
+                onBlur={() => { if (pix.keyType === "email" && pix.key && !isValidEmail(pix.key)) setEmailError("E-mail inválido."); }}
+                placeholder={PIX_TYPES.find((t) => t.value === pix.keyType)?.placeholder}
+                className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
+              />
+              {emailError && <p className="text-[11px] text-destructive">{emailError}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ben">Nome do recebedor</Label>
+              <Input id="ben" maxLength={25} value={pix.beneficiaryName}
+                onChange={(e) => updatePix({ beneficiaryName: e.target.value })}
+                placeholder="Exatamente como consta no banco" />
+              <p className="text-[11px] text-muted-foreground">
+                Use o nome exatamente como cadastrado no seu banco. Limite de 25 caracteres (BACEN).{" "}
+                <span className="font-semibold text-foreground">{pix.beneficiaryName.length}/25</span>
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">Cidade</Label>
+              <Input id="city" maxLength={15} value={pix.city}
+                onChange={(e) => updatePix({ city: e.target.value })}
+                placeholder="Ex.: São Paulo" />
+            </div>
+
+            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <p className="text-[11px] leading-snug text-amber-800 dark:text-amber-300">
+                <span className="font-bold">Atenção:</span> a chave PIX é de sua exclusiva responsabilidade. Dados incorretos podem redirecionar pagamentos para outra pessoa.
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handlePixSaveClick} disabled={saving || loading} variant="outline"
+                className="h-11 flex-1 rounded-2xl text-sm font-semibold">
+                {saving ? "Salvando..." : "Salvar dados"}
+              </Button>
+              {cfg.activePaymentMethod !== "pix" && pix.key && pix.beneficiaryName && pix.city && (
+                <Button onClick={() => activateMethod("pix")} disabled={saving}
+                  className="h-11 flex-1 rounded-2xl gradient-primary text-sm font-bold text-white shadow-glow">
+                  <Check className="mr-1.5 h-4 w-4" /> Ativar PIX
+                </Button>
+              )}
+            </div>
+          </div>
         </section>
           </TabsContent>
 

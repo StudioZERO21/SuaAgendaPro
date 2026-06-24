@@ -74,8 +74,9 @@ function PersonalizacaoPage() {
   });
 
   const [pub, setPub] = useState<PublicProfileSettings>({
-    slug: "", bannerUrl: "", businessName: "", themeColor: "#ec4899", gradientColor2: "",
+    slug: "", bannerUrl: "", logoUrl: "", businessName: "", themeColor: "#ec4899", gradientColor2: "",
     showPrices: true, showPortfolio: true, acceptOnline: true, cancellationPolicy: "", welcomeMessage: "",
+    uiSettings: { accent: "rose", font: "playfair", theme: "light", highContrast: false },
   });
 
   useEffect(() => {
@@ -156,14 +157,33 @@ function PersonalizacaoPage() {
   }
   // ─────────────────────────────────────────────────────────────
 
+  // Carrega personalização: Supabase tem prioridade sobre localStorage
   useEffect(() => {
-    const loaded = loadPersonalization();
-    setData(loaded);
-    applyPersonalization(loaded);
-    if (loaded.business.name) {
-      setPub((prev) => ({ ...prev, businessName: prev.businessName || loaded.business.name }));
+    const local = loadPersonalization();
+    setData(local);
+    applyPersonalization(local);
+    if (local.business.name) {
+      setPub((prev) => ({ ...prev, businessName: prev.businessName || local.business.name }));
     }
   }, []);
+
+  // Quando dados do Supabase chegarem, sobrescreve accent/font/theme do localStorage
+  useEffect(() => {
+    if (!pubSettings?.uiSettings) return;
+    const ui = pubSettings.uiSettings;
+    setData((prev) => {
+      const next: Personalization = {
+        ...prev,
+        accent:      ui.accent,
+        font:        ui.font,
+        theme:       ui.theme,
+        highContrast: ui.highContrast,
+      };
+      savePersonalization(next);
+      applyPersonalization(next);
+      return next;
+    });
+  }, [pubSettings?.uiSettings?.accent, pubSettings?.uiSettings?.font, pubSettings?.uiSettings?.theme]);
 
   // Sync: se logo está como data URL no localStorage (nunca foi upado), faz upload silencioso
   const logoSyncedRef = useRef(false);
@@ -337,11 +357,21 @@ function PersonalizacaoPage() {
         await supabase.from("profiles").update({ cover_url: null }).eq("id", user.id);
       }
 
-      // Save localStorage personalization
+      // Save personalization to localStorage (cache local)
       savePersonalization({ ...data, business: { ...data.business, logo: logoToSave } });
       applyPersonalization(data);
-      // Save public profile to Supabase
-      await saveSettingsFn({ data: pub });
+      // Save public profile + ui_settings to Supabase
+      await saveSettingsFn({
+        data: {
+          ...pub,
+          uiSettings: {
+            accent:      data.accent,
+            font:        data.font,
+            theme:       data.theme,
+            highContrast: data.highContrast,
+          },
+        },
+      });
       qc.invalidateQueries({ queryKey: ["public-profile-settings"] });
       toast.success("Configurações salvas!");
     } catch {
@@ -498,7 +528,11 @@ function PersonalizacaoPage() {
                 return (
                   <button
                     key={a.id}
-                    onClick={() => setData((d) => ({ ...d, accent: a.id }))}
+                    onClick={() => {
+                      setData((d) => ({ ...d, accent: a.id }));
+                      // Sincroniza themeColor do perfil público com a cor do accent
+                      setPub((p) => ({ ...p, themeColor: a.primary }));
+                    }}
                     aria-label={a.label}
                     className={cn(
                       "relative h-10 w-10 rounded-full ring-offset-2 ring-offset-card transition",

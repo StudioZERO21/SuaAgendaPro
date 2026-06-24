@@ -30,6 +30,7 @@ import {
   Wallet,
   Copy,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -57,6 +58,7 @@ import {
   getPublicProfile,
   getPublicSlots,
   createPublicBooking,
+  createMpPreferenceAndBooking,
   type PublicData,
   type PublicPixSettings,
 } from "@/lib/public-booking.functions";
@@ -161,6 +163,23 @@ function PublicBookingPage() {
 
   useEffect(() => { getPublicProfile(slug).then(setLoaderData); }, [slug]);
   useEffect(() => { if (avatarRef.current?.complete) setAvatarLoaded(true); }, []);
+
+  // Retorno do Mercado Pago — mostra toast de sucesso ou pendente
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const mp = params.get("mp");
+    if (!mp) return;
+    if (mp === "done") {
+      toast.success("Agendamento registrado!", {
+        description: "Assim que o pagamento for confirmado pelo Mercado Pago, seu horário será reservado.",
+        duration: 8000,
+      });
+    }
+    // Limpa os params da URL sem recarregar
+    const clean = window.location.pathname;
+    window.history.replaceState({}, "", clean);
+  }, []);
 
   // Inject professional's theme color into CSS vars so ALL primary-colored elements match
   useEffect(() => {
@@ -347,6 +366,7 @@ function PublicBookingPage() {
         show_prices: p.show_prices,
         accept_online: p.accept_online,
         pix: loaderData.pix,
+        mpConnected: loaderData.mpConnected,
       },
       services: mappedServices,
       portfolio: mappedPortfolio,
@@ -1092,6 +1112,7 @@ function PublicBookingPage() {
         professionalId={profile.id}
         professionalPhone={profile.phone}
         pix={profile.pix}
+        mpConnected={profile.mpConnected}
         scheduleBlocks={loaderData?.scheduleBlocks ?? []}
       />
 
@@ -1247,6 +1268,7 @@ function BookingSheet({
   professionalId,
   professionalPhone,
   pix,
+  mpConnected,
   scheduleBlocks,
 }: {
   open: boolean;
@@ -1258,6 +1280,7 @@ function BookingSheet({
   professionalId: string;
   professionalPhone: string;
   pix: PublicPixSettings;
+  mpConnected: boolean;
   scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
 }) {
   const [step, setStep] = useState<Step>(preselect ? 2 : 1);
@@ -1509,9 +1532,17 @@ function BookingSheet({
         }}
         service={service}
         clientName={name}
+        clientPhone={phone}
+        clientEmail={email}
+        clientNotes={notes}
+        date={date ?? ""}
+        time={time ?? ""}
         professionalName={professionalName}
+        professionalSlug={professionalSlug}
+        professionalId={professionalId}
         professionalPhone={professionalPhone}
         pix={pix}
+        mpConnected={mpConnected}
         onConfirmed={handlePaymentConfirmed}
         onExpired={handlePaymentExpired}
       />
@@ -2051,9 +2082,17 @@ function PaymentDialog({
   onOpenChange,
   service,
   clientName,
+  clientPhone,
+  clientEmail,
+  clientNotes,
+  date,
+  time,
   professionalName,
+  professionalSlug,
+  professionalId,
   professionalPhone,
   pix,
+  mpConnected,
   onConfirmed,
   onExpired,
 }: {
@@ -2061,20 +2100,34 @@ function PaymentDialog({
   onOpenChange: (v: boolean) => void;
   service: PublicService;
   clientName: string;
+  clientPhone: string;
+  clientEmail: string;
+  clientNotes: string;
+  date: string;
+  time: string;
   professionalName: string;
+  professionalSlug: string;
+  professionalId: string;
   professionalPhone: string;
   pix: PublicPixSettings;
+  mpConnected: boolean;
   onConfirmed: () => void;
   onExpired: () => void;
 }) {
+  const hasPix = pix?.enabled && !!pix?.key;
+  const defaultMethod: "mp" | "pix" = mpConnected ? "mp" : hasPix ? "pix" : "mp";
+
   const TOTAL_SECONDS = 10 * 60;
   const [remaining, setRemaining] = useState(TOTAL_SECONDS);
   const [processing, setProcessing] = useState(false);
+  const [mpLoading, setMpLoading] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [payMethod, setPayMethod] = useState<"mp" | "pix">(defaultMethod);
 
   // valor em reais (consistente com o resto da UI)
   const depositValue = Math.round(service.price_cents * 0.3) / 100;
+  const depositCents = Math.round(service.price_cents * 0.3);
 
   const pixPayload = useMemo(() => {
     if (!pix?.enabled || !pix?.key) return null;
@@ -2092,9 +2145,37 @@ function PaymentDialog({
     if (open) {
       setRemaining(TOTAL_SECONDS);
       setProcessing(false);
+      setMpLoading(false);
       setCopied(false);
+      setPayMethod(defaultMethod);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleMpPay() {
+    setMpLoading(true);
+    try {
+      const { initPoint } = await createMpPreferenceAndBooking({
+        data: {
+          professionalId,
+          serviceId: service.id,
+          scheduledAt: `${date}T${time}:00`,
+          durationMinutes: service.duration,
+          priceCents: service.price_cents,
+          depositCents,
+          clientName,
+          clientPhone,
+          clientEmail,
+          notes: clientNotes,
+          slug: professionalSlug,
+          origin: window.location.origin,
+        },
+      });
+      window.location.href = initPoint;
+    } catch {
+      toast.error("Não foi possível criar a cobrança. Tente novamente.");
+      setMpLoading(false);
+    }
+  }
 
   // QR code real (lado cliente)
   useEffect(() => {
@@ -2124,7 +2205,7 @@ function PaymentDialog({
   const urgent = remaining <= 60;
   const firstName = clientName?.split(" ")[0] || "Você";
 
-  // Link WhatsApp para enviar comprovante
+  // Link WhatsApp para enviar comprovante (PIX)
   const proDigits = professionalPhone?.replace(/\D/g, "") || "";
   const waNumber = proDigits.startsWith("55") ? proDigits : `55${proDigits}`;
   const waComprovanteLink = proDigits
@@ -2150,8 +2231,6 @@ function PaymentDialog({
     setTimeout(() => onConfirmed(), 600);
   }
 
-  const hasPix = pix?.enabled && !!pix?.key;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -2176,9 +2255,11 @@ function PaymentDialog({
                 <div>
                   <DialogTitle className="font-display text-lg">Pagamento do sinal</DialogTitle>
                   <DialogDescription className="text-xs">
-                    {hasPix
-                      ? `PIX pessoal · ${pix.beneficiaryName || professionalName}`
-                      : "Confirme com o profissional"}
+                    {payMethod === "mp"
+                      ? "Mercado Pago — pagamento automático"
+                      : hasPix
+                        ? `PIX pessoal · ${pix.beneficiaryName || professionalName}`
+                        : "Confirme com o profissional"}
                   </DialogDescription>
                 </div>
               </div>
@@ -2204,77 +2285,115 @@ function PaymentDialog({
               <div className="font-display text-2xl font-bold text-gradient">{formatPrice(depositValue)}</div>
             </div>
 
-            {/* QR Code real ou placeholder */}
-            <div className="mt-4 flex flex-col items-center rounded-3xl border border-border/60 bg-card p-5">
-              {hasPix ? (
-                qrDataUrl ? (
-                  <img src={qrDataUrl} alt="QR Code PIX" className="h-[176px] w-[176px] rounded-xl" />
-                ) : (
-                  <div className="flex h-[176px] w-[176px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
-                    <QrCode className="h-16 w-16 animate-pulse" />
-                  </div>
-                )
-              ) : (
-                <div className="flex h-[176px] w-[176px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
-                  <QrCode className="h-16 w-16 opacity-40" />
-                </div>
-              )}
-
-              {hasPix ? (
-                <>
-                  <p className="mt-3 text-center text-xs text-muted-foreground">
-                    Abra o app do seu banco e escaneie o QR Code,<br />ou copie o código PIX abaixo.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={copyPix}
-                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-secondary/70"
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? "Copiado!" : "Copiar código PIX"}
-                  </button>
-                </>
-              ) : (
-                <p className="mt-3 text-center text-xs text-muted-foreground">
-                  O profissional ainda não configurou uma chave PIX. Entre em contato para combinar o pagamento.
-                </p>
-              )}
-            </div>
-
-            {/* Instrução comprovante (só se tem PIX e WA) */}
-            {hasPix && waComprovanteLink && (
-              <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-border/60 bg-secondary/40 px-4 py-3">
-                <p className="text-xs font-medium text-foreground">
-                  Após pagar, envie o comprovante para confirmarmos seu agendamento:
-                </p>
-                <a
-                  href={waComprovanteLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-sm"
+            {/* Abas de método (só mostra se os dois estão disponíveis) */}
+            {mpConnected && hasPix && (
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-secondary/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => setPayMethod("mp")}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition",
+                    payMethod === "mp" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  Enviar comprovante pelo WhatsApp
-                </a>
+                  <CreditCard className="h-3.5 w-3.5" /> Mercado Pago
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayMethod("pix")}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition",
+                    payMethod === "pix" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <QrCode className="h-3.5 w-3.5" /> PIX
+                </button>
               </div>
             )}
 
-            {/* Aviso */}
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              {firstName}, após enviar o comprovante seu agendamento será confirmado manualmente.
-              Se o tempo expirar, o slot será liberado para outras pessoas.
-            </p>
+            {/* ── Mercado Pago ── */}
+            {payMethod === "mp" && (
+              <div className="mt-4 flex flex-col items-center gap-4 rounded-3xl border border-border/60 bg-card p-5">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#009EE3]/10">
+                  <CreditCard className="h-8 w-8 text-[#009EE3]" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground">Pagar com Mercado Pago</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Você será redirecionado para o ambiente seguro do Mercado Pago para concluir o pagamento.
+                    Ao voltar, seu agendamento será confirmado automaticamente.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleMpPay}
+                  disabled={mpLoading || remaining === 0}
+                  size="lg"
+                  className="h-12 w-full rounded-2xl bg-[#009EE3] text-sm font-bold text-white hover:bg-[#0082bd] disabled:opacity-60"
+                >
+                  {mpLoading ? "Aguarde…" : <><CreditCard className="mr-2 h-4 w-4" /> Pagar {formatPrice(depositValue)} via Mercado Pago</>}
+                </Button>
+              </div>
+            )}
 
-            {/* CTA */}
-            {hasPix && (
-              <Button
-                onClick={handleConfirm}
-                disabled={processing || remaining === 0}
-                size="lg"
-                className="mt-5 h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60"
-              >
-                {processing ? "Registrando…" : <><Check className="mr-2 h-5 w-5" /> Já enviei o comprovante</>}
-              </Button>
+            {/* ── PIX ── */}
+            {payMethod === "pix" && (
+              <>
+                <div className="mt-4 flex flex-col items-center rounded-3xl border border-border/60 bg-card p-5">
+                  {hasPix ? (
+                    qrDataUrl ? (
+                      <img src={qrDataUrl} alt="QR Code PIX" className="h-[176px] w-[176px] rounded-xl" />
+                    ) : (
+                      <div className="flex h-[176px] w-[176px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
+                        <QrCode className="h-16 w-16 animate-pulse" />
+                      </div>
+                    )
+                  ) : (
+                    <div className="flex h-[176px] w-[176px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
+                      <QrCode className="h-16 w-16 opacity-40" />
+                    </div>
+                  )}
+                  {hasPix ? (
+                    <>
+                      <p className="mt-3 text-center text-xs text-muted-foreground">
+                        Abra o app do seu banco e escaneie o QR Code,<br />ou copie o código PIX abaixo.
+                      </p>
+                      <button type="button" onClick={copyPix}
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-secondary/70">
+                        {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copied ? "Copiado!" : "Copiar código PIX"}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="mt-3 text-center text-xs text-muted-foreground">
+                      O profissional ainda não configurou uma chave PIX. Entre em contato para combinar o pagamento.
+                    </p>
+                  )}
+                </div>
+
+                {hasPix && waComprovanteLink && (
+                  <div className="mt-4 flex flex-col gap-2 rounded-2xl border border-border/60 bg-secondary/40 px-4 py-3">
+                    <p className="text-xs font-medium text-foreground">
+                      Após pagar, envie o comprovante para confirmarmos seu agendamento:
+                    </p>
+                    <a href={waComprovanteLink} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white shadow-sm">
+                      <MessageCircle className="h-4 w-4" /> Enviar comprovante pelo WhatsApp
+                    </a>
+                  </div>
+                )}
+
+                <p className="mt-4 text-center text-xs text-muted-foreground">
+                  {firstName}, após enviar o comprovante seu agendamento será confirmado manualmente.
+                  Se o tempo expirar, o slot será liberado.
+                </p>
+
+                {hasPix && (
+                  <Button onClick={handleConfirm} disabled={processing || remaining === 0} size="lg"
+                    className="mt-5 h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60">
+                    {processing ? "Registrando…" : <><Check className="mr-2 h-5 w-5" /> Já enviei o comprovante</>}
+                  </Button>
+                )}
+              </>
             )}
 
             <button
