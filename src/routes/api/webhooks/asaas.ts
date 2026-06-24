@@ -19,7 +19,7 @@ export const ServerRoute = createServerFileRoute(
     // 5. Inserir em billing_events
     // 6. Enviar WhatsApp de confirmação ou bloqueio
 
-    const token = request.headers.get("access_token");
+    const token = request.headers.get("asaas-access-token");
     if (token !== process.env.ASAAS_WEBHOOK_TOKEN) {
       return new Response("Unauthorized", { status: 401 });
     }

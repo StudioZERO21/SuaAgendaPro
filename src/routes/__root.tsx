@@ -17,6 +17,11 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthContext, useAuthState, createAuthActions } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  type SubscriptionInfo,
+  isBlocked,
+  requiresSubscription,
+} from "@/lib/subscription-guard";
 
 const PUBLIC_PATHS = [
   "/",
@@ -36,17 +41,32 @@ function isPublicPath(pathname: string) {
   return false;
 }
 
-function AuthGuard({ children }: { children: ReactNode }) {
+function AuthGuard({
+  children,
+  subscription,
+}: {
+  children: ReactNode;
+  subscription: SubscriptionInfo | null;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const { session, isLoading } = useAuthState();
 
+  // Redireciona para login se não autenticado
   useEffect(() => {
     if (isLoading) return;
     if (!session && !isPublicPath(location.pathname)) {
       navigate({ to: "/login" });
     }
   }, [session, isLoading, location.pathname, navigate]);
+
+  // Redireciona para /plano se assinatura bloqueada
+  useEffect(() => {
+    if (!session || !subscription) return;
+    if (isBlocked(subscription) && requiresSubscription(location.pathname)) {
+      navigate({ to: "/plano" });
+    }
+  }, [subscription, location.pathname, session, navigate]);
 
   return <>{children}</>;
 }
@@ -286,6 +306,8 @@ function RootComponent() {
     [session, user, isLoading, authActions],
   );
 
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+
   // 1. Aplica tema do localStorage imediatamente (sem flash)
   useEffect(() => {
     import("../lib/personalization").then((m) => {
@@ -319,6 +341,28 @@ function RootComponent() {
       });
   }, [user?.id]);
 
+  // 3. Busca assinatura e verifica bloqueio
+  useEffect(() => {
+    if (!user?.id) { setSubscription(null); return; }
+    supabase
+      .from("subscriptions")
+      .select("status, plan_id, trial_ends_at, current_period_end")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const endsAt = data.trial_ends_at ?? data.current_period_end;
+        const diff = endsAt ? new Date(endsAt).getTime() - Date.now() : null;
+        setSubscription({
+          status: data.status as SubscriptionInfo["status"],
+          planId: data.plan_id,
+          trialEndsAt: data.trial_ends_at,
+          currentPeriodEnd: data.current_period_end,
+          daysRemaining: diff !== null ? Math.max(0, Math.ceil(diff / 86_400_000)) : null,
+        });
+      });
+  }, [user?.id]);
+
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -338,7 +382,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={authValue}>
-        <AuthGuard>
+        <AuthGuard subscription={subscription}>
           <Outlet />
         </AuthGuard>
         <Toaster position="top-center" richColors />
