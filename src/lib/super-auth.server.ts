@@ -4,7 +4,6 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { getRequest } from "@tanstack/react-start/server";
 
 const TOKEN_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
 
@@ -64,6 +63,7 @@ function parseCookieToken(cookieHeader: string): string | null {
 }
 
 export async function requireSuperAuth(): Promise<void> {
+  const { getRequest } = await import("@tanstack/react-start/server");
   const req = getRequest();
   // Cookie (enviado automaticamente) tem prioridade; header como fallback
   const cookieToken = parseCookieToken(req?.headers.get("cookie") ?? "");
