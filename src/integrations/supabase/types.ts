@@ -93,6 +93,89 @@ export type Database = {
           },
         ]
       }
+      asaas_customers: {
+        Row: {
+          asaas_customer_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          asaas_customer_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          asaas_customer_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_customers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_events: {
+        Row: {
+          amount_cents: number | null
+          asaas_event_id: string | null
+          asaas_payment_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json | null
+          status_after: string | null
+          status_before: string | null
+          subscription_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          asaas_event_id?: string | null
+          asaas_payment_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          status_after?: string | null
+          status_before?: string | null
+          subscription_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          asaas_event_id?: string | null
+          asaas_payment_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          status_after?: string | null
+          status_before?: string | null
+          subscription_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_dates: {
         Row: {
           blocked_date: string
@@ -324,6 +407,45 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          display_name: string
+          features: Json
+          id: string
+          is_active: boolean
+          is_visible: boolean
+          price_cents: number
+          sort_order: number
+          trial_days: number
+        }
+        Insert: {
+          billing_cycle?: string
+          created_at?: string
+          display_name: string
+          features?: Json
+          id: string
+          is_active?: boolean
+          is_visible?: boolean
+          price_cents?: number
+          sort_order?: number
+          trial_days?: number
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          display_name?: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_visible?: boolean
+          price_cents?: number
+          sort_order?: number
+          trial_days?: number
         }
         Relationships: []
       }
@@ -743,6 +865,72 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          grace_period_ends_at: string | null
+          id: string
+          notes: string | null
+          plan_id: string
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          grace_period_ends_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          grace_period_ends_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_messages: {
         Row: {
           appointment_id: string | null
@@ -1037,18 +1225,3 @@ export const Constants = {
     },
   },
 } as const
-
-// ── Convenience aliases ───────────────────────────────────────
-export type Appointment        = Tables<"appointments">
-export type AppointmentStatus  = Database["public"]["Enums"]["appointment_status"]
-export type Client             = Tables<"clients">
-export type Service            = Tables<"services">
-export type ServiceInsert      = TablesInsert<"services">
-export type ServiceUpdate      = TablesUpdate<"services">
-export type WorkingHours       = Tables<"working_hours">
-export type WorkingHoursInsert = TablesInsert<"working_hours">
-export type BlockedDate        = Tables<"blocked_dates">
-export type Review             = Tables<"reviews">
-export type ReviewInsert       = TablesInsert<"reviews">
-export type ReviewUpdate       = TablesUpdate<"reviews">
-export type ScheduleBlock      = Tables<"schedule_blocks">

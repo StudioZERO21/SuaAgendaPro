@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Sparkles, Zap, Crown, Lock } from "lucide-react";
+import { CheckCircle2, Sparkles, Zap, Crown, Lock, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { type SubscriptionInfo, getBlockReason, getDaysRemaining } from "@/lib/subscription-guard";
+import { createCheckoutSession } from "@/lib/asaas-subscription.functions";
 
 export const Route = createFileRoute("/plano")({
   head: () => ({
@@ -107,6 +109,20 @@ function PlanoPage() {
   const reason = getBlockReason(subscription);
   const daysLeft = getDaysRemaining(subscription?.trialEndsAt ?? subscription?.currentPeriodEnd);
 
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  async function handleSubscribe() {
+    setCheckoutLoading(true);
+    try {
+      const { checkoutUrl } = await createCheckoutSession();
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      toast.error("Erro ao gerar link de pagamento. Tente novamente.");
+      console.error(err);
+      setCheckoutLoading(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-start bg-background px-4 py-12">
       <div className="w-full max-w-md space-y-6">
@@ -163,14 +179,16 @@ function PlanoPage() {
           </ul>
 
           <button
-            className="mt-6 w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-md transition hover:opacity-90 active:scale-[0.98]"
-            onClick={() => {
-              // TODO (Etapa 4): chamar Asaas e redirecionar para checkout
-              alert("Integração Asaas em implementação (Etapa 4)");
-            }}
+            className="mt-6 w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-md transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+            onClick={handleSubscribe}
+            disabled={checkoutLoading}
           >
-            <Zap className="mr-1.5 inline h-4 w-4" />
-            Assinar Premium — R$ 49,90/mês
+            {checkoutLoading ? (
+              <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="mr-1.5 inline h-4 w-4" />
+            )}
+            {checkoutLoading ? "Aguarde..." : "Assinar Premium — R$ 49,90/mês"}
           </button>
           <p className="mt-2.5 text-center text-[11px] text-muted-foreground">
             PIX ou cartão de crédito · Cancele quando quiser

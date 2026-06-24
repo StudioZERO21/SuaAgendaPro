@@ -1,5 +1,5 @@
-// ETAPA 4 — Serviço Asaas
-// Cliente HTTP para a API do Asaas (PIX + cartão, sem boleto)
+// Asaas HTTP client — PIX + cartão, sem boleto
+// Documentação: https://docs.asaas.com/reference
 
 const ASAAS_BASE = {
   sandbox:    "https://sandbox.asaas.com/api/v3",
@@ -24,26 +24,65 @@ async function asaasRequest<T>(
     headers: {
       "Content-Type": "application/json",
       "access_token": apiKey,
+      "User-Agent": "suaAgendaPro/1.0",
     },
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Asaas ${method} ${path} → ${res.status}: ${err}`);
+    const text = await res.text();
+    throw new Error(`Asaas ${method} ${path} → ${res.status}: ${text}`);
   }
   return res.json() as Promise<T>;
 }
 
-// TODO (Etapa 4) — implementar:
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 export type AsaasCustomer = {
   id: string;
   name: string;
   email: string;
-  cpfCnpj?: string;
+  phone?: string;
   mobilePhone?: string;
+  cpfCnpj?: string;
 };
+
+export type AsaasBillingType = "PIX" | "CREDIT_CARD" | "UNDEFINED";
+export type AsaasSubscriptionCycle = "MONTHLY" | "YEARLY";
+export type AsaasSubscriptionStatus = "ACTIVE" | "INACTIVE" | "EXPIRED";
+
+export type AsaasSubscription = {
+  id: string;
+  customer: string;
+  billingType: AsaasBillingType;
+  value: number;
+  cycle: AsaasSubscriptionCycle;
+  nextDueDate: string;
+  status: AsaasSubscriptionStatus;
+  description?: string;
+};
+
+export type AsaasPayment = {
+  id: string;
+  subscription: string;
+  status: "PENDING" | "RECEIVED" | "CONFIRMED" | "OVERDUE" | "REFUNDED";
+  value: number;
+  netValue: number;
+  billingType: string;
+  invoiceUrl: string;
+  bankSlipUrl: string | null;
+  pixQrCodeImage: string | null;
+  pixCopiaECola: string | null;
+  dueDate: string;
+};
+
+export type AsaasListResponse<T> = {
+  data: T[];
+  totalCount: number;
+  hasMore: boolean;
+};
+
+// ─── Customer ────────────────────────────────────────────────────────────────
 
 export async function createAsaasCustomer(params: {
   name: string;
@@ -51,40 +90,72 @@ export async function createAsaasCustomer(params: {
   cpfCnpj?: string;
   mobilePhone?: string;
 }): Promise<AsaasCustomer> {
-  // TODO: POST /customers
-  throw new Error("Etapa 4 — não implementado");
+  return asaasRequest<AsaasCustomer>("POST", "/customers", {
+    name: params.name,
+    email: params.email,
+    ...(params.cpfCnpj    && { cpfCnpj:     params.cpfCnpj }),
+    ...(params.mobilePhone && { mobilePhone: sanitizePhone(params.mobilePhone) }),
+    notificationDisabled: false,
+  });
 }
 
-export type AsaasSubscription = {
-  id: string;
-  status: string;
-  value: number;
-  nextDueDate: string;
-};
+export async function findAsaasCustomerByEmail(email: string): Promise<AsaasCustomer | null> {
+  const res = await asaasRequest<AsaasListResponse<AsaasCustomer>>(
+    "GET",
+    `/customers?email=${encodeURIComponent(email)}&limit=1`,
+  );
+  return res.data[0] ?? null;
+}
+
+// ─── Subscription ─────────────────────────────────────────────────────────────
 
 export async function createAsaasSubscription(params: {
   customerId: string;
   value: number;
-  billingType: "PIX" | "CREDIT_CARD";
-  nextDueDate: string;      // YYYY-MM-DD
+  billingType?: AsaasBillingType;
+  nextDueDate: string;  // YYYY-MM-DD
+  cycle?: AsaasSubscriptionCycle;
   description?: string;
 }): Promise<AsaasSubscription> {
-  // TODO: POST /subscriptions
-  throw new Error("Etapa 4 — não implementado");
+  return asaasRequest<AsaasSubscription>("POST", "/subscriptions", {
+    customer:    params.customerId,
+    billingType: params.billingType ?? "UNDEFINED",
+    value:       params.value,
+    nextDueDate: params.nextDueDate,
+    cycle:       params.cycle ?? "MONTHLY",
+    description: params.description ?? "suaAgendaPro Premium",
+  });
 }
 
-export type AsaasPaymentLink = {
-  invoiceUrl: string;
-  bankSlipUrl: string | null;
-  pixQrCode: string | null;
-};
-
-export async function getPaymentLink(subscriptionId: string): Promise<AsaasPaymentLink> {
-  // TODO: GET /subscriptions/:id/payments → pegar última fatura pendente
-  throw new Error("Etapa 4 — não implementado");
+export async function getAsaasSubscription(id: string): Promise<AsaasSubscription> {
+  return asaasRequest<AsaasSubscription>("GET", `/subscriptions/${id}`);
 }
 
-export async function cancelAsaasSubscription(subscriptionId: string): Promise<void> {
-  // TODO: DELETE /subscriptions/:id
-  throw new Error("Etapa 4 — não implementado");
+export async function cancelAsaasSubscription(id: string): Promise<void> {
+  await asaasRequest<unknown>("DELETE", `/subscriptions/${id}`);
+}
+
+// ─── Payments ────────────────────────────────────────────────────────────────
+
+export async function getSubscriptionPayments(
+  subscriptionId: string,
+  status?: "PENDING" | "OVERDUE",
+): Promise<AsaasPayment[]> {
+  const qs = status ? `&status=${status}` : "";
+  const res = await asaasRequest<AsaasListResponse<AsaasPayment>>(
+    "GET",
+    `/subscriptions/${subscriptionId}/payments?limit=5${qs}`,
+  );
+  return res.data;
+}
+
+export async function getFirstPendingPayment(subscriptionId: string): Promise<AsaasPayment | null> {
+  const payments = await getSubscriptionPayments(subscriptionId, "PENDING");
+  return payments[0] ?? null;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function sanitizePhone(phone: string): string {
+  return phone.replace(/\D/g, "");
 }
