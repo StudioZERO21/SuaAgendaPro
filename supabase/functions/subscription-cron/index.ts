@@ -50,22 +50,25 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 // ─── WhatsApp via Evolution API ────────────────────────────────────────────────
 
 async function sendWhatsApp(phone: string, message: string): Promise<boolean> {
-  const apiUrl  = Deno.env.get("EVOLUTION_API_URL");
-  const apiKey  = Deno.env.get("EVOLUTION_API_KEY");
-  const instance = Deno.env.get("EVOLUTION_INSTANCE") ?? "suaagendapro";
+  const apiUrl       = Deno.env.get("EVOLUTION_API_URL");
+  const instanceToken = Deno.env.get("EVOLUTION_API_KEY");   // token da instância
+  const instanceId    = Deno.env.get("EVOLUTION_INSTANCE_ID"); // UUID da instância
 
-  if (!apiUrl || !apiKey) {
+  if (!apiUrl || !instanceToken) {
     console.warn("[cron:wa] Evolution API não configurada →", phone);
     return false;
   }
 
-  const number = phone.replace(/\D/g, "");
-  const jid    = (number.startsWith("55") ? number : `55${number}`) + "@s.whatsapp.net";
+  const digits = phone.replace(/\D/g, "");
+  const number = digits.startsWith("55") ? digits : `55${digits}`;
 
-  const res = await fetch(`${apiUrl}/message/sendText/${instance}`, {
+  const body: Record<string, string> = { number, text: message };
+  if (instanceId) body["instanceId"] = instanceId;
+
+  const res = await fetch(`${apiUrl}/send/text`, {
     method: "POST",
-    headers: { "apikey": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ number: jid, text: message }),
+    headers: { "apikey": instanceToken, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
   if (!res.ok) { console.error("[cron:wa] error:", phone, await res.text()); return false; }
   return true;
