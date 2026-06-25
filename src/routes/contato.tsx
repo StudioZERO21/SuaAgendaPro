@@ -22,7 +22,7 @@ export const Route = createFileRoute("/contato")({
 });
 
 const channels = [
-  { icon: MessageCircle, label: "WhatsApp", value: "(11) 95105-3444", href: "https://wa.me/5511951053444" },
+  { icon: MessageCircle, label: "WhatsApp", value: "(11) 99999-9999", href: "https://wa.me/5511999999999" },
   { icon: Mail, label: "E-mail", value: "oi@suaagenda.pro", href: "mailto:oi@suaagenda.pro" },
   { icon: Instagram, label: "Instagram", value: "@suaagenda.pro", href: "https://instagram.com" },
 ];

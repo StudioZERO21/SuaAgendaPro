@@ -223,7 +223,7 @@ function PlanoPage() {
         <p className="text-center text-xs text-muted-foreground">
           Dúvidas?{" "}
           <a
-            href="https://wa.me/5511951053444"
+            href="https://wa.me/5511999999999"
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-primary underline underline-offset-2"
