@@ -10,6 +10,7 @@ export type UIClient = {
   phone: string;
   email?: string | null;
   notes?: string | null;
+  internalNotes?: string | null;
   birthDate?: string | null;
   isVip: boolean;
   initials: string;
@@ -47,6 +48,7 @@ export function adaptClient(row: Client): UIClient {
     phone:              row.phone ?? "",
     email:              row.email,
     notes:              row.notes,
+    internalNotes:      (row as any).internal_notes ?? null,
     birthDate:          row.birth_date,
     isVip:              row.is_vip ?? false,
     initials:           makeInitials(row.name),
@@ -97,6 +99,7 @@ export function useCreateCliente() {
       phone: string;
       email?: string | null;
       notes?: string | null;
+      internalNotes?: string | null;
       birthDate?: string | null;
       isVip?: boolean;
     }) => {
@@ -105,13 +108,14 @@ export function useCreateCliente() {
         .from("clients")
         .insert({
           professional_id: id,
-          name:       payload.name.trim(),
-          phone:      payload.phone.trim(),
-          email:      payload.email?.trim() || null,
-          notes:      payload.notes?.trim() || null,
-          birth_date: payload.birthDate || null,
-          is_vip:     payload.isVip ?? false,
-        })
+          name:           payload.name.trim(),
+          phone:          payload.phone.trim(),
+          email:          payload.email?.trim() || null,
+          notes:          payload.notes?.trim() || null,
+          internal_notes: payload.internalNotes?.trim() || null,
+          birth_date:     payload.birthDate || null,
+          is_vip:         payload.isVip ?? false,
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -130,6 +134,7 @@ export function useUpdateCliente() {
       phone?: string;
       email?: string | null;
       notes?: string | null;
+      internalNotes?: string | null;
       birthDate?: string | null;
       isVip?: boolean;
     }) => {
@@ -137,13 +142,14 @@ export function useUpdateCliente() {
       const { error } = await supabase
         .from("clients")
         .update({
-          ...(patch.name      !== undefined && { name:       patch.name.trim() }),
-          ...(patch.phone     !== undefined && { phone:      patch.phone.trim() || undefined }),
-          ...(patch.email     !== undefined && { email:      patch.email?.trim() || null }),
-          ...(patch.notes     !== undefined && { notes:      patch.notes?.trim() || null }),
-          ...(patch.birthDate !== undefined && { birth_date: patch.birthDate || null }),
-          ...(patch.isVip     !== undefined && { is_vip:     patch.isVip }),
-        })
+          ...(patch.name          !== undefined && { name:           patch.name.trim() }),
+          ...(patch.phone         !== undefined && { phone:          patch.phone.trim() || undefined }),
+          ...(patch.email         !== undefined && { email:          patch.email?.trim() || null }),
+          ...(patch.notes         !== undefined && { notes:          patch.notes?.trim() || null }),
+          ...(patch.internalNotes !== undefined && { internal_notes: patch.internalNotes?.trim() || null }),
+          ...(patch.birthDate     !== undefined && { birth_date:     patch.birthDate || null }),
+          ...(patch.isVip         !== undefined && { is_vip:         patch.isVip }),
+        } as any)
         .eq("id", id);
       if (error) throw error;
     },

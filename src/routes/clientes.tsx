@@ -421,13 +421,14 @@ function ClientModal({
   }
 
   const [form, setForm] = useState({
-    name:     client.name,
-    phone:    client.phone,
-    email:    client.email ?? "",
-    notes:    client.notes ?? "",
-    birthday: toDisplay(client.birthDate),
-    address:  "" as string,
-    isVip:    client.isVip,
+    name:          client.name,
+    phone:         client.phone,
+    email:         client.email ?? "",
+    notes:         client.notes ?? "",
+    internalNotes: client.internalNotes ?? "",
+    birthday:      toDisplay(client.birthDate),
+    address:       "" as string,
+    isVip:         client.isVip,
   });
   const [showAddress, setShowAddress] = useState(false);
 
@@ -438,13 +439,14 @@ function ClientModal({
   async function handleSave() {
     try {
       await updateCliente.mutateAsync({
-        id:        client.id,
-        name:      form.name,
-        phone:     form.phone,
-        email:     form.email || null,
-        notes:     form.notes || null,
-        birthDate: toIso(form.birthday),
-        isVip:     form.isVip,
+        id:            client.id,
+        name:          form.name,
+        phone:         form.phone,
+        email:         form.email || null,
+        notes:         form.notes || null,
+        internalNotes: form.internalNotes || null,
+        birthDate:     toIso(form.birthday),
+        isVip:         form.isVip,
       });
       toast.success("Cliente atualizada");
       onSaved();
@@ -564,14 +566,15 @@ function ClientModal({
                 {(showAddress || !editing) && (
                   <Field label="Endereço"     icon={MapPin}     value={form.address}        editing={editing} onChange={(v) => update("address", v)} />
                 )}
+                <Field label="Observações" icon={StickyNote} value={editing ? form.notes : client.notes ?? ""} editing={editing} onChange={(v) => update("notes", v)} multiline placeholder="Ex: alergia a determinado produto..." />
                 <Field
                   label="Anotações internas"
                   icon={Lock}
-                  value={editing ? form.notes : client.notes ?? ""}
+                  value={editing ? form.internalNotes : client.internalNotes ?? ""}
                   editing={editing}
-                  onChange={(v) => update("notes", v)}
+                  onChange={(v) => update("internalNotes", v)}
                   multiline
-                  placeholder="Anotações privadas sobre a cliente..."
+                  placeholder="Ex: não gosta de café, prefere atendimento mais rápido..."
                   subtitle={
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
                       <EyeOff className="h-2.5 w-2.5" /> Privado
@@ -649,7 +652,7 @@ function Field({
 
 function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const createCliente = useCreateCliente();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "", birthday: "", address: "", isVip: false });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "", internalNotes: "", birthday: "", address: "", isVip: false });
   const [showAddress, setShowAddress] = useState(false);
 
   function update<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -667,12 +670,13 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
     if (!form.phone.trim()) return toast.error("Informe o WhatsApp");
     try {
       await createCliente.mutateAsync({
-        name:      form.name.trim(),
-        phone:     form.phone.trim(),
-        email:     form.email.trim() || null,
-        notes:     form.notes.trim() || null,
-        birthDate: toIso(form.birthday),
-        isVip:     form.isVip,
+        name:          form.name.trim(),
+        phone:         form.phone.trim(),
+        email:         form.email.trim() || null,
+        notes:         form.notes.trim() || null,
+        internalNotes: form.internalNotes.trim() || null,
+        birthDate:     toIso(form.birthday),
+        isVip:         form.isVip,
       });
       toast.success("Cliente cadastrada ✨");
       onCreated();
@@ -733,12 +737,13 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
           {showAddress && <FormField label="Endereço" value={form.address} onChange={(v) => update("address", v)} placeholder="Cidade, UF" />}
 
+          <FormField label="Observações" value={form.notes} onChange={(v) => update("notes", v)} multiline placeholder="Ex: alergia a determinado produto..." />
           <FormField
             label="Anotações internas"
-            value={form.notes}
-            onChange={(v) => update("notes", v)}
+            value={form.internalNotes}
+            onChange={(v) => update("internalNotes", v)}
             multiline
-            placeholder="Anotações privadas sobre a cliente..."
+            placeholder="Ex: não gosta de café, prefere atendimento mais rápido..."
             subtitle={
               <span className="inline-flex items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
                 <EyeOff className="h-2.5 w-2.5" /> Privado
