@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Eye, Mail, MessageSquare, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Mail, MessageSquare, Loader2, SendHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { withSuperToken } from "@/lib/super-client";
 import {
-  getTemplates, upsertTemplate, deleteTemplate, previewTemplate,
+  getTemplates, upsertTemplate, deleteTemplate, previewTemplate, sendTestEmail,
   type MessageTemplate,
 } from "@/lib/super-templates.functions";
 
@@ -35,6 +35,9 @@ function TemplatesPage() {
   const [deleting, setDeleting]   = useState<string | null>(null);
   const [preview, setPreview]     = useState<{ body: string; html: string } | null>(null);
   const [varInput, setVarInput]   = useState("");
+  const [testTarget, setTestTarget]     = useState<MessageTemplate | null>(null);
+  const [testEmail, setTestEmail]       = useState("adrianoelite1980@gmail.com");
+  const [testSending, setTestSending]   = useState(false);
 
   function load() {
     setLoading(true);
@@ -82,6 +85,24 @@ function TemplatesPage() {
     } catch (e: any) {
       toast.error(e.message);
     } finally { setDeleting(null); }
+  }
+
+  async function sendTest() {
+    if (!testTarget) return;
+    setTestSending(true);
+    try {
+      const result = await sendTestEmail({
+        data: withSuperToken({ id: testTarget.id, recipient: testEmail }),
+      });
+      if (result.ok) {
+        toast.success(result.message);
+        setTestTarget(null);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally { setTestSending(false); }
   }
 
   async function showPreview(t: MessageTemplate) {
@@ -152,6 +173,11 @@ function TemplatesPage() {
                         <Button size="sm" variant="ghost" onClick={() => showPreview(t)} title="Prévia">
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
+                        {t.type === "email" && (
+                          <Button size="sm" variant="ghost" onClick={() => setTestTarget(t)} title="Testar envio" className="text-blue-500 hover:text-blue-600">
+                            <SendHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" onClick={() => setEditing(t)} title="Editar">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -242,6 +268,48 @@ function TemplatesPage() {
             <Button onClick={save} disabled={saving}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {editing?.id ? "Salvar alterações" : "Criar template"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Email Dialog */}
+      <Dialog open={!!testTarget} onOpenChange={(o) => !o && setTestTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <SendHorizontal className="h-4 w-4 text-blue-500" />
+              Testar envio de e-mail
+            </DialogTitle>
+            <DialogDescription>
+              Envia o template <strong>{testTarget?.name}</strong> com variáveis de exemplo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label>Destinatário</Label>
+              <Input
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder="exemplo@email.com"
+              />
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 space-y-1">
+              <p className="font-semibold">⚠ Sem domínio verificado no Resend</p>
+              <p>Sem domínio verificado, o Resend só aceita envio para o email da sua conta (<strong>adrianoelite1980@gmail.com</strong>).</p>
+              <p>Para enviar para qualquer email: acesse <strong>resend.com/domains</strong> e verifique o domínio <strong>suaagenda.pro</strong>. Depois adicione <code>RESEND_FROM_EMAIL=noreply@suaagenda.pro</code> no .env.</p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+              <p><strong>Variáveis substituídas por:</strong></p>
+              <p>nome → "Profissional Teste" · dias_restantes → "3" · link_pagamento → "https://suaagenda.pro/plano"</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setTestTarget(null)}>Cancelar</Button>
+            <Button onClick={sendTest} disabled={testSending || !testEmail.includes("@")}>
+              {testSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendHorizontal className="mr-2 h-4 w-4" />}
+              Enviar teste
             </Button>
           </DialogFooter>
         </DialogContent>
