@@ -52,6 +52,7 @@ function DashboardPage() {
   const kpis = [
     {
       key: "faturamento", label: "Faturamento",
+      subtitle: "serviços concluídos",
       value: formatPrice(d.revenueCents),
       delta: revenueD.delta, up: revenueD.up,
       icon: DollarSign,
@@ -139,6 +140,9 @@ function DashboardPage() {
                       {k.value}
                     </motion.p>
                     <p className="mt-6 text-[11px] font-semibold uppercase tracking-wider text-white/20">{k.label}</p>
+                    {"subtitle" in k && k.subtitle && (
+                      <p className="text-[9px] text-white/30 mt-0.5">{k.subtitle as string}</p>
+                    )}
                     <motion.div
                       initial={{ y: 24, opacity: 0, rotate: -8 }} animate={{ y: 0, opacity: 1, rotate: 0 }}
                       transition={{ delay: 0.2 + i * 0.08, type: "spring", stiffness: 180, damping: 14 }}

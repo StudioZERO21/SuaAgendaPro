@@ -90,9 +90,11 @@ export function useDashboard() {
 
     // ── KPIs ─────────────────────────────────────────────────
     const nonCancelled = (arr: typeof appts) => arr.filter((a) => a.status !== "cancelado");
+    const completed    = (arr: typeof appts) => arr.filter((a) => a.status === "concluido");
 
-    const revenueCents     = nonCancelled(thisMonthAppts).reduce((s, a) => s + a.priceCents, 0);
-    const lastRevenueCents = nonCancelled(lastMonthAppts).reduce((s, a) => s + a.priceCents, 0);
+    // Faturamento = apenas serviços concluídos (efetivamente pagos)
+    const revenueCents     = completed(thisMonthAppts).reduce((s, a) => s + a.priceCents, 0);
+    const lastRevenueCents = completed(lastMonthAppts).reduce((s, a) => s + a.priceCents, 0);
     const apptCount        = nonCancelled(thisMonthAppts).length;
     const lastApptCount    = nonCancelled(lastMonthAppts).length;
 
@@ -131,7 +133,7 @@ export function useDashboard() {
           ? "Hoje"
           : d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "").slice(0, 3);
         const revenue = appts
-          .filter((a) => a.date === ds && a.status !== "cancelado")
+          .filter((a) => a.date === ds && a.status === "concluido")
           .reduce((s, a) => s + a.priceCents, 0);
         return { day: label, value: revenue };
       });
@@ -183,7 +185,7 @@ export function useDashboard() {
       chart7:  getChartData(7),
       chart14: getChartData(14),
       chart30: getChartData(30),
-      ticketMedioCents: apptCount > 0 ? Math.round(revenueCents / apptCount) : 0,
+      ticketMedioCents: completed(thisMonthAppts).length > 0 ? Math.round(revenueCents / completed(thisMonthAppts).length) : 0,
       upcoming, topServices, topClients,
       peakMatrix, peakTop,
     };
