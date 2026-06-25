@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Plus, Phone, MessageCircle, Cake, Calendar, Crown, X, Pencil,
   Mail, MapPin, StickyNote, Check, ChevronLeft, ChevronRight, CalendarCheck,
-  Heart, Loader2,
+  Heart, Loader2, Lock, EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -564,7 +564,20 @@ function ClientModal({
                 {(showAddress || !editing) && (
                   <Field label="Endereço"     icon={MapPin}     value={form.address}        editing={editing} onChange={(v) => update("address", v)} />
                 )}
-                <Field label="Observações"  icon={StickyNote} value={editing ? form.notes : client.notes ?? ""} editing={editing} onChange={(v) => update("notes", v)} multiline />
+                <Field
+                  label="Anotações internas"
+                  icon={Lock}
+                  value={editing ? form.notes : client.notes ?? ""}
+                  editing={editing}
+                  onChange={(v) => update("notes", v)}
+                  multiline
+                  placeholder="Anotações privadas sobre a cliente..."
+                  subtitle={
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                      <EyeOff className="h-2.5 w-2.5" /> Privado
+                    </span>
+                  }
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
@@ -592,7 +605,7 @@ function ClientModal({
 // ── Field ─────────────────────────────────────────────────────
 
 function Field({
-  label, icon: Icon, value, editing, onChange, multiline, phone, placeholder,
+  label, icon: Icon, value, editing, onChange, multiline, phone, placeholder, subtitle,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -602,6 +615,7 @@ function Field({
   multiline?: boolean;
   phone?: boolean;
   placeholder?: string;
+  subtitle?: React.ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -609,7 +623,10 @@ function Field({
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+          {subtitle && <span>{subtitle}</span>}
+        </div>
         {editing ? (
           phone ? (
             <PhoneInputBR value={value} onChange={onChange} className="mt-1 h-9 text-sm [&>span]:text-xs [&>span]:px-2" />
@@ -716,7 +733,18 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
           {showAddress && <FormField label="Endereço" value={form.address} onChange={(v) => update("address", v)} placeholder="Cidade, UF" />}
 
-          <FormField label="Observações" value={form.notes} onChange={(v) => update("notes", v)} multiline />
+          <FormField
+            label="Anotações internas"
+            value={form.notes}
+            onChange={(v) => update("notes", v)}
+            multiline
+            placeholder="Anotações privadas sobre a cliente..."
+            subtitle={
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                <EyeOff className="h-2.5 w-2.5" /> Privado
+              </span>
+            }
+          />
 
           <VipBlock
             vipType={form.isVip ? "manual" : null}
@@ -740,17 +768,21 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
 // ── Form Field ────────────────────────────────────────────────
 
 function FormField({
-  label, value, onChange, placeholder, multiline,
+  label, value, onChange, placeholder, multiline, subtitle,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   multiline?: boolean;
+  subtitle?: React.ReactNode;
 }) {
   return (
     <div>
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <div className="mb-1 flex items-center gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+        {subtitle && <span>{subtitle}</span>}
+      </div>
       {multiline ? (
         <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder}
           className="w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
