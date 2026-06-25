@@ -6,6 +6,7 @@ import {
   Eye, Heart, Flame, Flower2, Star, Brush,
   User, Link2, DollarSign, Clock, AlertCircle,
   Plus, X, Share2, MapPin, Loader2, Home,
+  Camera, PawPrint, Stethoscope, SmilePlus, UserRound, PenTool,
 } from "lucide-react";
 import {
   Select,
@@ -42,6 +43,12 @@ const niches = [
   { id: "Estética Corporal",  label: "Estética corporal", Icon: Heart },
   { id: "Maquiagem",          label: "Maquiagem",         Icon: Brush },
   { id: "Depilação",          label: "Depilação",         Icon: Flame },
+  { id: "Fotografia",         label: "Fotografia",        Icon: Camera },
+  { id: "Pet Shop",           label: "Pet Shop",          Icon: PawPrint },
+  { id: "Veterinário",        label: "Veterinário",       Icon: Stethoscope },
+  { id: "Dentista",           label: "Dentista",          Icon: SmilePlus },
+  { id: "Barbeiro",           label: "Barbeiro",          Icon: UserRound },
+  { id: "Tatuagem",           label: "Tatuagem",          Icon: PenTool },
   { id: "Outro",              label: "Outro",             Icon: Star },
 ];
 

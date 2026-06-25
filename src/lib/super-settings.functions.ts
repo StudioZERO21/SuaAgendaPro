@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSuperAuth } from "@/lib/super-auth.server";
+import { getServerEnv, getServerEnvStatus } from "@/lib/server-env";
 
 const _st = z.string().optional();
 
@@ -30,6 +31,13 @@ export const updateSettings = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
   });
 
+export const getEnvStatus = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st }).parse(input ?? {}))
+  .handler(async ({ data }) => {
+    await requireSuperAuth(data._st ?? null);
+    return getServerEnvStatus();
+  });
+
 export const testApiConnection = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
     z.object({ _st, api: z.enum(["asaas", "resend", "evolution"]) }).parse(input),
@@ -38,10 +46,10 @@ export const testApiConnection = createServerFn({ method: "POST" })
     await requireSuperAuth(data._st ?? null);
 
     if (data.api === "asaas") {
-      const key = process.env.ASAAS_API_KEY;
+      const key = getServerEnv("ASAAS_API_KEY");
       if (!key) return { ok: false, message: "ASAAS_API_KEY não configurado no .env" };
       try {
-        const env = process.env.ASAAS_ENV === "production" ? "production" : "sandbox";
+        const env = getServerEnv("ASAAS_ENV") === "production" ? "production" : "sandbox";
         const base = env === "production" ? "https://api.asaas.com" : "https://sandbox.asaas.com";
         const r = await fetch(`${base}/api/v3/customers?limit=1`, { headers: { access_token: key } });
         if (r.ok) return { ok: true, message: `Asaas ${env} conectado com sucesso` };
@@ -50,7 +58,7 @@ export const testApiConnection = createServerFn({ method: "POST" })
     }
 
     if (data.api === "resend") {
-      const key = process.env.RESEND_API_KEY;
+      const key = getServerEnv("RESEND_API_KEY");
       if (!key) return { ok: false, message: "RESEND_API_KEY não configurado no .env" };
       try {
         const r = await fetch("https://api.resend.com/domains", { headers: { Authorization: `Bearer ${key}` } });
@@ -60,14 +68,16 @@ export const testApiConnection = createServerFn({ method: "POST" })
     }
 
     if (data.api === "evolution") {
-      const url = process.env.EVOLUTION_API_URL;
-      const key = process.env.EVOLUTION_API_KEY;
+      const url = getServerEnv("EVOLUTION_API_URL");
+      const key = getServerEnv("EVOLUTION_API_KEY");
       if (!url || !key) return { ok: false, message: "EVOLUTION_API_URL ou EVOLUTION_API_KEY não configurado no .env" };
       try {
-        const r = await fetch(`${url}/instance/fetchInstances`, { headers: { apikey: key } });
+        const base = url.replace(/\/+$/, "");
+        const r = await fetch(`${base}/instance/all`, { headers: { apikey: key } });
         if (r.ok) {
           const json = await r.json() as any;
-          return { ok: true, message: `Evolution conectado — ${Array.isArray(json) ? json.length : "?"} instância(s)` };
+          const count = Array.isArray(json) ? json.length : (json?.data?.length ?? "?");
+          return { ok: true, message: `Evolution conectado — ${count} instância(s)` };
         }
         return { ok: false, message: `Evolution retornou status ${r.status}` };
       } catch (e: any) { return { ok: false, message: e?.message ?? "Erro de conexão" }; }

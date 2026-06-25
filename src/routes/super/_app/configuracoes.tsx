@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { withSuperToken } from "@/lib/super-client";
-import { getSettings, updateSettings, testApiConnection } from "@/lib/super-settings.functions";
+import { getSettings, updateSettings, testApiConnection, getEnvStatus } from "@/lib/super-settings.functions";
 
 export const Route = createFileRoute("/super/_app/configuracoes")({
   ssr: false,
@@ -52,9 +52,9 @@ function ConfiguracoesPage() {
     getSettings({ data: withSuperToken() })
       .then((s) => { setSettings(s); setLoading(false); })
       .catch((e) => { toast.error(e.message); setLoading(false); });
-    import("@/lib/super-infra.functions").then(({ getInfraStats }) =>
-      getInfraStats({ data: withSuperToken() }).then((s) => setEnvStatus(s.envConfigured)).catch(() => {}),
-    );
+    getEnvStatus({ data: withSuperToken() })
+      .then((s) => setEnvStatus(s))
+      .catch((e) => toast.error("Erro ao ler .env: " + e.message));
   }, []);
 
   function set(key: string, val: string) { setSettings((p) => ({ ...p, [key]: val })); }
@@ -180,7 +180,7 @@ function ConfiguracoesPage() {
         <SectionHeader title="Chaves de API" description="Configuradas no arquivo .env do servidor — não armazenadas no banco" />
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex gap-2">
           <Info className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>Edite o arquivo <code className="font-mono">.env</code> na raiz do projeto e reinicie o servidor para aplicar as chaves.</span>
+          <span>Edite o arquivo <code className="font-mono">.env</code> na raiz do projeto e reinicie o servidor para aplicar as chaves. Chaves Asaas começam com <code className="font-mono">$</code> — use <code className="font-mono">\$</code> no .env (ex: <code className="font-mono">ASAAS_API_KEY=&quot;\$aact_...&quot;</code>).</span>
         </div>
         <div className="space-y-3">
           <div className="space-y-2">

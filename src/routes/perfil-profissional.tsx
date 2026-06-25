@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { PhoneInputBR } from "@/components/ui/phone-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PROFESSIONAL_SPECIALTIES } from "@/lib/professional-specialties";
 
 export const Route = createFileRoute("/perfil-profissional")({
   head: () => ({
@@ -31,11 +32,7 @@ export const Route = createFileRoute("/perfil-profissional")({
 
 // ── Constants ─────────────────────────────────────────────────
 
-const SPECIALTIES = [
-  "Lash Designer", "Cabeleireira", "Manicure",
-  "Designer de Sobrancelhas", "Maquiadora", "Esteticista",
-  "Depilação", "Outro",
-];
+const SPECIALTIES = [...PROFESSIONAL_SPECIALTIES];
 
 const LOCAL_KEY = "sa.perfil-extras";
 

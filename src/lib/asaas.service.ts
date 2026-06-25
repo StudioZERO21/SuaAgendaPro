@@ -1,13 +1,15 @@
 // Asaas HTTP client — PIX + cartão, sem boleto
 // Documentação: https://docs.asaas.com/reference
 
+import { getServerEnv } from "@/lib/server-env";
+
 const ASAAS_BASE = {
   sandbox:    "https://sandbox.asaas.com/api/v3",
   production: "https://api.asaas.com/api/v3",
 } as const;
 
 function getBase(): string {
-  const env = process.env.ASAAS_ENV ?? "sandbox";
+  const env = getServerEnv("ASAAS_ENV") || "sandbox";
   return ASAAS_BASE[env as keyof typeof ASAAS_BASE] ?? ASAAS_BASE.sandbox;
 }
 
@@ -16,7 +18,7 @@ async function asaasRequest<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const apiKey = process.env.ASAAS_API_KEY;
+  const apiKey = getServerEnv("ASAAS_API_KEY");
   if (!apiKey) throw new Error("ASAAS_API_KEY não configurada");
 
   const res = await fetch(`${getBase()}${path}`, {
