@@ -37,7 +37,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
     method: "POST",
     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "suaAgendaPro <noreply@suaagendapro.com>",
+      from: Deno.env.get("RESEND_FROM_EMAIL") ?? "suaAgendaPro <noreply@suaagenda.pro>",
       to: [to],
       subject,
       html,
