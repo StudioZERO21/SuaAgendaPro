@@ -627,16 +627,15 @@ function PublicBookingPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold">{rev.name}</p>
-                      <span className="shrink-0 text-[10px] text-muted-foreground">{rev.date}</span>
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={cn("h-3 w-3", i < rev.rating ? "text-amber-400" : "text-muted-foreground/30")}
-                          fill={i < rev.rating ? "currentColor" : "none"}
-                        />
-                      ))}
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn("h-3 w-3", i < rev.rating ? "text-amber-400" : "text-muted-foreground/30")}
+                            fill={i < rev.rating ? "currentColor" : "none"}
+                          />
+                        ))}
+                      </div>
                     </div>
                     <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">{rev.text}</p>
                   </div>

@@ -10,6 +10,7 @@ import {
   Copy,
   CreditCard,
   FileText,
+  Loader2,
   Mail,
   MessageCircle,
   Phone,
@@ -45,6 +46,7 @@ import {
   getPublicSlots,
   createPublicBooking,
   createMpPreferenceAndBooking,
+  lookupClientByPhone,
   type PublicPixSettings,
 } from "@/lib/public-booking.functions";
 import { buildPixPayload, normalizePixKey } from "@/lib/pix";
@@ -301,6 +303,7 @@ export function BookingSheet({
                   )}
                   {step === 3 && (
                     <StepDetails
+                      professionalId={professionalId}
                       name={name}
                       phone={phone}
                       email={email}
@@ -347,7 +350,7 @@ export function BookingSheet({
                     size="lg"
                     disabled={
                       (step === 2 && (!date || !time)) ||
-                      (step === 3 && (!name.trim() || phone.replace(/\D/g, "").length < 10 || !isValidEmail(email)))
+                      (step === 3 && (!name.trim() || phone.replace(/\D/g, "").length < 10 || (email.length > 0 && !isValidEmail(email))))
                     }
                     className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-50"
                   >
@@ -554,6 +557,7 @@ function StepDateTime({
 }
 
 function StepDetails({
+  professionalId,
   name,
   phone,
   email,
@@ -563,6 +567,7 @@ function StepDetails({
   onEmail,
   onNotes,
 }: {
+  professionalId: string;
   name: string;
   phone: string;
   email: string;
@@ -572,48 +577,114 @@ function StepDetails({
   onEmail: (v: string) => void;
   onNotes: (v: string) => void;
 }) {
+  const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "found" | "notfound">("idle");
+  const phoneDigits = phone.replace(/\D/g, "");
+  const phoneReady = phoneDigits.length >= 10;
   const emailInvalid = email.length > 0 && !isValidEmail(email);
+
+  // Lookup automático com debounce quando phone >= 10 dígitos
+  useEffect(() => {
+    if (!phoneReady) {
+      setLookupStatus("idle");
+      onName("");
+      onEmail("");
+      return;
+    }
+    setLookupStatus("loading");
+    const timer = setTimeout(async () => {
+      try {
+        const result = await lookupClientByPhone({ data: { professionalId, phone: phoneDigits } });
+        if (result) {
+          onName(result.name);
+          onEmail(result.email ?? "");
+          setLookupStatus("found");
+        } else {
+          setLookupStatus("notfound");
+        }
+      } catch {
+        setLookupStatus("notfound");
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phoneDigits]);
+
+  const isFound = lookupStatus === "found";
+  const isLoading = lookupStatus === "loading";
+  const otherFieldsDisabled = !phoneReady || isLoading || isFound;
+
   return (
     <div>
       <h3 className="font-display text-xl font-bold">Seus dados</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Para confirmarmos seu agendamento via WhatsApp e e-mail.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Para confirmarmos seu agendamento via WhatsApp.</p>
       <div className="mt-4 space-y-4">
-        <div>
-          <Label htmlFor="b-name">Nome completo</Label>
-          <Input id="b-name" value={name} onChange={(e) => onName(e.target.value)} placeholder="Seu nome" className="mt-1 h-12 rounded-2xl" />
-        </div>
+
+        {/* WhatsApp — sempre habilitado, campo principal */}
         <div>
           <Label htmlFor="b-phone">WhatsApp</Label>
-          <PhoneInputBR
-            id="b-phone"
-            value={phone}
-            onChange={onPhone}
-            className="mt-1"
+          <div className="relative">
+            <PhoneInputBR id="b-phone" value={phone} onChange={onPhone} className="mt-1" />
+            {isLoading && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 mt-0.5">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </span>
+            )}
+          </div>
+          {isFound && (
+            <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Cliente identificado — dados preenchidos automaticamente
+            </p>
+          )}
+        </div>
+
+        {/* Nome */}
+        <div>
+          <Label htmlFor="b-name" className={cn(!phoneReady && "text-muted-foreground/40")}>
+            Nome completo
+          </Label>
+          <Input
+            id="b-name"
+            value={name}
+            onChange={(e) => onName(e.target.value)}
+            placeholder={!phoneReady ? "Informe o WhatsApp primeiro" : "Seu nome"}
+            disabled={otherFieldsDisabled}
+            className={cn("mt-1 h-12 rounded-2xl", isFound && "cursor-default opacity-60")}
           />
         </div>
+
+        {/* E-mail */}
         <div>
-          <Label htmlFor="b-email">E-mail</Label>
+          <Label htmlFor="b-email" className={cn(!phoneReady && "text-muted-foreground/40")}>
+            E-mail <span className="text-muted-foreground/60 font-normal">(opcional)</span>
+          </Label>
           <Input
             id="b-email"
             type="email"
             value={email}
             onChange={(e) => onEmail(e.target.value)}
-            placeholder="voce@exemplo.com"
+            placeholder={!phoneReady ? "Informe o WhatsApp primeiro" : "voce@exemplo.com"}
+            disabled={otherFieldsDisabled}
             inputMode="email"
             autoComplete="email"
-            className="mt-1 h-12 rounded-2xl"
+            className={cn("mt-1 h-12 rounded-2xl", isFound && "cursor-default opacity-60")}
           />
-          {emailInvalid && (
+          {emailInvalid && !isFound && (
             <p className="mt-1 text-xs text-destructive">Informe um e-mail válido.</p>
           )}
         </div>
+
+        {/* Observações — liberado assim que nome for preenchido, mesmo para clientes conhecidos */}
         <div>
-          <Label htmlFor="b-notes">Observações (opcional)</Label>
+          <Label htmlFor="b-notes" className={cn(!phoneReady && "text-muted-foreground/40")}>
+            Observações <span className="text-muted-foreground/60 font-normal">(opcional)</span>
+          </Label>
           <Textarea
             id="b-notes"
             value={notes}
             onChange={(e) => onNotes(e.target.value)}
-            placeholder="Alguma preferência, alergia ou recado?"
+            placeholder={!phoneReady ? "Informe o WhatsApp primeiro" : "Alguma preferência, alergia ou recado?"}
+            disabled={!phoneReady || isLoading}
             className="mt-1 min-h-[88px] rounded-2xl"
           />
         </div>

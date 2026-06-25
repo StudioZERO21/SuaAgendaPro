@@ -295,6 +295,30 @@ export const createPublicBooking = createServerFn({ method: "POST" })
     return { appointmentId: appt.id };
   });
 
+// ── Lookup de cliente por telefone (página pública) ──────────
+
+export type ClientLookupResult = { name: string; email: string | null } | null;
+
+export const lookupClientByPhone = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown): { professionalId: string; phone: string } => {
+    const i = input as Record<string, unknown>;
+    if (!i?.professionalId || !i?.phone) throw new Error("Dados inválidos");
+    return input as { professionalId: string; phone: string };
+  })
+  .handler(async ({ data }): Promise<ClientLookupResult> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const phone = data.phone.replace(/\D/g, "");
+    if (phone.length < 10) return null;
+    const { data: client } = await supabaseAdmin
+      .from("clients")
+      .select("name, email")
+      .eq("professional_id", data.professionalId)
+      .eq("phone", phone)
+      .maybeSingle();
+    if (!client) return null;
+    return { name: client.name, email: (client as any).email ?? null };
+  });
+
 // ── Mercado Pago: cria agendamento + preferência de pagamento ──
 
 export type CreateMpBookingInput = CreateBookingInput & {
