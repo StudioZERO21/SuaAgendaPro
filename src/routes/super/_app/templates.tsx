@@ -36,7 +36,7 @@ function TemplatesPage() {
   const [preview, setPreview]     = useState<{ body: string; html: string } | null>(null);
   const [varInput, setVarInput]   = useState("");
   const [testTarget, setTestTarget]     = useState<MessageTemplate | null>(null);
-  const [testEmail, setTestEmail]       = useState("adrianoelite1980@gmail.com");
+  const [testEmail, setTestEmail]       = useState("adrianoelite@msn.com");
   const [testSending, setTestSending]   = useState(false);
 
   function load() {
@@ -295,10 +295,9 @@ function TemplatesPage() {
                 placeholder="exemplo@email.com"
               />
             </div>
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 space-y-1">
-              <p className="font-semibold">⚠ Sem domínio verificado no Resend</p>
-              <p>Sem domínio verificado, o Resend só aceita envio para o email da sua conta (<strong>adrianoelite1980@gmail.com</strong>).</p>
-              <p>Para enviar para qualquer email: acesse <strong>resend.com/domains</strong> e verifique o domínio <strong>suaagenda.pro</strong>. Depois adicione <code>RESEND_FROM_EMAIL=noreply@suaagenda.pro</code> no .env.</p>
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-xs text-green-800 space-y-1">
+              <p className="font-semibold">✓ Domínio suaagenda.pro verificado no Resend</p>
+              <p>Envio de <strong>noreply@suaagenda.pro</strong> para qualquer destinatário.</p>
             </div>
             <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
               <p><strong>Variáveis substituídas por:</strong></p>
