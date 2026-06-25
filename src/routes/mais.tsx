@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
-  Bell, CalendarDays, CreditCard, Globe, HelpCircle, History,
+  Bell, CalendarDays, CreditCard, Globe, History,
   Link as LinkIcon, LogOut, Palette, Share2, Sparkles,
   Star, User, ChevronRight, Crown, MessageCircle, Loader2, Info, Copy, Check, X,
 } from "lucide-react";
@@ -55,9 +55,8 @@ const groups = [
   {
     title: "Suporte",
     items: [
-      { id: "share",  label: "Indicar para amigas", icon: Share2     },
-      { id: "review", label: "Avaliar o app",        icon: Star       },
-      { id: "help",   label: "Central de ajuda",     icon: HelpCircle },
+      { id: "share",  label: "Indicar para amigas", icon: Share2 },
+      { id: "review", label: "Avaliar o app",        icon: Star   },
     ],
   },
 ] as const;
