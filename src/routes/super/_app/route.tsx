@@ -14,7 +14,6 @@ export const Route = createFileRoute("/super/_app")({
   // Login lives at /super/login (outside this layout).
   ssr: false,
   beforeLoad: () => {
-    if (typeof window === "undefined") return;
     if (!getSuperAuth()) {
       throw redirect({ to: "/super/login" });
     }

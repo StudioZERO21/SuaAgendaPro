@@ -36,16 +36,18 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
     handlers: {
       POST: async ({ request }) => {
         const webhookSecret = process.env.MP_WEBHOOK_SECRET;
+        if (!webhookSecret) {
+          console.error("[mp-webhook] MP_WEBHOOK_SECRET não configurado — rejeitando requisição");
+          return new Response("Internal Server Error", { status: 500 });
+        }
+
         const body = await request.text();
 
-        if (webhookSecret) {
-          const xSignature = request.headers.get("x-signature") ?? "";
-          const xRequestId = request.headers.get("x-request-id") ?? "";
-          // ts is inside x-signature "ts=...,v1=..."
-          const ts = xSignature.match(/ts=([^,]+)/)?.[1] ?? "";
-          if (!verifyMpSignature(webhookSecret, body, xSignature, xRequestId, ts)) {
-            return new Response("Unauthorized", { status: 401 });
-          }
+        const xSignature = request.headers.get("x-signature") ?? "";
+        const xRequestId = request.headers.get("x-request-id") ?? "";
+        const ts = xSignature.match(/ts=([^,]+)/)?.[1] ?? "";
+        if (!verifyMpSignature(webhookSecret, body, xSignature, xRequestId, ts)) {
+          return new Response("Unauthorized", { status: 401 });
         }
 
         let payload: { type?: string; data?: { id?: string | number } };

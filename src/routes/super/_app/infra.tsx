@@ -116,11 +116,11 @@ function InfraPage() {
     setLoading(false);
   }
 
-  async function testSendMessage(instanceToken: string, instanceName: string) {
+  async function testSendMessage(instanceName: string) {
     setSendingMsg(instanceName);
     try {
       const result = await sendEvolutionMessage({
-        data: { ...withSuperToken(), instanceToken, to: "21997051225", text: "Teste de mensagem — SuaAgenda Pro ✅" },
+        data: { ...withSuperToken(), instanceName, to: "5521997051225", text: "Teste de mensagem — SuaAgenda Pro ✅" },
       });
       if (result.ok) toast.success(result.message);
       else toast.error(result.message);
@@ -386,14 +386,14 @@ function InfraPage() {
                   {evoStateLabel[inst.state] ?? inst.state}
                 </span>
 
-                {/* Botão de teste — só aparece se conectado e tiver token */}
-                {inst.state === "open" && inst.instanceToken && (
+                {/* Botão de teste — só aparece se conectado */}
+                {inst.state === "open" && (
                   <Button
                     size="sm"
                     variant="outline"
                     className="shrink-0 h-7 gap-1.5 px-2 text-[11px]"
                     disabled={sendingMsg === inst.name}
-                    onClick={() => testSendMessage(inst.instanceToken!, inst.name)}
+                    onClick={() => testSendMessage(inst.name)}
                   >
                     {sendingMsg === inst.name
                       ? <Loader2 className="h-3 w-3 animate-spin" />

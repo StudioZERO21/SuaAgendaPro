@@ -68,7 +68,7 @@ export const superAdminLogin = createServerFn({ method: "POST" })
     const adminPass  = process.env.SUPER_ADMIN_PASSWORD ?? "";
 
     if (!adminEmail || !adminPass) {
-      throw new Error("Super admin não configurado no servidor.");
+      throw new Error("Unauthorized");
     }
 
     let emailOk = false;

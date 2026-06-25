@@ -33,12 +33,14 @@ const EVENT_TO_STATUS: Record<string, "active" | "suspended" | "cancelled" | nul
 
 export const ServerRoute = createServerFileRoute("/api/webhooks/asaas").methods({
   POST: async ({ request }) => {
-    // 1. Validar token de autenticação
+    // 1. Validar token de autenticação — fail-closed
+    const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
+    if (!expectedToken) {
+      console.error("[asaas-webhook] ASAAS_WEBHOOK_TOKEN não configurado — rejeitando requisição");
+      return new Response("Internal Server Error", { status: 500 });
+    }
     const token = request.headers.get("asaas-access-token");
-    if (
-      process.env.ASAAS_WEBHOOK_TOKEN &&
-      token !== process.env.ASAAS_WEBHOOK_TOKEN
-    ) {
+    if (token !== expectedToken) {
       console.warn("[asaas-webhook] token inválido");
       return new Response("Unauthorized", { status: 401 });
     }

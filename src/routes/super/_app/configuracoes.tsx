@@ -46,7 +46,7 @@ function ConfiguracoesPage() {
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [testing, setTesting]   = useState<Record<string, boolean>>({});
-  const [envStatus, setEnvStatus] = useState({ ASAAS_API_KEY: false, RESEND_API_KEY: false, EVOLUTION_API_URL: false, EVOLUTION_API_KEY: false });
+  const [envStatus, setEnvStatus] = useState<Record<string, boolean>>({ ASAAS_API_KEY: false, RESEND_API_KEY: false, EVOLUTION_API_URL: false, EVOLUTION_API_KEY: false, HOSTINGER_API_TOKEN: false });
 
   useEffect(() => {
     getSettings({ data: withSuperToken() })

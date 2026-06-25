@@ -78,7 +78,6 @@ export type EvolutionInstance = {
   profileName: string;
   profilePicture: string | null;
   number: string | null;
-  instanceToken: string | null;
 };
 
 export type EvolutionStats = {
@@ -312,8 +311,6 @@ export const getEvolutionStats = createServerFn({ method: "GET" })
             profileName:    item.profileName   ?? item.profile_name ?? "",
             profilePicture: item.profilePicUrl ?? item.profile_pic  ?? null,
             number,
-            // token da instância — usado para envio de mensagem
-            instanceToken: item.token ?? null,
           };
         });
       } else {
@@ -385,26 +382,37 @@ export const getSupabaseStats = createServerFn({ method: "GET" })
     };
   });
 
+const PHONE_E164 = /^\+?[1-9]\d{6,14}$/;
+
 export const sendEvolutionMessage = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
     z.object({
-      _st:           z.string().optional(),
-      instanceToken: z.string(),
-      to:            z.string(),
-      text:          z.string(),
+      _st:          z.string().optional(),
+      instanceName: z.string().min(1).max(100),
+      to:           z.string().regex(PHONE_E164, "Número inválido — use formato E.164 (ex: 5521997051225)"),
+      text:         z.string().min(1).max(1000),
     }).parse(input ?? {}),
   )
   .handler(async ({ data }): Promise<{ ok: boolean; message: string }> => {
     await requireSuperAuth(data._st ?? null);
 
     const url = process.env.EVOLUTION_API_URL ?? "";
-    if (!url) return { ok: false, message: "EVOLUTION_API_URL não configurado" };
+    const key = process.env.EVOLUTION_API_KEY ?? "";
+    if (!url || !key) return { ok: false, message: "Evolution não configurado" };
 
     const base = url.replace(/\/+$/, "");
-    // /send/text usa o token da instância no header apikey (não o global key)
+
+    // Busca o token da instância server-side — nunca exposto ao browser
+    const allRes = await fetch(`${base}/instance/all`, { headers: { apikey: key } });
+    if (!allRes.ok) return { ok: false, message: `Erro ao buscar instâncias: ${allRes.status}` };
+    const allData = await allRes.json().catch(() => ({})) as any;
+    const list: any[] = Array.isArray(allData) ? allData : (allData?.data ?? allData?.instances ?? []);
+    const inst = list.find((i: any) => (i.name ?? i.instanceName) === data.instanceName);
+    if (!inst?.token) return { ok: false, message: `Instância "${data.instanceName}" não encontrada ou sem token` };
+
     const r = await fetch(`${base}/send/text`, {
       method: "POST",
-      headers: { apikey: data.instanceToken, "Content-Type": "application/json" },
+      headers: { apikey: inst.token, "Content-Type": "application/json" },
       body: JSON.stringify({ number: data.to, text: data.text }),
     });
 
