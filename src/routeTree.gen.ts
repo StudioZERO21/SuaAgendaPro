@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WhatsappRouteImport } from './routes/whatsapp'
+import { Route as UseNoCelularRouteImport } from './routes/use-no-celular'
 import { Route as TransacoesRouteImport } from './routes/transacoes'
 import { Route as ServicosRouteImport } from './routes/servicos'
 import { Route as SaudacaoRouteImport } from './routes/saudacao'
@@ -57,6 +58,11 @@ import { Route as ApiPublicMercadoPagoCallbackRouteImport } from './routes/api/p
 const WhatsappRoute = WhatsappRouteImport.update({
   id: '/whatsapp',
   path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UseNoCelularRoute = UseNoCelularRouteImport.update({
+  id: '/use-no-celular',
+  path: '/use-no-celular',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TransacoesRoute = TransacoesRouteImport.update({
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/saudacao': typeof SaudacaoRoute
   '/servicos': typeof ServicosRoute
   '/transacoes': typeof TransacoesRoute
+  '/use-no-celular': typeof UseNoCelularRoute
   '/whatsapp': typeof WhatsappRoute
   '/super': typeof SuperAppRouteRouteWithChildren
   '/agendar/$slug': typeof AgendarSlugRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/saudacao': typeof SaudacaoRoute
   '/servicos': typeof ServicosRoute
   '/transacoes': typeof TransacoesRoute
+  '/use-no-celular': typeof UseNoCelularRoute
   '/whatsapp': typeof WhatsappRoute
   '/agendar/$slug': typeof AgendarSlugRoute
   '/avaliar/$token': typeof AvaliarTokenRoute
@@ -396,6 +404,7 @@ export interface FileRoutesById {
   '/saudacao': typeof SaudacaoRoute
   '/servicos': typeof ServicosRoute
   '/transacoes': typeof TransacoesRoute
+  '/use-no-celular': typeof UseNoCelularRoute
   '/whatsapp': typeof WhatsappRoute
   '/super/_app': typeof SuperAppRouteRouteWithChildren
   '/agendar/$slug': typeof AgendarSlugRoute
@@ -444,6 +453,7 @@ export interface FileRouteTypes {
     | '/saudacao'
     | '/servicos'
     | '/transacoes'
+    | '/use-no-celular'
     | '/whatsapp'
     | '/super'
     | '/agendar/$slug'
@@ -490,6 +500,7 @@ export interface FileRouteTypes {
     | '/saudacao'
     | '/servicos'
     | '/transacoes'
+    | '/use-no-celular'
     | '/whatsapp'
     | '/agendar/$slug'
     | '/avaliar/$token'
@@ -535,6 +546,7 @@ export interface FileRouteTypes {
     | '/saudacao'
     | '/servicos'
     | '/transacoes'
+    | '/use-no-celular'
     | '/whatsapp'
     | '/super/_app'
     | '/agendar/$slug'
@@ -582,6 +594,7 @@ export interface RootRouteChildren {
   SaudacaoRoute: typeof SaudacaoRoute
   ServicosRoute: typeof ServicosRoute
   TransacoesRoute: typeof TransacoesRoute
+  UseNoCelularRoute: typeof UseNoCelularRoute
   WhatsappRoute: typeof WhatsappRoute
   SuperAppRouteRoute: typeof SuperAppRouteRouteWithChildren
   AgendarSlugRoute: typeof AgendarSlugRoute
@@ -600,6 +613,13 @@ declare module '@tanstack/react-router' {
       path: '/whatsapp'
       fullPath: '/whatsapp'
       preLoaderRoute: typeof WhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-no-celular': {
+      id: '/use-no-celular'
+      path: '/use-no-celular'
+      fullPath: '/use-no-celular'
+      preLoaderRoute: typeof UseNoCelularRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transacoes': {
@@ -960,6 +980,7 @@ const rootRouteChildren: RootRouteChildren = {
   SaudacaoRoute: SaudacaoRoute,
   ServicosRoute: ServicosRoute,
   TransacoesRoute: TransacoesRoute,
+  UseNoCelularRoute: UseNoCelularRoute,
   WhatsappRoute: WhatsappRoute,
   SuperAppRouteRoute: SuperAppRouteRouteWithChildren,
   AgendarSlugRoute: AgendarSlugRoute,

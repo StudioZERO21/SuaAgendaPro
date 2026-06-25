@@ -22,6 +22,7 @@ import {
   isBlocked,
   requiresSubscription,
 } from "@/lib/subscription-guard";
+import { useDeviceGuard } from "@/lib/device-guard";
 
 const PUBLIC_PATHS = [
   "/",
@@ -52,6 +53,7 @@ function AuthGuard({
   const navigate = useNavigate();
   const location = useLocation();
   const { session, isLoading } = useAuthState();
+  useDeviceGuard();
 
   // Redireciona para login se não autenticado
   useEffect(() => {
