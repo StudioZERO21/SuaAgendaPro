@@ -238,3 +238,62 @@ export const adminCancelSubscription = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     await auditLog(supabaseAdmin, "cancel_subscription", data.userId, data.userEmail ?? "");
   });
+
+// ─── Billing Events ───────────────────────────────────────────────────────────
+
+export type BillingEvent = {
+  id:              string;
+  userId:          string;
+  userName:        string;
+  userEmail:       string;
+  eventType:       string;
+  amountCents:     number;
+  statusBefore:    string | null;
+  statusAfter:     string | null;
+  asaasPaymentId:  string | null;
+  createdAt:       string;
+};
+
+export const getBillingEvents = createServerFn({ method: "GET" })
+  .validator((input: unknown) =>
+    z.object({
+      _st:      _st,
+      from:     z.string().optional(),
+      to:       z.string().optional(),
+      eventType: z.string().optional(),
+    }).parse(input ?? {}),
+  )
+  .handler(async ({ data }): Promise<BillingEvent[]> => {
+    await requireSuperAuth(data._st ?? null);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let q = (supabaseAdmin as any)
+      .from("billing_events")
+      .select("id, user_id, event_type, amount_cents, status_before, status_after, asaas_payment_id, created_at, profiles!inner(display_name)")
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    if (data.from) q = q.gte("created_at", data.from);
+    if (data.to)   q = q.lte("created_at", data.to + "T23:59:59Z");
+    if (data.eventType && data.eventType !== "todos") q = q.eq("event_type", data.eventType);
+
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    // Busca emails em batch
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    const emailMap = new Map((authUsers?.users ?? []).map((u) => [u.id, u.email ?? ""]));
+
+    return (rows ?? []).map((r: any) => ({
+      id:             r.id,
+      userId:         r.user_id,
+      userName:       r.profiles?.display_name ?? "—",
+      userEmail:      emailMap.get(r.user_id) ?? "—",
+      eventType:      r.event_type,
+      amountCents:    r.amount_cents ?? 0,
+      statusBefore:   r.status_before ?? null,
+      statusAfter:    r.status_after ?? null,
+      asaasPaymentId: r.asaas_payment_id ?? null,
+      createdAt:      r.created_at,
+    }));
+  });

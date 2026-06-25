@@ -195,7 +195,6 @@ export function BookingSheet({
   }
 
   function confirm() {
-    // Abre modal de pagamento do sinal (Mercado Pago — mock)
     setPaymentOpen(true);
   }
 
