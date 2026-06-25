@@ -99,7 +99,7 @@ function PublicBookingPage() {
   const [mapOpen, setMapOpen]           = useState(false);
   const avatarRef                       = useRef<HTMLImageElement>(null);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
-  const [visibleServices, setVisibleServices] = useState(9);
+  const [visibleServices, setVisibleServices] = useState(6);
   const [visibleReviews, setVisibleReviews]   = useState(3);
 
   useEffect(() => { getPublicProfile(slug).then(setLoaderData); }, [slug]);
@@ -163,7 +163,7 @@ function PublicBookingPage() {
           <div className="mt-10 space-y-3">
             <div className="h-7 w-24 animate-pulse rounded-full bg-secondary" />
             <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 9 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="h-36 animate-pulse rounded-2xl bg-secondary" style={{ animationDelay: `${i * 50}ms` }} />
               ))}
             </div>
@@ -553,7 +553,7 @@ function PublicBookingPage() {
               </div>
 
               {/* Ver mais / Ver menos */}
-              {profile.services.length > 9 && (
+              {profile.services.length > 6 && (
                 <div className="mt-5 flex flex-col items-center gap-2">
                   {visibleServices < profile.services.length && (
                     <button onClick={() => setVisibleServices((v) => v + 6)} className="flex items-center gap-1.5 py-1">
@@ -572,9 +572,9 @@ function PublicBookingPage() {
                       </motion.span>
                     </button>
                   )}
-                  {visibleServices > 9 && (
+                  {visibleServices > 6 && (
                     <button
-                      onClick={() => setVisibleServices(9)}
+                      onClick={() => setVisibleServices(6)}
                       className="text-xs text-muted-foreground/50 underline-offset-4 hover:text-muted-foreground hover:underline transition-colors"
                     >
                       Ver menos
@@ -945,6 +945,9 @@ function PublicBookingPage() {
         pix={profile.pix}
         mpConnected={profile.mpConnected}
         scheduleBlocks={loaderData?.scheduleBlocks ?? []}
+        openDays={profile.hours
+          .map((h, i) => (h.closed ? -1 : i))
+          .filter((i) => i >= 0)}
       />
 
       {/* Preview de foto do portfólio */}

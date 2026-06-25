@@ -57,18 +57,37 @@ import {
 
 type Step = 1 | 2 | 3 | 4;
 
-function getNextDays(n = 10) {
-  const out: { date: Date; key: string; day: string; weekday: string; month: string }[] = [];
+type DayItem = { date: Date; key: string; day: string; weekday: string; month: string };
+
+function getNextAvailableDays(
+  openDays: number[],
+  scheduleBlocks: { start_date: string; end_date: string }[],
+  n = 14,
+): DayItem[] {
+  const out: DayItem[] = [];
   const wd = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
   const mo = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  const openSet = new Set(openDays);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < n; i++) {
+
+  let offset = 0;
+  while (out.length < n && offset < 120) {
     const d = new Date(today);
-    d.setDate(today.getDate() + i);
+    d.setDate(today.getDate() + offset);
+    offset++;
+
+    // pula dias de semana sem funcionamento
+    if (!openSet.has(d.getDay())) continue;
+
+    // pula dias dentro de bloqueios/travamentos
+    const key = d.toISOString().slice(0, 10);
+    const blocked = scheduleBlocks.some((b) => key >= b.start_date && key <= b.end_date);
+    if (blocked) continue;
+
     out.push({
       date: d,
-      key: d.toISOString().slice(0, 10),
+      key,
       day: String(d.getDate()).padStart(2, "0"),
       weekday: wd[d.getDay()],
       month: mo[d.getMonth()],
@@ -89,6 +108,7 @@ export function BookingSheet({
   pix,
   mpConnected,
   scheduleBlocks,
+  openDays,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -101,6 +121,7 @@ export function BookingSheet({
   pix: PublicPixSettings;
   mpConnected: boolean;
   scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
+  openDays: number[];
 }) {
   const [step, setStep] = useState<Step>(preselect ? 2 : 1);
   const [service, setService] = useState<PublicService | undefined>(preselect);
@@ -119,7 +140,10 @@ export function BookingSheet({
 
 
 
-  const days = useMemo(() => getNextDays(10), []);
+  const days = useMemo(
+    () => getNextAvailableDays(openDays, scheduleBlocks, 14),
+    [openDays, scheduleBlocks],
+  );
 
   // Fetch real availability when date or service changes
   useEffect(() => {
@@ -273,7 +297,6 @@ export function BookingSheet({
                       loadingSlots={loadingSlots}
                       onDate={setDate}
                       onTime={setTime}
-                      scheduleBlocks={scheduleBlocks}
                     />
                   )}
                   {step === 3 && (
@@ -453,46 +476,26 @@ function StepDateTime({
   loadingSlots,
   onDate,
   onTime,
-  scheduleBlocks,
 }: {
-  days: ReturnType<typeof getNextDays>;
+  days: DayItem[];
   date?: string;
   time?: string;
   slots: string[];
   loadingSlots: boolean;
   onDate: (k: string) => void;
   onTime: (t: string) => void;
-  scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
 }) {
-  function getBlock(dateStr: string) {
-    return scheduleBlocks.find((b) => dateStr >= b.start_date && dateStr <= b.end_date) ?? null;
-  }
-
-  const selectedBlock = date ? getBlock(date) : null;
-
   return (
     <div>
       <h3 className="font-display text-xl font-bold">Quando você quer vir?</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Próximos 10 dias disponíveis.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Próximas datas disponíveis.</p>
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {days.length === 0 && (
+          <p className="text-sm text-muted-foreground">Nenhuma data disponível nos próximos meses.</p>
+        )}
         {days.map((d) => {
           const selected = d.key === date;
-          const block = getBlock(d.key);
-          if (block) {
-            const abbr = block.reason === "ferias" ? "Fér." : block.reason === "feriado" ? "Fer." : "Bloq.";
-            return (
-              <div
-                key={d.key}
-                className="flex min-w-[56px] flex-col items-center gap-0.5 rounded-2xl border border-border/40 bg-secondary/40 px-2 py-3 text-center opacity-50"
-                title={`Agenda bloqueada: ${abbr}`}
-              >
-                <span className="text-[9px] font-semibold tracking-wider text-muted-foreground">{d.weekday}</span>
-                <span className="font-display text-xl font-bold leading-none line-through text-muted-foreground">{d.day}</span>
-                <span className="text-[7px] font-bold uppercase tracking-widest text-primary leading-none">{abbr}</span>
-              </div>
-            );
-          }
           return (
             <button
               key={d.key}
@@ -515,14 +518,7 @@ function StepDateTime({
       </div>
 
       <h4 className="mt-6 mb-3 text-sm font-semibold">Horários disponíveis</h4>
-      {selectedBlock ? (
-        <div className="rounded-2xl border border-border bg-secondary/30 p-4 text-center">
-          <p className="text-sm font-semibold text-muted-foreground">
-            Agenda indisponível neste período ({selectedBlock.reason === "ferias" ? "Férias" : "Bloqueado"}).
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">Por favor, selecione outra data.</p>
-        </div>
-      ) : loadingSlots ? (
+      {loadingSlots ? (
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-12 animate-pulse rounded-2xl bg-secondary" />
