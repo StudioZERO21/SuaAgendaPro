@@ -12,9 +12,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { useClientes } from "@/hooks/useClientes";
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useReviews } from "@/hooks/useReviews";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { getMyAppRating, submitAppRating, type MyRating } from "@/lib/app-rating.functions";
 
 export const Route = createFileRoute("/mais")({
   head: () => ({
@@ -89,8 +91,14 @@ function MaisPage() {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }, [displayName]);
 
-  const [regraOpen, setRegraOpen]   = useState(false);
-  const [copied,    setCopied]      = useState(false);
+  const [regraOpen,   setRegraOpen]   = useState(false);
+  const [copied,      setCopied]      = useState(false);
+  const [ratingOpen,  setRatingOpen]  = useState(false);
+  const [myRating,    setMyRating]    = useState<MyRating>(null);
+
+  useEffect(() => {
+    getMyAppRating().then(setMyRating).catch(() => {});
+  }, []);
 
   const referralLink = typeof window !== "undefined"
     ? `${window.location.origin}/cadastro?ref=${publicSlug}`
@@ -247,6 +255,26 @@ function MaisPage() {
                   );
                 }
 
+                // ── Avaliar o app ────────────────────────────────
+                if (it.id === "review") {
+                  return (
+                    <button key={it.id} onClick={() => setRatingOpen(true)} className={cls}>
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold">{it.label}</p>
+                        {myRating && (
+                          <p className="text-[11px] text-muted-foreground">
+                            {"★".repeat(myRating.rating)}{"☆".repeat(5 - myRating.rating)} — sua avaliação
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  );
+                }
+
                 // ── Meu link público ─────────────────────────────
                 if (it.id === "link") {
                   return (
@@ -309,6 +337,14 @@ function MaisPage() {
         </p>
       </main>
 
+      {/* Modal — Avaliar o app */}
+      <AppRatingModal
+        open={ratingOpen}
+        initial={myRating}
+        onClose={() => setRatingOpen(false)}
+        onSaved={(r) => setMyRating(r)}
+      />
+
       <BottomNav />
     </MobileShell>
   );
@@ -320,5 +356,120 @@ function Stat({ label, value }: { label: string; value: string }) {
       <p className="font-display text-2xl font-bold leading-none tracking-tight">{value}</p>
       <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-white/70">{label}</p>
     </div>
+  );
+}
+
+function AppRatingModal({
+  open,
+  initial,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  initial: MyRating;
+  onClose: () => void;
+  onSaved: (r: MyRating) => void;
+}) {
+  const [stars,   setStars]   = useState(initial?.rating ?? 0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState(initial?.comment ?? "");
+  const [saving,  setSaving]  = useState(false);
+
+  // sync when modal opens with existing rating
+  useEffect(() => {
+    if (open) {
+      setStars(initial?.rating ?? 0);
+      setComment(initial?.comment ?? "");
+      setHovered(0);
+    }
+  }, [open, initial]);
+
+  async function handleSave() {
+    if (stars === 0) { toast.error("Selecione uma classificação."); return; }
+    setSaving(true);
+    try {
+      await submitAppRating(stars, comment);
+      onSaved({ rating: stars, comment: comment.trim() || null });
+      toast.success(initial ? "Avaliação atualizada! Obrigada 💜" : "Avaliação enviada! Obrigada 💜");
+      onClose();
+    } catch (e: any) {
+      toast.error("Erro ao enviar: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const display = hovered || stars;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 font-display text-xl">
+            <Star className="h-5 w-5 text-amber-400" fill="currentColor" />
+            {initial ? "Editar avaliação" : "Avaliar o SuaAgenda.Pro"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5 py-1">
+          <p className="text-sm text-muted-foreground text-center">Sua opinião nos ajuda a melhorar o app para todas as profissionais.</p>
+
+          {/* Stars */}
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onMouseEnter={() => setHovered(n)}
+                onMouseLeave={() => setHovered(0)}
+                onClick={() => setStars(n)}
+                className="transition-transform active:scale-90"
+                aria-label={`${n} estrela${n > 1 ? "s" : ""}`}
+              >
+                <Star
+                  className={`h-10 w-10 transition-colors ${n <= display ? "text-amber-400" : "text-muted-foreground/25"}`}
+                  fill={n <= display ? "currentColor" : "none"}
+                />
+              </button>
+            ))}
+          </div>
+
+          {display > 0 && (
+            <p className="text-center text-sm font-semibold text-amber-500">
+              {display === 1 && "Precisamos melhorar muito 😔"}
+              {display === 2 && "Tem bastante espaço para melhorar 🤔"}
+              {display === 3 && "Razoável, vamos trabalhar nisso! 🙂"}
+              {display === 4 && "Muito bom! Quase perfeito ✨"}
+              {display === 5 && "Incrível! Muito obrigada 💜"}
+            </p>
+          )}
+
+          {/* Comment */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Comentário <span className="text-muted-foreground/60 font-normal">(opcional)</span></label>
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="O que você mais gosta? O que poderíamos melhorar?"
+              className="min-h-[88px] rounded-2xl resize-none"
+              maxLength={1000}
+            />
+            <p className="text-right text-[10px] text-muted-foreground">{comment.length}/1000</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1 rounded-2xl" onClick={onClose} disabled={saving}>
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1 rounded-2xl gradient-primary font-semibold shadow-glow"
+            onClick={handleSave}
+            disabled={saving || stars === 0}
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : initial ? "Atualizar" : "Enviar avaliação"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

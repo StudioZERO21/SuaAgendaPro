@@ -20,6 +20,9 @@ import {
   Clock,
   AlertTriangle,
   CalendarIcon,
+  Star,
+  MessageSquare,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -56,6 +59,7 @@ import {
   adminChangePlan,
   type SuperUser,
 } from "@/lib/super-admin.functions";
+import { getAppRatings, type AppRatingRow } from "@/lib/app-rating.functions";
 import { withSuperToken } from "@/lib/super-client";
 
 export const Route = createFileRoute("/super/_app/usuarios")({
@@ -158,9 +162,13 @@ function endOfDay(d: Date) {
 function UsuariosPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "todos">("todos");
+  const [ratingFilter, setRatingFilter] = useState<"todos" | "sem" | "1" | "2" | "3" | "4" | "5">("todos");
+  const [sortBy, setSortBy] = useState<"nome" | "data" | "rating">("data");
   const [users, setUsers] = useState<Pro[]>([]);
+  const [appRatings, setAppRatings] = useState<AppRatingRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [viewing, setViewing] = useState<Pro | null>(null);
+  const [viewingRating, setViewingRating] = useState<AppRatingRow | null>(null);
   const [confirming, setConfirming] = useState<{ user: Pro; action: string } | null>(null);
   const [reason, setReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -175,8 +183,12 @@ function UsuariosPage() {
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      const data = await getSuperAdminUsers({ data: withSuperToken() });
+      const [data, ratings] = await Promise.all([
+        getSuperAdminUsers({ data: withSuperToken() }),
+        getAppRatings({ data: withSuperToken() }),
+      ]);
       setUsers(data.map(superUserToPro));
+      setAppRatings(ratings);
     } catch (err: any) {
       toast.error("Erro ao carregar usuários: " + (err?.message ?? ""));
     } finally {
@@ -214,17 +226,28 @@ function UsuariosPage() {
     }
   }
 
-  const filtered = useMemo(
-    () =>
-      users.filter((u) => {
-        const matchQ =
-          u.name.toLowerCase().includes(q.toLowerCase()) ||
-          u.email.toLowerCase().includes(q.toLowerCase());
-        const matchS = statusFilter === "todos" || u.status === statusFilter;
-        return matchQ && matchS;
-      }),
-    [users, q, statusFilter],
+  const ratingMap = useMemo(
+    () => new Map(appRatings.map((r) => [r.userId, r])),
+    [appRatings],
   );
+
+  const filtered = useMemo(() => {
+    let list = users.filter((u) => {
+      const matchQ =
+        u.name.toLowerCase().includes(q.toLowerCase()) ||
+        u.email.toLowerCase().includes(q.toLowerCase());
+      const matchS = statusFilter === "todos" || u.status === statusFilter;
+      const r = ratingMap.get(u.id);
+      const matchR =
+        ratingFilter === "todos" ? true :
+        ratingFilter === "sem"   ? !r :
+        r?.rating === Number(ratingFilter);
+      return matchQ && matchS && matchR;
+    });
+    if (sortBy === "nome")   list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "rating") list = [...list].sort((a, b) => (ratingMap.get(b.id)?.rating ?? 0) - (ratingMap.get(a.id)?.rating ?? 0));
+    return list;
+  }, [users, q, statusFilter, ratingFilter, sortBy, ratingMap]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -368,6 +391,34 @@ function UsuariosPage() {
               </button>
             ))}
           </div>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+            {([
+              { v: "todos", label: "Todas notas" },
+              { v: "5",     label: "★★★★★" },
+              { v: "4",     label: "★★★★" },
+              { v: "3",     label: "★★★" },
+              { v: "2",     label: "★★" },
+              { v: "1",     label: "★" },
+              { v: "sem",   label: "Sem avaliação" },
+            ] as const).map(({ v, label }) => (
+              <button key={v} onClick={() => { setRatingFilter(v); setPage(1); }}
+                className={cn("rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                  ratingFilter === v ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted/70"
+                )}
+              >{label}</button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Ordem:</span>
+            {([["data","Data"],["nome","Nome"],["rating","Nota"]] as const).map(([v, l]) => (
+              <button key={v} onClick={() => setSortBy(v)}
+                className={cn("rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                  sortBy === v ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+                )}
+              >{l}</button>
+            ))}
+          </div>
           <p className="ml-auto hidden text-xs text-muted-foreground sm:block">
             {filtered.length} de {users.length}
           </p>
@@ -381,6 +432,7 @@ function UsuariosPage() {
                 <th className="px-4 py-3 text-left font-semibold">Nome</th>
                 <th className="px-4 py-3 text-left font-semibold">E-mail</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-left font-semibold">Avaliação</th>
                 <th className="px-4 py-3 text-left font-semibold">Desde</th>
                 <th className="px-4 py-3 text-right font-semibold">Ações</th>
               </tr>
@@ -402,6 +454,20 @@ function UsuariosPage() {
                       {statusLabel[u.status]}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const r = ratingMap.get(u.id);
+                      if (!r) return <span className="text-xs text-muted-foreground">—</span>;
+                      return (
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? "text-amber-400" : "text-muted-foreground/20"}`} fill={i < r.rating ? "currentColor" : "none"} />
+                          ))}
+                          <span className="ml-1 text-xs font-semibold text-muted-foreground">{r.rating}/5</span>
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{u.joined}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
@@ -409,6 +475,12 @@ function UsuariosPage() {
                         <Eye className="mr-1.5 h-3.5 w-3.5" />
                         Ver mais
                       </Button>
+                      {ratingMap.get(u.id) && (
+                        <Button size="sm" variant="ghost" onClick={() => setViewingRating(ratingMap.get(u.id)!)}>
+                          <MessageSquare className="mr-1.5 h-3.5 w-3.5 text-amber-500" />
+                          Avaliação
+                        </Button>
+                      )}
                       {(u.status === "suspended" || u.status === "cancelled" || u.status === "overdue") && (
                         <Button size="sm" variant="default" onClick={() => setConfirming({ user: u, action: "reativar" })}>
                           <Power className="mr-1.5 h-3.5 w-3.5" />
@@ -840,6 +912,53 @@ function UsuariosPage() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal — Visualizar avaliação do app */}
+      <Dialog open={!!viewingRating} onOpenChange={(o) => !o && setViewingRating(null)}>
+        <DialogContent className="sm:max-w-md">
+          {viewingRating && (() => {
+            const user = users.find((u) => u.id === viewingRating.userId);
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-amber-400" fill="currentColor" />
+                    Avaliação do app
+                  </DialogTitle>
+                  {user && (
+                    <DialogDescription>
+                      {user.name} · {user.email}
+                    </DialogDescription>
+                  )}
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`h-6 w-6 ${i < viewingRating.rating ? "text-amber-400" : "text-muted-foreground/20"}`} fill={i < viewingRating.rating ? "currentColor" : "none"} />
+                      ))}
+                    </div>
+                    <span className="text-lg font-bold">{viewingRating.rating}/5</span>
+                  </div>
+                  {viewingRating.comment ? (
+                    <div className="rounded-xl border border-border bg-muted/30 p-4">
+                      <p className="text-sm leading-relaxed text-foreground">{viewingRating.comment}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Sem comentário.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Enviado em {new Date(viewingRating.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setViewingRating(null)}>Fechar</Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
