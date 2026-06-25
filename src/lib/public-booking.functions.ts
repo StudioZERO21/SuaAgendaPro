@@ -307,14 +307,23 @@ export const lookupClientByPhone = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }): Promise<ClientLookupResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const phone = data.phone.replace(/\D/g, "");
-    if (phone.length < 10) return null;
-    const { data: client } = await supabaseAdmin
+    const digits = data.phone.replace(/\D/g, "");
+    if (digits.length < 10) return null;
+
+    // Gera os dois formatos possíveis: dígitos puros e o formato BR (XX) XXXXX-XXXX
+    // pois o admin pode salvar de qualquer jeito e o agendamento público salva só dígitos
+    const formatted = digits.length === 11
+      ? `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+      : `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+
+    const { data: clients } = await supabaseAdmin
       .from("clients")
       .select("name, email")
       .eq("professional_id", data.professionalId)
-      .eq("phone", phone)
-      .maybeSingle();
+      .in("phone", [digits, formatted])
+      .limit(1);
+
+    const client = clients?.[0] ?? null;
     if (!client) return null;
     return { name: client.name, email: (client as any).email ?? null };
   });
