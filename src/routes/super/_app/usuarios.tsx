@@ -1,5 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  flexRender,
+  type ColumnDef,
+  type SortingState,
+} from "@tanstack/react-table";
 import { format, parse } from "date-fns";
 import {
   Search,
@@ -22,7 +32,9 @@ import {
   CalendarIcon,
   Star,
   MessageSquare,
-  SlidersHorizontal,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -162,18 +174,16 @@ function endOfDay(d: Date) {
 function UsuariosPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "todos">("todos");
-  const [ratingFilter, setRatingFilter] = useState<"todos" | "sem" | "1" | "2" | "3" | "4" | "5">("todos");
-  const [sortBy, setSortBy] = useState<"nome" | "data" | "rating">("data");
+  const [sorting, setSorting] = useState<SortingState>([{ id: "joined", desc: true }]);
   const [users, setUsers] = useState<Pro[]>([]);
   const [appRatings, setAppRatings] = useState<AppRatingRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [viewing, setViewing] = useState<Pro | null>(null);
-  const [viewingRating, setViewingRating] = useState<AppRatingRow | null>(null);
   const [confirming, setConfirming] = useState<{ user: Pro; action: string } | null>(null);
   const [reason, setReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(1); // kept for audit pagination only
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditQ, setAuditQ] = useState("");
   const [auditPage, setAuditPage] = useState(1);
@@ -231,30 +241,67 @@ function UsuariosPage() {
     [appRatings],
   );
 
-  const filtered = useMemo(() => {
-    let list = users.filter((u) => {
+  const filtered = useMemo(() =>
+    users.filter((u) => {
       const matchQ =
         u.name.toLowerCase().includes(q.toLowerCase()) ||
         u.email.toLowerCase().includes(q.toLowerCase());
       const matchS = statusFilter === "todos" || u.status === statusFilter;
-      const r = ratingMap.get(u.id);
-      const matchR =
-        ratingFilter === "todos" ? true :
-        ratingFilter === "sem"   ? !r :
-        r?.rating === Number(ratingFilter);
-      return matchQ && matchS && matchR;
-    });
-    if (sortBy === "nome")   list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === "rating") list = [...list].sort((a, b) => (ratingMap.get(b.id)?.rating ?? 0) - (ratingMap.get(a.id)?.rating ?? 0));
-    return list;
-  }, [users, q, statusFilter, ratingFilter, sortBy, ratingMap]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
+      return matchQ && matchS;
+    }),
+    [users, q, statusFilter],
   );
+
+  // ── TanStack Table ────────────────────────────────────────────
+  const columns = useMemo<ColumnDef<Pro>[]>(
+    () => [
+      {
+        id: "name",
+        accessorKey: "name",
+        header: "Nome",
+        enableSorting: true,
+      },
+      {
+        id: "email",
+        accessorKey: "email",
+        header: "E-mail",
+        enableSorting: true,
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: "Status",
+        enableSorting: true,
+      },
+      {
+        id: "rating",
+        header: "Avaliação",
+        enableSorting: true,
+        accessorFn: (row) => ratingMap.get(row.id)?.rating ?? -1,
+      },
+      {
+        id: "joined",
+        accessorKey: "joined",
+        header: "Desde",
+        enableSorting: true,
+      },
+    ],
+    [ratingMap],
+  );
+
+  const table = useReactTable({
+    data: filtered,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: PAGE_SIZE } },
+  });
+
+  const totalPages = Math.max(1, table.getPageCount());
 
   useEffect(() => {
     setAuditQ("");
@@ -366,7 +413,7 @@ function UsuariosPage() {
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);
-                setPage(1);
+                table.setPageIndex(0);
               }}
               placeholder="Buscar por nome ou e-mail…"
               className="pl-9"
@@ -378,7 +425,7 @@ function UsuariosPage() {
                 key={s}
                 onClick={() => {
                   setStatusFilter(s as any);
-                  setPage(1);
+                  table.setPageIndex(0);
                 }}
                 className={cn(
                   "rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition",
@@ -391,155 +438,89 @@ function UsuariosPage() {
               </button>
             ))}
           </div>
-          <div className="flex flex-wrap gap-1.5 items-center">
-            <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-            {([
-              { v: "todos", label: "Todas notas" },
-              { v: "5",     label: "★★★★★" },
-              { v: "4",     label: "★★★★" },
-              { v: "3",     label: "★★★" },
-              { v: "2",     label: "★★" },
-              { v: "1",     label: "★" },
-              { v: "sem",   label: "Sem avaliação" },
-            ] as const).map(({ v, label }) => (
-              <button key={v} onClick={() => { setRatingFilter(v); setPage(1); }}
-                className={cn("rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                  ratingFilter === v ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted/70"
-                )}
-              >{label}</button>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">Ordem:</span>
-            {([["data","Data"],["nome","Nome"],["rating","Nota"]] as const).map(([v, l]) => (
-              <button key={v} onClick={() => setSortBy(v)}
-                className={cn("rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                  sortBy === v ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
-                )}
-              >{l}</button>
-            ))}
-          </div>
           <p className="ml-auto hidden text-xs text-muted-foreground sm:block">
             {filtered.length} de {users.length}
           </p>
         </div>
 
-        {/* Desktop */}
-        <div className="hidden md:block">
+        {/* Data Table */}
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold">Nome</th>
-                <th className="px-4 py-3 text-left font-semibold">E-mail</th>
-                <th className="px-4 py-3 text-left font-semibold">Status</th>
-                <th className="px-4 py-3 text-left font-semibold">Avaliação</th>
-                <th className="px-4 py-3 text-left font-semibold">Desde</th>
-                <th className="px-4 py-3 text-right font-semibold">Ações</th>
-              </tr>
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id}>
+                  {hg.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className={cn(
+                        "px-4 py-3 text-left font-semibold select-none",
+                        header.column.getCanSort() && "cursor-pointer hover:text-foreground transition-colors",
+                      )}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          header.column.getIsSorted() === "asc"  ? <ArrowUp className="h-3 w-3" /> :
+                          header.column.getIsSorted() === "desc" ? <ArrowDown className="h-3 w-3" /> :
+                          <ArrowUpDown className="h-3 w-3 opacity-40" />
+                        )}
+                      </span>
+                    </th>
+                  ))}
+                  <th className="px-4 py-3 text-right font-semibold">Ações</th>
+                </tr>
+              ))}
             </thead>
             <tbody>
-              {paginated.map((u) => (
-                <tr key={u.id} className="border-t border-border hover:bg-muted/20">
-                  <td className="px-4 py-3 font-medium">{u.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                        statusStyle[u.status],
-                      )}
-                    >
-                      {u.status === "active"    ? <CheckCircle2 className="h-3 w-3" /> : null}
-                      {u.status === "suspended" ? <XCircle className="h-3 w-3" />      : null}
-                      {statusLabel[u.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {(() => {
-                      const r = ratingMap.get(u.id);
-                      if (!r) return <span className="text-xs text-muted-foreground">—</span>;
-                      return (
+              {table.getRowModel().rows.map((row) => {
+                const u = row.original;
+                const r = ratingMap.get(u.id);
+                return (
+                  <tr key={u.id} className="border-t border-border hover:bg-muted/20">
+                    <td className="px-4 py-3 font-medium">{u.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
+                    <td className="px-4 py-3">
+                      <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold", statusStyle[u.status])}>
+                        {u.status === "active"    && <CheckCircle2 className="h-3 w-3" />}
+                        {u.status === "suspended" && <XCircle className="h-3 w-3" />}
+                        {statusLabel[u.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {r ? (
                         <div className="flex items-center gap-1">
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? "text-amber-400" : "text-muted-foreground/20"}`} fill={i < r.rating ? "currentColor" : "none"} />
                           ))}
                           <span className="ml-1 text-xs font-semibold text-muted-foreground">{r.rating}/5</span>
                         </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{u.joined}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setViewing(u)}>
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
-                        Ver mais
-                      </Button>
-                      {ratingMap.get(u.id) && (
-                        <Button size="sm" variant="ghost" onClick={() => setViewingRating(ratingMap.get(u.id)!)}>
-                          <MessageSquare className="mr-1.5 h-3.5 w-3.5 text-amber-500" />
-                          Avaliação
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.joined}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setViewing(u)}>
+                          <Eye className="mr-1.5 h-3.5 w-3.5" /> Ver mais
                         </Button>
-                      )}
-                      {(u.status === "suspended" || u.status === "cancelled" || u.status === "overdue") && (
-                        <Button size="sm" variant="default" onClick={() => setConfirming({ user: u, action: "reativar" })}>
-                          <Power className="mr-1.5 h-3.5 w-3.5" />
-                          Reativar
-                        </Button>
-                      )}
-                      {(u.status === "active" || u.status === "trial") && (
-                        <Button size="sm" variant="destructive" onClick={() => setConfirming({ user: u, action: "desativar" })}>
-                          <Power className="mr-1.5 h-3.5 w-3.5" />
-                          Suspender
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {(u.status === "suspended" || u.status === "cancelled" || u.status === "overdue") && (
+                          <Button size="sm" variant="default" onClick={() => setConfirming({ user: u, action: "reativar" })}>
+                            <Power className="mr-1.5 h-3.5 w-3.5" /> Reativar
+                          </Button>
+                        )}
+                        {(u.status === "active" || u.status === "trial") && (
+                          <Button size="sm" variant="destructive" onClick={() => setConfirming({ user: u, action: "desativar" })}>
+                            <Power className="mr-1.5 h-3.5 w-3.5" /> Suspender
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-
-        {/* Mobile */}
-        <ul className="divide-y divide-border md:hidden">
-          {paginated.map((u) => (
-            <li key={u.id} className="space-y-3 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{u.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{u.email}</p>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                    statusStyle[u.status],
-                  )}
-                >
-                  {statusLabel[u.status]}
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground">Desde {u.joined}</p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => setViewing(u)}>
-                  <Eye className="mr-1.5 h-3.5 w-3.5" />
-                  Ver mais
-                </Button>
-                {(u.status === "suspended" || u.status === "cancelled" || u.status === "overdue") ? (
-                  <Button size="sm" variant="default" className="flex-1" onClick={() => setConfirming({ user: u, action: "reativar" })}>
-                    <Power className="mr-1.5 h-3.5 w-3.5" />
-                    Reativar
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="destructive" className="flex-1" onClick={() => setConfirming({ user: u, action: "desativar" })}>
-                    <Power className="mr-1.5 h-3.5 w-3.5" />
-                    Suspender
-                  </Button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
 
         {loadingUsers && (
           <p className="p-8 text-center text-sm text-muted-foreground">
@@ -553,32 +534,27 @@ function UsuariosPage() {
         )}
 
         {/* Pagination */}
-        {filtered.length > 0 && (
+        {table.getPageCount() > 1 && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-4">
             <p className="text-xs text-muted-foreground">
               Mostrando{" "}
               <span className="font-semibold text-foreground">
-                {(safePage - 1) * PAGE_SIZE + 1}–
-                {Math.min(safePage * PAGE_SIZE, filtered.length)}
+                {table.getState().pagination.pageIndex * PAGE_SIZE + 1}–
+                {Math.min((table.getState().pagination.pageIndex + 1) * PAGE_SIZE, filtered.length)}
               </span>{" "}
               de <span className="font-semibold text-foreground">{filtered.length}</span>
             </p>
             <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-              >
+              <Button size="sm" variant="outline" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
-                  onClick={() => setPage(i + 1)}
+                  onClick={() => table.setPageIndex(i)}
                   className={cn(
                     "h-8 min-w-8 rounded-md px-2 text-xs font-semibold",
-                    safePage === i + 1
+                    table.getState().pagination.pageIndex === i
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted",
                   )}
@@ -586,12 +562,7 @@ function UsuariosPage() {
                   {i + 1}
                 </button>
               ))}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-              >
+              <Button size="sm" variant="outline" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -636,7 +607,7 @@ function UsuariosPage() {
               </DialogHeader>
 
               <Tabs defaultValue="info" className="mt-2">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="info">Informações</TabsTrigger>
                   <TabsTrigger value="metricas">Métricas</TabsTrigger>
                   <TabsTrigger value="auditoria">
@@ -646,6 +617,10 @@ function UsuariosPage() {
                         {auditForViewing.length}
                       </span>
                     )}
+                  </TabsTrigger>
+                  <TabsTrigger value="avaliacao" className="flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5" />
+                    Avaliação
                   </TabsTrigger>
                 </TabsList>
 
@@ -798,6 +773,40 @@ function UsuariosPage() {
                     </div>
                   )}
                 </TabsContent>
+
+                <TabsContent value="avaliacao" className="pt-4">
+                  {(() => {
+                    const r = ratingMap.get(viewing.id);
+                    if (!r) return (
+                      <div className="rounded-xl border border-dashed border-border p-8 text-center">
+                        <Star className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
+                        <p className="text-sm text-muted-foreground">Este profissional ainda não avaliou o app.</p>
+                      </div>
+                    );
+                    return (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star key={i} className={`h-7 w-7 ${i < r.rating ? "text-amber-400" : "text-muted-foreground/20"}`} fill={i < r.rating ? "currentColor" : "none"} />
+                            ))}
+                          </div>
+                          <span className="text-2xl font-bold">{r.rating}<span className="text-sm font-normal text-muted-foreground">/5</span></span>
+                        </div>
+                        {r.comment ? (
+                          <div className="rounded-xl border border-border bg-muted/30 p-4">
+                            <p className="text-sm leading-relaxed">{r.comment}</p>
+                          </div>
+                        ) : (
+                          <p className="text-sm italic text-muted-foreground">Sem comentário.</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Enviado em {new Date(r.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </TabsContent>
               </Tabs>
 
               <DialogFooter className="flex-wrap gap-2">
@@ -912,53 +921,6 @@ function UsuariosPage() {
               </DialogFooter>
             </>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal — Visualizar avaliação do app */}
-      <Dialog open={!!viewingRating} onOpenChange={(o) => !o && setViewingRating(null)}>
-        <DialogContent className="sm:max-w-md">
-          {viewingRating && (() => {
-            const user = users.find((u) => u.id === viewingRating.userId);
-            return (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Star className="h-4 w-4 text-amber-400" fill="currentColor" />
-                    Avaliação do app
-                  </DialogTitle>
-                  {user && (
-                    <DialogDescription>
-                      {user.name} · {user.email}
-                    </DialogDescription>
-                  )}
-                </DialogHeader>
-                <div className="space-y-4 py-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className={`h-6 w-6 ${i < viewingRating.rating ? "text-amber-400" : "text-muted-foreground/20"}`} fill={i < viewingRating.rating ? "currentColor" : "none"} />
-                      ))}
-                    </div>
-                    <span className="text-lg font-bold">{viewingRating.rating}/5</span>
-                  </div>
-                  {viewingRating.comment ? (
-                    <div className="rounded-xl border border-border bg-muted/30 p-4">
-                      <p className="text-sm leading-relaxed text-foreground">{viewingRating.comment}</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">Sem comentário.</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Enviado em {new Date(viewingRating.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
-                  </p>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setViewingRating(null)}>Fechar</Button>
-                </DialogFooter>
-              </>
-            );
-          })()}
         </DialogContent>
       </Dialog>
 
