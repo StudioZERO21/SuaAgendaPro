@@ -2,18 +2,30 @@ import Redis from "ioredis";
 
 let _redis: Redis | undefined;
 
+function buildRedisUrl(): string {
+  // Formato 1 — URL completa (dev local / Coolify / Railway)
+  const url = process.env.REDIS_URL;
+  if (url) return url;
+
+  // Formato 2 — variáveis separadas (já existentes no container da VPS)
+  const password = process.env.REDIS_PASSWORD;
+  const host     = process.env.REDIS_HOST ?? "187.77.244.198";
+  const port     = process.env.REDIS_PORT ?? "32773";
+
+  if (password) return `redis://:${password}@${host}:${port}`;
+
+  throw new Error("Redis não configurado. Defina REDIS_URL ou REDIS_PASSWORD no .env");
+}
+
 function getRedis(): Redis {
   if (!_redis) {
-    const url = process.env.REDIS_URL;
-    if (!url) throw new Error("Missing REDIS_URL env var");
-    _redis = new Redis(url, {
+    _redis = new Redis(buildRedisUrl(), {
       lazyConnect: true,
       retryStrategy: (times) => Math.min(times * 100, 3000),
       maxRetriesPerRequest: 3,
       enableReadyCheck: false,
     });
     _redis.on("error", (err) => {
-      // não derruba o app se Redis estiver fora
       console.error("[Redis] connection error:", err.message);
     });
   }
@@ -37,7 +49,7 @@ export async function cacheSet(
 ): Promise<void> {
   try {
     await getRedis().setex(key, ttlSeconds, JSON.stringify(value));
-  } catch { /* noop — Redis indisponível não quebra o app */ }
+  } catch { /* Redis indisponível não quebra o app */ }
 }
 
 export async function cacheDel(...keys: string[]): Promise<void> {
