@@ -1,13 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ShieldCheck,
   ShieldOff,
-  Copy,
-  Check,
   Loader2,
-  RefreshCw,
   KeyRound,
+  AlertTriangle,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { Button } from "@/components/ui/button";
@@ -16,8 +14,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getSuperToken } from "@/lib/super-auth";
 import {
+  superAdminGetMfaStatus,
   superAdminGenerateTotpSetup,
-  superAdminConfirmTotpSetup,
+  superAdminActivateMfa,
+  superAdminDeactivateMfa,
 } from "@/lib/super-auth.server";
 
 export const Route = createFileRoute("/(admin)/super/_app/mfa-setup")({
@@ -30,20 +30,32 @@ export const Route = createFileRoute("/(admin)/super/_app/mfa-setup")({
   component: MfaSetupPage,
 });
 
-type Phase = "idle" | "scanning" | "confirming" | "done";
+type Phase = "loading" | "inactive" | "scanning" | "confirming" | "active" | "disabling";
 type SetupData = { secret: string; uri: string; email: string };
 
 function MfaSetupPage() {
   const token = getSuperToken();
 
-  const [phase, setPhase]   = useState<Phase>("idle");
-  const [setup, setSetup]   = useState<SetupData | null>(null);
-  const [code, setCode]     = useState("");
+  const [phase, setPhase]     = useState<Phase>("loading");
+  const [setup, setSetup]     = useState<SetupData | null>(null);
+  const [code, setCode]       = useState("");
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [adminEmail, setAdminEmail] = useState("");
 
-  async function handleActivate() {
-    if (!token) { toast.error("Sessão inválida. Faça login novamente."); return; }
+  // Carrega status atual do MFA ao abrir a página
+  useEffect(() => {
+    if (!token) return;
+    superAdminGetMfaStatus({ data: { _st: token } })
+      .then(({ enabled, email }) => {
+        setAdminEmail(email);
+        setPhase(enabled ? "active" : "inactive");
+      })
+      .catch(() => setPhase("inactive"));
+  }, [token]);
+
+  // Passo 1: gerar QR code (secret temporário, ainda não salvo)
+  async function handleStartSetup() {
+    if (!token) return;
     setLoading(true);
     try {
       const data = await superAdminGenerateTotpSetup({ data: { _st: token } });
@@ -57,16 +69,17 @@ function MfaSetupPage() {
     }
   }
 
+  // Passo 2: confirmar código → salva no banco automaticamente
   async function handleConfirm(e: React.FormEvent) {
     e.preventDefault();
     if (!token || !setup) return;
     setLoading(true);
     try {
-      await superAdminConfirmTotpSetup({
+      await superAdminActivateMfa({
         data: { _st: token, secret: setup.secret, totpCode: code },
       });
-      setPhase("done");
-      toast.success("Código validado! Copie o secret para o .env da VPS.");
+      setPhase("active");
+      toast.success("2FA ativado com sucesso!");
     } catch (err: any) {
       toast.error(err?.message ?? "Código incorreto");
       setCode("");
@@ -75,117 +88,116 @@ function MfaSetupPage() {
     }
   }
 
-  function copySecret() {
-    if (!setup) return;
-    navigator.clipboard.writeText(setup.secret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  function reset() {
-    setPhase("idle");
-    setSetup(null);
-    setCode("");
+  // Desativar MFA
+  async function handleDeactivate() {
+    if (!token) return;
+    setLoading(true);
+    try {
+      await superAdminDeactivateMfa({ data: { _st: token } });
+      setSetup(null);
+      setCode("");
+      setPhase("inactive");
+      toast.success("2FA desativado.");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao desativar 2FA");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 py-8 px-4">
-      {/* Header */}
+    <div className="mx-auto max-w-lg space-y-6 py-8 px-4">
+      {/* Cabeçalho */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <KeyRound className="h-6 w-6 text-violet-600" />
-          Autenticação em 2 Fatores (2FA)
+          Verificação em 2 Fatores
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Proteja o acesso ao painel com um código temporário gerado pelo Google
-          Authenticator, Authy ou qualquer app TOTP.
+          Proteja o acesso ao painel com um código temporário gerado pelo
+          Google Authenticator ou Authy.
         </p>
       </div>
 
-      {/* ── IDLE: botão de ativar ── */}
-      {phase === "idle" && (
-        <div className="rounded-2xl border p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <ShieldOff className="h-8 w-8 text-muted-foreground" />
+      {/* ── Carregando ── */}
+      {phase === "loading" && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {/* ── 2FA inativo ── */}
+      {phase === "inactive" && (
+        <div className="rounded-2xl border p-6 space-y-5">
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-muted p-3">
+              <ShieldOff className="h-6 w-6 text-muted-foreground" />
+            </div>
             <div>
-              <p className="font-semibold">2FA ainda não configurado</p>
-              <p className="text-sm text-muted-foreground">
-                Clique em <strong>Ativar</strong> para gerar um QR code e vinculá-lo
-                ao seu app autenticador.
+              <p className="font-semibold">2FA desativado</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Seu acesso está protegido apenas por senha. Ative o 2FA para
+                adicionar uma segunda camada de segurança.
               </p>
             </div>
           </div>
           <Button
-            onClick={handleActivate}
+            onClick={handleStartSetup}
             disabled={loading}
-            className="w-full gradient-primary text-primary-foreground"
+            className="w-full gradient-primary text-primary-foreground h-11"
           >
-            {loading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…</>
-            ) : (
-              <><ShieldCheck className="mr-2 h-4 w-4" /> Ativar 2FA</>
-            )}
+            {loading
+              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Gerando…</>
+              : <><ShieldCheck className="mr-2 h-4 w-4" />Ativar 2FA</>
+            }
           </Button>
         </div>
       )}
 
-      {/* ── SCANNING: QR code + chave manual ── */}
+      {/* ── QR code para escanear ── */}
       {phase === "scanning" && setup && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="rounded-2xl border p-6 space-y-4">
-            <p className="font-semibold text-center">Passo 1 — Escaneie o QR code</p>
+            <p className="font-semibold text-center">
+              Escaneie no app autenticador
+            </p>
             <div className="flex justify-center rounded-xl bg-white p-5">
-              <QRCode value={setup.uri} size={210} />
+              <QRCode value={setup.uri} size={220} />
             </div>
-            <p className="text-center text-xs text-muted-foreground">
-              Abra o Google Authenticator ou Authy, toque em <strong>+</strong> e
-              escaneie o código acima.
+            <p className="text-center text-sm text-muted-foreground">
+              Abra o <strong>Google Authenticator</strong> ou <strong>Authy</strong>,
+              toque em <strong>+</strong> e escaneie o código acima.
             </p>
           </div>
 
-          {/* Chave manual (fallback) */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">
-              Prefere digitar manualmente?
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                readOnly
-                value={setup.secret}
-                className="font-mono text-sm tracking-widest"
-              />
-              <Button variant="outline" size="icon" onClick={copySecret} title="Copiar chave">
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setPhase("inactive")}
+              disabled={loading}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => setPhase("confirming")}
+              className="flex-1 gradient-primary text-primary-foreground"
+            >
+              Já escaniei →
+            </Button>
           </div>
-
-          <Button
-            className="w-full"
-            onClick={() => setPhase("confirming")}
-            variant="default"
-          >
-            Já escaniei — confirmar código →
-          </Button>
-          <button
-            type="button"
-            onClick={reset}
-            className="block w-full text-center text-sm text-muted-foreground hover:underline underline-offset-4"
-          >
-            Cancelar
-          </button>
         </div>
       )}
 
-      {/* ── CONFIRMING: inserir primeiro código ── */}
+      {/* ── Confirmar com o primeiro código ── */}
       {phase === "confirming" && setup && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border p-6 space-y-5">
+        <div className="space-y-5">
+          <div className="rounded-2xl border p-6 space-y-4">
             <div className="text-center space-y-1">
-              <p className="font-semibold">Passo 2 — Confirme com o primeiro código</p>
+              <p className="font-semibold">Digite o código do app</p>
               <p className="text-sm text-muted-foreground">
-                Abra o app autenticador e informe o código de 6 dígitos que aparece
-                para <strong>SuaAgenda Super Admin</strong>.
+                Informe os 6 dígitos que aparecem para{" "}
+                <strong>SuaAgenda Super Admin</strong> no seu autenticador.
               </p>
             </div>
             <form onSubmit={handleConfirm} className="space-y-4">
@@ -214,7 +226,10 @@ function MfaSetupPage() {
                   disabled={loading || code.length !== 6}
                   className="flex-1 gradient-primary text-primary-foreground"
                 >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+                  {loading
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : "Confirmar e ativar"
+                  }
                 </Button>
               </div>
             </form>
@@ -222,48 +237,90 @@ function MfaSetupPage() {
         </div>
       )}
 
-      {/* ── DONE: secret para copiar ao .env ── */}
-      {phase === "done" && setup && (
-        <div className="rounded-2xl border border-green-200 bg-green-50 p-6 space-y-5 dark:border-green-900 dark:bg-green-950/30">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="h-9 w-9 text-green-600 shrink-0" />
-            <div>
-              <p className="font-semibold text-green-800 dark:text-green-300">
-                2FA configurado com sucesso!
-              </p>
-              <p className="text-sm text-green-700 dark:text-green-400">
-                Adicione o secret abaixo ao <code className="rounded bg-green-100 dark:bg-green-900 px-1">.env</code> da VPS e reinicie o container.
-              </p>
+      {/* ── 2FA ativo ── */}
+      {phase === "active" && (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-6 space-y-3">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="h-8 w-8 text-green-600 shrink-0" />
+              <div>
+                <p className="font-semibold text-green-800 dark:text-green-300">
+                  2FA ativo
+                </p>
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  {adminEmail && <span className="font-mono">{adminEmail}</span>}
+                  {" "}está protegido com verificação em 2 etapas.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Secret TOTP (copie para o .env)</Label>
-            <div className="flex gap-2">
-              <Input readOnly value={setup.secret} className="font-mono text-sm tracking-widest" />
-              <Button variant="outline" size="icon" onClick={copySecret}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-5 space-y-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                Ao desativar, o login voltará a exigir apenas senha. Você pode
+                reativar a qualquer momento.
+              </p>
             </div>
+            <Button
+              variant="outline"
+              onClick={phase === "active" ? () => setPhase("disabling") : undefined}
+              className="w-full border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300"
+            >
+              <ShieldOff className="mr-2 h-4 w-4" /> Desativar 2FA
+            </Button>
           </div>
 
-          <div className="rounded-xl bg-slate-900 text-slate-300 text-xs font-mono p-4 space-y-0.5 select-all">
-            <p className="text-slate-500"># Cole no .env (substitua os valores):</p>
-            <p>SUPER_ADMINS='[&#123;</p>
-            <p className="pl-4">"email": "{setup.email}",</p>
-            <p className="pl-4">"password": "SUA_SENHA_ATUAL",</p>
-            <p className="pl-4 text-green-400">"totpSecret": "{setup.secret}"</p>
-            <p>&#125;]'</p>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Após salvar o .env e reiniciar o container, o login passará a exigir o
-            código do autenticador na segunda etapa.
-          </p>
-
-          <Button variant="outline" onClick={reset} className="w-full">
-            <RefreshCw className="mr-2 h-4 w-4" /> Gerar novo secret
+          <Button
+            variant="outline"
+            onClick={handleStartSetup}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading
+              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Gerando…</>
+              : "Reconfigurar (trocar app autenticador)"
+            }
           </Button>
+        </div>
+      )}
+
+      {/* ── Confirmação de desativação ── */}
+      {phase === "disabling" && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30 p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-red-800 dark:text-red-300">
+                Confirmar desativação do 2FA
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                Seu acesso ficará protegido apenas por senha até você reativar.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setPhase("active")}
+              disabled={loading}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDeactivate}
+              disabled={loading}
+              variant="destructive"
+              className="flex-1"
+            >
+              {loading
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : "Sim, desativar"
+              }
+            </Button>
+          </div>
         </div>
       )}
     </div>
