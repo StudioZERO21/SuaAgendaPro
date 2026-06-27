@@ -1,61 +1,85 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
-// ── Client-side public fetches (no server function needed) ────
-export async function getPublicProfile(slug: string): Promise<PublicData | null> {
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, slug, display_name, bio, phone, avatar_url, banner_url, cover_url, city, state, street, street_number, neighborhood, social_links, specialty, theme_color, gradient_color_2, show_prices, accept_online")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .single();
+// ── Página pública — busca com cache Redis (server function) ──────────────────
 
-  if (error) console.error("[getPublicProfile]", error.message);
-  if (!profile) return null;
+export const getPublicProfile = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ slug: z.string() }).parse(input ?? {}))
+  .handler(async ({ data }): Promise<PublicData | null> => {
+    const { cacheGet, cacheSet } = await import("@/lib/redis.server");
+    const cacheKey = `public:profile:${data.slug}`;
 
-  const [{ data: services }, { data: wh }, { data: portfolio }, { data: reviews }, { data: statsRows }, { data: schedBlocks }, { data: paySettings }] = await Promise.all([
-    supabase.from("services").select("id, name, description, duration_minutes, price_cents, category, category_label, image_url").eq("professional_id", profile.id).eq("is_active", true).order("name"),
-    supabase.from("working_hours").select("day_of_week, is_open, start_time, end_time").eq("professional_id", profile.id),
-    supabase.from("portfolio_items").select("id, image_url, title, description, order_index").eq("professional_id", profile.id).order("order_index", { ascending: true }),
-    supabase.from("reviews").select("id, client_name, client_avatar_url, rating, message, is_anonymous, created_at").eq("professional_id", profile.id).eq("is_public", true).order("created_at", { ascending: false }),
-    supabase.rpc("get_review_stats", { p_professional_id: profile.id }),
-    supabase.from("schedule_blocks").select("id, start_date, end_date, reason, title").eq("professional_id", profile.id),
-    supabase.from("professional_payment_settings").select("pix_enabled, pix_key, pix_key_type, pix_beneficiary_name, pix_city, mercado_pago_connected, active_payment_method").eq("user_id", profile.id).maybeSingle(),
-  ]);
+    const cached = await cacheGet<PublicData>(cacheKey);
+    if (cached) return cached;
 
-  const stats = (statsRows as { total_count: number; avg_rating: number }[] | null)?.[0];
-  const ps = paySettings as {
-    pix_enabled: boolean;
-    pix_key: string | null;
-    pix_key_type: string;
-    pix_beneficiary_name: string | null;
-    pix_city: string | null;
-    mercado_pago_connected: boolean;
-    active_payment_method: string | null;
-  } | null;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const activeMethod = ps?.active_payment_method ?? null;
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, slug, display_name, bio, phone, avatar_url, banner_url, cover_url, city, state, street, street_number, neighborhood, social_links, specialty, theme_color, gradient_color_2, show_prices, accept_online")
+      .eq("slug", data.slug)
+      .eq("is_active", true)
+      .single();
 
-  return {
-    profile: profile as PublicProfileRow,
-    services: (services ?? []) as PublicServiceRow[],
-    workingHours: (wh ?? []) as PublicWorkingHoursRow[],
-    portfolio: (portfolio ?? []) as PublicPortfolioRow[],
-    reviews: (reviews ?? []) as PublicReviewRow[],
-    reviewTotalCount: stats?.total_count ?? 0,
-    reviewAvgRating: stats?.avg_rating ?? 0,
-    scheduleBlocks: (schedBlocks ?? []) as PublicScheduleBlock[],
-    // Só expõe dados do método que está ativo — nunca os dois ao mesmo tempo
-    pix: {
-      enabled: activeMethod === "pix" && (ps?.pix_enabled ?? false),
-      key: activeMethod === "pix" ? (ps?.pix_key ?? null) : null,
-      keyType: ps?.pix_key_type ?? "email",
-      beneficiaryName: ps?.pix_beneficiary_name ?? null,
-      city: ps?.pix_city ?? null,
-    },
-    mpConnected: activeMethod === "mercado_pago" && (ps?.mercado_pago_connected ?? false),
-  };
-}
+    if (error || !profile) return null;
+
+    const [
+      { data: services },
+      { data: wh },
+      { data: portfolio },
+      { data: reviews },
+      { data: statsRows },
+      { data: schedBlocks },
+      { data: paySettings },
+    ] = await Promise.all([
+      supabaseAdmin.from("services").select("id, name, description, duration_minutes, price_cents, category, category_label, image_url").eq("professional_id", profile.id).eq("is_active", true).order("name"),
+      supabaseAdmin.from("working_hours").select("day_of_week, is_open, start_time, end_time").eq("professional_id", profile.id),
+      supabaseAdmin.from("portfolio_items").select("id, image_url, title, description, order_index").eq("professional_id", profile.id).order("order_index", { ascending: true }),
+      supabaseAdmin.from("reviews").select("id, client_name, client_avatar_url, rating, message, is_anonymous, created_at").eq("professional_id", profile.id).eq("is_public", true).order("created_at", { ascending: false }),
+      supabaseAdmin.rpc("get_review_stats", { p_professional_id: profile.id }),
+      supabaseAdmin.from("schedule_blocks").select("id, start_date, end_date, reason, title").eq("professional_id", profile.id),
+      supabaseAdmin.from("professional_payment_settings").select("pix_enabled, pix_key, pix_key_type, pix_beneficiary_name, pix_city, mercado_pago_connected, active_payment_method").eq("user_id", profile.id).maybeSingle(),
+    ]);
+
+    const stats = (statsRows as { total_count: number; avg_rating: number }[] | null)?.[0];
+    const ps = paySettings as {
+      pix_enabled: boolean; pix_key: string | null; pix_key_type: string;
+      pix_beneficiary_name: string | null; pix_city: string | null;
+      mercado_pago_connected: boolean; active_payment_method: string | null;
+    } | null;
+    const activeMethod = ps?.active_payment_method ?? null;
+
+    const result: PublicData = {
+      profile:          profile as PublicProfileRow,
+      services:         (services ?? []) as PublicServiceRow[],
+      workingHours:     (wh ?? []) as PublicWorkingHoursRow[],
+      portfolio:        (portfolio ?? []) as PublicPortfolioRow[],
+      reviews:          (reviews ?? []) as PublicReviewRow[],
+      reviewTotalCount: stats?.total_count ?? 0,
+      reviewAvgRating:  stats?.avg_rating ?? 0,
+      scheduleBlocks:   (schedBlocks ?? []) as PublicScheduleBlock[],
+      pix: {
+        enabled:         activeMethod === "pix" && (ps?.pix_enabled ?? false),
+        key:             activeMethod === "pix" ? (ps?.pix_key ?? null) : null,
+        keyType:         ps?.pix_key_type ?? "email",
+        beneficiaryName: ps?.pix_beneficiary_name ?? null,
+        city:            ps?.pix_city ?? null,
+      },
+      mpConnected: activeMethod === "mercado_pago" && (ps?.mercado_pago_connected ?? false),
+    };
+
+    await cacheSet(cacheKey, result, 300); // 5 min
+    return result;
+  });
+
+// Server function para hooks client-side invalidarem o cache após salvar
+// serviços, horários, portfólio ou perfil — requer auth do usuário logado
+export const invalidatePublicProfileCache = createServerFn({ method: "POST" })
+  .validator((input: unknown) => z.object({ slug: z.string() }).parse(input))
+  .handler(async ({ data }): Promise<void> => {
+    const { cacheDel } = await import("@/lib/redis.server");
+    await cacheDel(`public:profile:${data.slug}`);
+  });
 
 export async function getPublicSlots(professionalId: string, dateStr: string, durationMin: number): Promise<string[]> {
   const { data } = await supabase.rpc("get_available_slots", {

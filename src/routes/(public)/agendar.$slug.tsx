@@ -102,7 +102,7 @@ function PublicBookingPage() {
   const [visibleServices, setVisibleServices] = useState(6);
   const [visibleReviews, setVisibleReviews]   = useState(3);
 
-  useEffect(() => { getPublicProfile(slug).then(setLoaderData); }, [slug]);
+  useEffect(() => { getPublicProfile({ data: { slug } }).then(setLoaderData); }, [slug]);
   useEffect(() => { if (avatarRef.current?.complete) setAvatarLoaded(true); }, []);
 
   // Retorno do Mercado Pago — mostra toast de sucesso ou pendente

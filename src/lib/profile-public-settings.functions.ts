@@ -119,10 +119,17 @@ export const savePublicProfileSettings = createServerFn({ method: "POST" })
       .select("slug, banner_url, gradient_color_2")
       .eq("id", context.userId)
       .maybeSingle();
+
+    // Invalida cache da página pública após atualização do perfil
+    if (prof?.slug) {
+      const { cacheDel } = await import("@/lib/redis.server");
+      await cacheDel(`public:profile:${prof.slug}`);
+    }
+
     return {
       ...data,
-      slug:          prof?.slug             ?? "",
-      bannerUrl:     prof?.banner_url       ?? "",
+      slug:           prof?.slug             ?? "",
+      bannerUrl:      prof?.banner_url       ?? "",
       gradientColor2: prof?.gradient_color_2 ?? "",
     };
   });

@@ -21,6 +21,12 @@ export const getSuperAdminMetrics = createServerFn({ method: "GET" })
   .validator((input: unknown) => z.object({ _st }).parse(input ?? {}))
   .handler(async ({ data }): Promise<SuperMetrics> => {
     await requireSuperAuth(data._st ?? null);
+
+    const { cacheGet, cacheSet } = await import("@/lib/redis.server");
+    const cacheKey = "super:metrics";
+    const cached = await cacheGet<SuperMetrics>(cacheKey);
+    if (cached) return cached;
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: rows, error } = await supabaseAdmin
@@ -46,7 +52,7 @@ export const getSuperAdminMetrics = createServerFn({ method: "GET" })
       (r) => r.status === "cancelled" && r.cancelled_at && r.cancelled_at >= startOfMonth,
     ).length;
 
-    return {
+    const result: SuperMetrics = {
       totalUsers:     subs.length,
       activeUsers:    counts["active"]    ?? 0,
       trialUsers:     counts["trial"]     ?? 0,
@@ -56,6 +62,9 @@ export const getSuperAdminMetrics = createServerFn({ method: "GET" })
       mrr,
       churnThisMonth,
     };
+
+    await cacheSet(cacheKey, result, 120); // 2 min
+    return result;
   });
 
 // ─── Lista de usuários ────────────────────────────────────────────────────────
