@@ -4,7 +4,7 @@ import {
   Server, CheckCircle2, XCircle, AlertCircle, RefreshCw,
   HardDrive, Cpu, MemoryStick, WifiOff, Loader2,
   Clock, Globe, MessageSquare, Activity, Send,
-  Database, Users, Layers, FolderOpen,
+  Database, Users, Layers, FolderOpen, BrainCircuit,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   getInfraStats, getVpsStats, getEvolutionStats, sendEvolutionMessage, getSupabaseStats,
   type InfraStats, type VpsStats, type EvolutionStats, type SupabaseStats,
 } from "@/lib/super-infra.functions";
+import { triggerAiSync, getLastAiSyncStats } from "@/lib/ai-sync.server";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -657,9 +658,115 @@ function InfraPage() {
             }
           </ul>
         </section>
+
+        {/* Sync IA */}
+        <AiSyncPanel />
       </div>
 
 
     </div>
+  );
+}
+
+// ─── Painel de Sincronização IA ───────────────────────────────────────────────
+
+function AiSyncPanel() {
+  const token = withSuperToken({});
+  const [syncing, setSyncing] = useState(false);
+  const [stats,   setStats]   = useState<any>(null);
+
+  useEffect(() => {
+    if (!token._st) return;
+    getLastAiSyncStats({ data: { _st: token._st } })
+      .then(s => { if (s) setStats(s); })
+      .catch(() => {});
+  }, [token._st]);
+
+  async function handleSync() {
+    if (!token._st) return;
+    setSyncing(true);
+    try {
+      const s = await triggerAiSync({ data: { _st: token._st } });
+      setStats(s);
+      toast.success(
+        `Sync concluído em ${(s.durationMs / 1000).toFixed(1)}s — ` +
+        `${s.professionals} profissionais, ${s.serviceStats} registros de serviço, ` +
+        `${s.reviews} avaliações`
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro no sync");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  return (
+    <section className="border border-border bg-card shadow-sm">
+      <header className="border-b border-border p-4 flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold flex items-center gap-2">
+            <BrainCircuit className="h-4 w-4 text-violet-500" />
+            Banco de Dados da IA
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Sincroniza dados anonimizados do Supabase → PostgreSQL VPS
+          </p>
+        </div>
+        <Button size="sm" onClick={handleSync} disabled={syncing} variant="outline">
+          {syncing
+            ? <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />Sincronizando…</>
+            : <><RefreshCw className="mr-2 h-3.5 w-3.5" />Sincronizar agora</>
+          }
+        </Button>
+      </header>
+
+      {stats ? (
+        <ul className="divide-y divide-border text-sm">
+          <li className="flex items-center justify-between px-4 py-3">
+            <span className="text-muted-foreground">Última execução</span>
+            <span className="font-mono text-xs">{new Date(stats.syncedAt).toLocaleString("pt-BR")}</span>
+          </li>
+          <li className="flex items-center justify-between px-4 py-3">
+            <span className="text-muted-foreground">Duração</span>
+            <span>{(stats.durationMs / 1000).toFixed(1)}s</span>
+          </li>
+          <li className="flex items-center justify-between px-4 py-3">
+            <span className="text-muted-foreground">Padrões de agendamento</span>
+            <span className="font-semibold">{stats.appointmentPatterns?.toLocaleString()}</span>
+          </li>
+          <li className="flex items-center justify-between px-4 py-3">
+            <span className="text-muted-foreground">Registros de serviços</span>
+            <span className="font-semibold">{stats.serviceStats?.toLocaleString()}</span>
+          </li>
+          <li className="flex items-center justify-between px-4 py-3">
+            <span className="text-muted-foreground">Profissionais</span>
+            <span className="font-semibold">{stats.professionals?.toLocaleString()}</span>
+          </li>
+          <li className="flex items-center justify-between px-4 py-3">
+            <span className="text-muted-foreground">Avaliações anonimizadas</span>
+            <span className="font-semibold">{stats.reviews?.toLocaleString()}</span>
+          </li>
+          {stats.errors?.length > 0 && (
+            <li className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30">
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-1">Avisos:</p>
+              {stats.errors.map((e: string, i: number) => (
+                <p key={i} className="text-xs text-amber-600 dark:text-amber-500 font-mono">{e}</p>
+              ))}
+            </li>
+          )}
+        </ul>
+      ) : (
+        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+          {syncing ? "Primeira sincronização em andamento…" : "Nenhum sync realizado ainda. Clique em Sincronizar agora."}
+        </div>
+      )}
+
+      <div className="border-t border-border px-4 py-3 bg-muted/30">
+        <p className="text-[11px] text-muted-foreground">
+          Cron automático: <code className="rounded bg-muted px-1">POST /api/cron/ai-sync</code> com
+          header <code className="rounded bg-muted px-1">Authorization: Bearer AI_SYNC_TOKEN</code>
+        </p>
+      </div>
+    </section>
   );
 }
