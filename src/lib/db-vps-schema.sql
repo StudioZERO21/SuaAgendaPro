@@ -5,7 +5,7 @@
 -- Padrões de agendamento (sem nome, telefone ou email do cliente)
 CREATE TABLE IF NOT EXISTS ai_appointment_patterns (
   id              BIGSERIAL PRIMARY KEY,
-  professional_id UUID        NOT NULL,  -- referência ao Supabase (sem JOIN possível)
+  professional_id UUID        NOT NULL,
   service_id      UUID        NOT NULL,
   day_of_week     SMALLINT    NOT NULL,  -- 0=dom … 6=sáb
   hour_of_day     SMALLINT    NOT NULL,
@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS ai_appointment_patterns (
   count           INT         NOT NULL DEFAULT 1,
   avg_price_cents INT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT ai_appt_patterns_unique UNIQUE (professional_id, service_id, day_of_week, hour_of_day, month, year)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ai_patterns_prof
