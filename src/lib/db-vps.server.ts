@@ -1,13 +1,9 @@
 import postgres from "postgres";
 
-let _sql: postgres.Sql | undefined;
-
 function buildVpsUrl(): string {
-  // Formato 1 — URL completa
   const url = process.env.VPS_DATABASE_URL;
   if (url) return url;
 
-  // Formato 2 — variáveis separadas (mesmas que o container PostgreSQL da VPS usa)
   const user     = process.env.POSTGRES_USER;
   const password = process.env.POSTGRES_PASSWORD;
   const db       = process.env.POSTGRES_DB;
@@ -23,14 +19,13 @@ function buildVpsUrl(): string {
   );
 }
 
+// Sem singleton — lê process.env sempre que chamado
+// (evita conectar com credenciais desatualizadas se o .env mudar em dev)
 export function getVpsDb(): postgres.Sql {
-  if (!_sql) {
-    _sql = postgres(buildVpsUrl(), {
-      max: 5,             // pool pequeno — banco auxiliar, não principal
-      idle_timeout: 30,
-      connect_timeout: 10,
-      ssl: false,         // rede interna da VPS
-    });
-  }
-  return _sql;
+  return postgres(buildVpsUrl(), {
+    max: 5,
+    idle_timeout: 30,
+    connect_timeout: 10,
+    ssl: false,
+  });
 }

@@ -59,7 +59,7 @@ export async function runAiSync(): Promise<SyncStats> {
       const { data, error } = await supabaseAdmin
         .from("appointments")
         .select("professional_id, service_id, scheduled_at, price_cents, status")
-        .in("status", ["confirmed", "completed", "done"])
+        .in("status", ["confirmed", "completed"])
         .range(page * 1000, page * 1000 + 999);
       if (error) { errors.push("appointments: " + error.message); break; }
       if (!data?.length) break;
@@ -124,7 +124,7 @@ export async function runAiSync(): Promise<SyncStats> {
     const { data: apptCounts } = await supabaseAdmin
       .from("appointments")
       .select("service_id, scheduled_at, price_cents")
-      .in("status", ["confirmed", "completed", "done"]);
+      .in("status", ["confirmed", "completed"]);
 
     const { data: reviewRows } = await supabaseAdmin
       .from("reviews")
@@ -223,7 +223,7 @@ export async function runAiSync(): Promise<SyncStats> {
     const { data: apptAll } = await supabaseAdmin
       .from("appointments")
       .select("professional_id")
-      .in("status", ["confirmed", "completed", "done"]);
+      .in("status", ["confirmed", "completed"]);
 
     const { data: reviewAll } = await supabaseAdmin
       .from("reviews")
