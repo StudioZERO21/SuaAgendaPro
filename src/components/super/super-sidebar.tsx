@@ -12,6 +12,7 @@ import {
   Server,
   TicketCheck,
   Share2,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const NAV_SISTEMA = [
   { title: "Auditoria",    to: "/super/auditoria",    icon: ClipboardList,  exact: false },
   { title: "Infra",        to: "/super/infra",        icon: Server,         exact: false },
   { title: "Configurações",to: "/super/configuracoes",icon: Settings,       exact: false },
+  { title: "Meu 2FA",      to: "/super/mfa-setup",   icon: ShieldCheck,    exact: false },
 ];
 
 export function SuperSidebar() {
