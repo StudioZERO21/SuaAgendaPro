@@ -1,7 +1,142 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+
+// ─── Rotas por domínio ────────────────────────────────────────────────────────
+
+const APP_ROUTE_PREFIXES = [
+  "/app",
+  "/dashboard",
+  "/clientes",
+  "/servicos",
+  "/servico",
+  "/horarios",
+  "/portfolio",
+  "/avaliacoes",
+  "/notificacoes",
+  "/notificacoes-todas",
+  "/perfil-profissional",
+  "/personalizacao",
+  "/pagamentos",
+  "/transacoes",
+  "/plano",
+  "/mais",
+  "/onboarding",
+  "/whatsapp",
+  "/google-calendar",
+  "/saudacao",
+  "/use-no-celular",
+];
+
+const SITE_ONLY_PREFIXES = [
+  "/precos",
+  "/recursos",
+  "/contato",
+  "/cadastro",
+  "/login",
+  "/reset-password",
+];
+
+const ADMIN_PREFIX = "/super";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function detectSubdomain(hostname: string): "site" | "app" | "admin" {
+  if (hostname.startsWith("app.")) return "app";
+  if (hostname.startsWith("admin.")) return "admin";
+  return "site";
+}
+
+function isLocalDev(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".local") ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.")
+  );
+}
+
+function isPassthrough(path: string): boolean {
+  if (
+    path.startsWith("/api/") ||
+    path.startsWith("/_server/") ||
+    path.startsWith("/_build/") ||
+    path.startsWith("/_nitro/") ||
+    path.startsWith("/@")
+  ) {
+    return true;
+  }
+  if (
+    /\.(js|mjs|cjs|ts|css|map|png|jpg|jpeg|webp|svg|ico|woff|woff2|ttf|otf|json|txt|xml|pdf)$/.test(
+      path,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function matchesPrefix(path: string, prefixes: string[]): boolean {
+  return prefixes.some((p) => path === p || path.startsWith(p + "/"));
+}
+
+// ─── Middleware de subdomínio ─────────────────────────────────────────────────
+
+const subdomainMiddleware = createMiddleware().server(async ({ next }) => {
+  try {
+    const req = getRequest();
+    if (!req) return await next();
+
+    const host = req.headers.get("host") ?? "";
+    const hostname = host.split(":")[0];
+
+    if (isLocalDev(hostname)) return await next();
+
+    const path = new URL(req.url).pathname;
+    if (isPassthrough(path)) return await next();
+
+    const subdomain = detectSubdomain(hostname);
+
+    if (subdomain === "site") {
+      if (matchesPrefix(path, APP_ROUTE_PREFIXES)) {
+        return Response.redirect(`https://app.suaagenda.pro${path}`, 302);
+      }
+      if (path === ADMIN_PREFIX || path.startsWith(ADMIN_PREFIX + "/")) {
+        return Response.redirect(`https://admin.suaagenda.pro${path}`, 302);
+      }
+    }
+
+    if (subdomain === "app") {
+      // Raiz do domínio app → redireciona para a tela de Agenda
+      if (path === "/") {
+        return Response.redirect("https://app.suaagenda.pro/app", 302);
+      }
+      if (matchesPrefix(path, SITE_ONLY_PREFIXES)) {
+        return Response.redirect(`https://suaagenda.pro${path}`, 302);
+      }
+      if (path === ADMIN_PREFIX || path.startsWith(ADMIN_PREFIX + "/")) {
+        return Response.redirect(`https://admin.suaagenda.pro${path}`, 302);
+      }
+    }
+
+    if (subdomain === "admin") {
+      const isAdminPath =
+        path === ADMIN_PREFIX || path.startsWith(ADMIN_PREFIX + "/");
+      if (!isAdminPath) {
+        return Response.redirect("https://admin.suaagenda.pro/super/", 302);
+      }
+    }
+  } catch {
+    // não interrompe o app se o middleware falhar
+  }
+
+  return await next();
+});
+
+// ─── Middleware de erro (mantém comportamento original) ───────────────────────
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -20,5 +155,5 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware],
+  requestMiddleware: [subdomainMiddleware, errorMiddleware],
 }));

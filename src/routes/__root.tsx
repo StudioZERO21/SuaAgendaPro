@@ -23,6 +23,7 @@ import {
   requiresSubscription,
 } from "@/lib/subscription-guard";
 import { useDeviceGuard } from "@/lib/device-guard";
+import type { AccentId, FontId, ThemeId } from "@/lib/personalization";
 
 const PUBLIC_PATHS = [
   "/",
@@ -245,27 +246,36 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+async function resolveSubdomain(): Promise<"site" | "app" | "admin"> {
+  let hostname = "suaagenda.pro";
+  if (typeof window !== "undefined") {
+    hostname = window.location.hostname;
+  } else {
+    try {
+      const { getRequest } = await import("@tanstack/react-start/server");
+      const req = getRequest();
+      hostname = req?.headers.get("host")?.split(":")[0] ?? "suaagenda.pro";
+    } catch { /* noop */ }
+  }
+  return hostname.startsWith("app.") ? "app"
+       : hostname.startsWith("admin.") ? "admin"
+       : "site";
+}
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: async () => {
-    let hostname = "suaagenda.pro";
-    if (typeof window !== "undefined") {
-      hostname = window.location.hostname;
-    } else {
-      try {
-        const { getWebRequest } = await import("@tanstack/react-start/server");
-        const req = getWebRequest();
-        hostname = req?.headers.get("host")?.split(":")[0] ?? "suaagenda.pro";
-      } catch { /* noop */ }
-    }
-    const subdomain: "site" | "app" | "admin" =
-      hostname.startsWith("app.") ? "app" :
-      hostname.startsWith("admin.") ? "admin" :
-      "site";
+    const subdomain = await resolveSubdomain();
     return { subdomain };
   },
 
-  head: ({ context }) => {
+  loader: async ({ context }) => {
+    // loaderData é o único jeito de passar dados para head()
     const subdomain = (context as any).subdomain as "site" | "app" | "admin" ?? "site";
+    return { subdomain };
+  },
+
+  head: ({ loaderData }) => {
+    const subdomain = loaderData?.subdomain ?? "site";
     const isApp   = subdomain === "app";
     const isAdmin = subdomain === "admin";
 
@@ -361,9 +371,9 @@ function RootComponent() {
           const ui = data.ui_settings as { accent?: string; font?: string; theme?: string; highContrast?: boolean };
           const merged = {
             ...local,
-            accent:      (ui.accent      as m.AccentId) ?? local.accent,
-            font:        (ui.font        as m.FontId)   ?? local.font,
-            theme:       (ui.theme       as m.ThemeId)  ?? local.theme,
+            accent:      (ui.accent      as AccentId) ?? local.accent,
+            font:        (ui.font        as FontId)   ?? local.font,
+            theme:       (ui.theme       as ThemeId)  ?? local.theme,
             highContrast: ui.highContrast               ?? local.highContrast,
           };
           m.savePersonalization(merged);
