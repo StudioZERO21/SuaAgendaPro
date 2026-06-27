@@ -9,283 +9,238 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WhatsappRouteImport } from './routes/whatsapp'
-import { Route as UseNoCelularRouteImport } from './routes/use-no-celular'
-import { Route as TransacoesRouteImport } from './routes/transacoes'
-import { Route as ServicosRouteImport } from './routes/servicos'
-import { Route as SaudacaoRouteImport } from './routes/saudacao'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RecursosRouteImport } from './routes/recursos'
-import { Route as PrecosRouteImport } from './routes/precos'
-import { Route as PortfolioRouteImport } from './routes/portfolio'
-import { Route as PlanoRouteImport } from './routes/plano'
-import { Route as PersonalizacaoRouteImport } from './routes/personalizacao'
-import { Route as PerfilPublicoRouteImport } from './routes/perfil-publico'
-import { Route as PerfilProfissionalRouteImport } from './routes/perfil-profissional'
-import { Route as PagamentosRouteImport } from './routes/pagamentos'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as NotificacoesTodasRouteImport } from './routes/notificacoes-todas'
-import { Route as NotificacoesRouteImport } from './routes/notificacoes'
-import { Route as MaisRouteImport } from './routes/mais'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HorariosRouteImport } from './routes/horarios'
-import { Route as GoogleCalendarRouteImport } from './routes/google-calendar'
-import { Route as ExemploPaginaRouteImport } from './routes/exemplo-pagina'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ContatoRouteImport } from './routes/contato'
-import { Route as ClientesRouteImport } from './routes/clientes'
-import { Route as CadastroRouteImport } from './routes/cadastro'
-import { Route as AvaliacoesRouteImport } from './routes/avaliacoes'
-import { Route as AppRouteImport } from './routes/app'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as SuperLoginRouteImport } from './routes/super/login'
-import { Route as ServicoNovoRouteImport } from './routes/servico.novo'
-import { Route as ServicoIdRouteImport } from './routes/servico.$id'
-import { Route as AvaliarTokenRouteImport } from './routes/avaliar.$token'
-import { Route as AgendarSlugRouteImport } from './routes/agendar.$slug'
-import { Route as SuperAppRouteRouteImport } from './routes/super/_app/route'
-import { Route as SuperAppIndexRouteImport } from './routes/super/_app/index'
-import { Route as SuperAppUsuariosRouteImport } from './routes/super/_app/usuarios'
-import { Route as SuperAppTicketsRouteImport } from './routes/super/_app/tickets'
-import { Route as SuperAppTemplatesRouteImport } from './routes/super/_app/templates'
-import { Route as SuperAppPlanosRouteImport } from './routes/super/_app/planos'
-import { Route as SuperAppInfraRouteImport } from './routes/super/_app/infra'
-import { Route as SuperAppIndicacoesRouteImport } from './routes/super/_app/indicacoes'
-import { Route as SuperAppFinanceiroRouteImport } from './routes/super/_app/financeiro'
-import { Route as SuperAppConfiguracoesRouteImport } from './routes/super/_app/configuracoes'
-import { Route as SuperAppAuditoriaRouteImport } from './routes/super/_app/auditoria'
+import { Route as siteIndexRouteImport } from './routes/(site)/index'
+import { Route as siteResetPasswordRouteImport } from './routes/(site)/reset-password'
+import { Route as siteRecursosRouteImport } from './routes/(site)/recursos'
+import { Route as sitePrecosRouteImport } from './routes/(site)/precos'
+import { Route as siteLoginRouteImport } from './routes/(site)/login'
+import { Route as siteContatoRouteImport } from './routes/(site)/contato'
+import { Route as siteCadastroRouteImport } from './routes/(site)/cadastro'
+import { Route as publicPerfilPublicoRouteImport } from './routes/(public)/perfil-publico'
+import { Route as publicExemploPaginaRouteImport } from './routes/(public)/exemplo-pagina'
+import { Route as appWhatsappRouteImport } from './routes/(app)/whatsapp'
+import { Route as appUseNoCelularRouteImport } from './routes/(app)/use-no-celular'
+import { Route as appTransacoesRouteImport } from './routes/(app)/transacoes'
+import { Route as appServicosRouteImport } from './routes/(app)/servicos'
+import { Route as appSaudacaoRouteImport } from './routes/(app)/saudacao'
+import { Route as appPortfolioRouteImport } from './routes/(app)/portfolio'
+import { Route as appPlanoRouteImport } from './routes/(app)/plano'
+import { Route as appPersonalizacaoRouteImport } from './routes/(app)/personalizacao'
+import { Route as appPerfilProfissionalRouteImport } from './routes/(app)/perfil-profissional'
+import { Route as appPagamentosRouteImport } from './routes/(app)/pagamentos'
+import { Route as appOnboardingRouteImport } from './routes/(app)/onboarding'
+import { Route as appNotificacoesTodasRouteImport } from './routes/(app)/notificacoes-todas'
+import { Route as appNotificacoesRouteImport } from './routes/(app)/notificacoes'
+import { Route as appMaisRouteImport } from './routes/(app)/mais'
+import { Route as appHorariosRouteImport } from './routes/(app)/horarios'
+import { Route as appGoogleCalendarRouteImport } from './routes/(app)/google-calendar'
+import { Route as appDashboardRouteImport } from './routes/(app)/dashboard'
+import { Route as appClientesRouteImport } from './routes/(app)/clientes'
+import { Route as appAvaliacoesRouteImport } from './routes/(app)/avaliacoes'
+import { Route as appAppRouteImport } from './routes/(app)/app'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
+import { Route as publicAvaliarTokenRouteImport } from './routes/(public)/avaliar.$token'
+import { Route as publicAgendarSlugRouteImport } from './routes/(public)/agendar.$slug'
+import { Route as appServicoNovoRouteImport } from './routes/(app)/servico.novo'
+import { Route as appServicoIdRouteImport } from './routes/(app)/servico.$id'
+import { Route as adminSuperLoginRouteImport } from './routes/(admin)/super/login'
+import { Route as adminSuperAppRouteRouteImport } from './routes/(admin)/super/_app/route'
+import { Route as adminSuperAppIndexRouteImport } from './routes/(admin)/super/_app/index'
 import { Route as ApiPublicMercadoPagoCallbackRouteImport } from './routes/api/public/mercado-pago.callback'
+import { Route as adminSuperAppUsuariosRouteImport } from './routes/(admin)/super/_app/usuarios'
+import { Route as adminSuperAppTicketsRouteImport } from './routes/(admin)/super/_app/tickets'
+import { Route as adminSuperAppTemplatesRouteImport } from './routes/(admin)/super/_app/templates'
+import { Route as adminSuperAppPlanosRouteImport } from './routes/(admin)/super/_app/planos'
+import { Route as adminSuperAppInfraRouteImport } from './routes/(admin)/super/_app/infra'
+import { Route as adminSuperAppIndicacoesRouteImport } from './routes/(admin)/super/_app/indicacoes'
+import { Route as adminSuperAppFinanceiroRouteImport } from './routes/(admin)/super/_app/financeiro'
+import { Route as adminSuperAppConfiguracoesRouteImport } from './routes/(admin)/super/_app/configuracoes'
+import { Route as adminSuperAppAuditoriaRouteImport } from './routes/(admin)/super/_app/auditoria'
 
-const WhatsappRoute = WhatsappRouteImport.update({
-  id: '/whatsapp',
-  path: '/whatsapp',
+const siteIndexRoute = siteIndexRouteImport.update({
+  id: '/(site)/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UseNoCelularRoute = UseNoCelularRouteImport.update({
-  id: '/use-no-celular',
-  path: '/use-no-celular',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TransacoesRoute = TransacoesRouteImport.update({
-  id: '/transacoes',
-  path: '/transacoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServicosRoute = ServicosRouteImport.update({
-  id: '/servicos',
-  path: '/servicos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SaudacaoRoute = SaudacaoRouteImport.update({
-  id: '/saudacao',
-  path: '/saudacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
+const siteResetPasswordRoute = siteResetPasswordRouteImport.update({
+  id: '/(site)/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RecursosRoute = RecursosRouteImport.update({
-  id: '/recursos',
+const siteRecursosRoute = siteRecursosRouteImport.update({
+  id: '/(site)/recursos',
   path: '/recursos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PrecosRoute = PrecosRouteImport.update({
-  id: '/precos',
+const sitePrecosRoute = sitePrecosRouteImport.update({
+  id: '/(site)/precos',
   path: '/precos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PortfolioRoute = PortfolioRouteImport.update({
-  id: '/portfolio',
-  path: '/portfolio',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlanoRoute = PlanoRouteImport.update({
-  id: '/plano',
-  path: '/plano',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PersonalizacaoRoute = PersonalizacaoRouteImport.update({
-  id: '/personalizacao',
-  path: '/personalizacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerfilPublicoRoute = PerfilPublicoRouteImport.update({
-  id: '/perfil-publico',
-  path: '/perfil-publico',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerfilProfissionalRoute = PerfilProfissionalRouteImport.update({
-  id: '/perfil-profissional',
-  path: '/perfil-profissional',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagamentosRoute = PagamentosRouteImport.update({
-  id: '/pagamentos',
-  path: '/pagamentos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotificacoesTodasRoute = NotificacoesTodasRouteImport.update({
-  id: '/notificacoes-todas',
-  path: '/notificacoes-todas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotificacoesRoute = NotificacoesRouteImport.update({
-  id: '/notificacoes',
-  path: '/notificacoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MaisRoute = MaisRouteImport.update({
-  id: '/mais',
-  path: '/mais',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
+const siteLoginRoute = siteLoginRouteImport.update({
+  id: '/(site)/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HorariosRoute = HorariosRouteImport.update({
-  id: '/horarios',
-  path: '/horarios',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoogleCalendarRoute = GoogleCalendarRouteImport.update({
-  id: '/google-calendar',
-  path: '/google-calendar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExemploPaginaRoute = ExemploPaginaRouteImport.update({
-  id: '/exemplo-pagina',
-  path: '/exemplo-pagina',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContatoRoute = ContatoRouteImport.update({
-  id: '/contato',
+const siteContatoRoute = siteContatoRouteImport.update({
+  id: '/(site)/contato',
   path: '/contato',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClientesRoute = ClientesRouteImport.update({
-  id: '/clientes',
-  path: '/clientes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CadastroRoute = CadastroRouteImport.update({
-  id: '/cadastro',
+const siteCadastroRoute = siteCadastroRouteImport.update({
+  id: '/(site)/cadastro',
   path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AvaliacoesRoute = AvaliacoesRouteImport.update({
-  id: '/avaliacoes',
+const publicPerfilPublicoRoute = publicPerfilPublicoRouteImport.update({
+  id: '/(public)/perfil-publico',
+  path: '/perfil-publico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const publicExemploPaginaRoute = publicExemploPaginaRouteImport.update({
+  id: '/(public)/exemplo-pagina',
+  path: '/exemplo-pagina',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appWhatsappRoute = appWhatsappRouteImport.update({
+  id: '/(app)/whatsapp',
+  path: '/whatsapp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appUseNoCelularRoute = appUseNoCelularRouteImport.update({
+  id: '/(app)/use-no-celular',
+  path: '/use-no-celular',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appTransacoesRoute = appTransacoesRouteImport.update({
+  id: '/(app)/transacoes',
+  path: '/transacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appServicosRoute = appServicosRouteImport.update({
+  id: '/(app)/servicos',
+  path: '/servicos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appSaudacaoRoute = appSaudacaoRouteImport.update({
+  id: '/(app)/saudacao',
+  path: '/saudacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appPortfolioRoute = appPortfolioRouteImport.update({
+  id: '/(app)/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appPlanoRoute = appPlanoRouteImport.update({
+  id: '/(app)/plano',
+  path: '/plano',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appPersonalizacaoRoute = appPersonalizacaoRouteImport.update({
+  id: '/(app)/personalizacao',
+  path: '/personalizacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appPerfilProfissionalRoute = appPerfilProfissionalRouteImport.update({
+  id: '/(app)/perfil-profissional',
+  path: '/perfil-profissional',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appPagamentosRoute = appPagamentosRouteImport.update({
+  id: '/(app)/pagamentos',
+  path: '/pagamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appOnboardingRoute = appOnboardingRouteImport.update({
+  id: '/(app)/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appNotificacoesTodasRoute = appNotificacoesTodasRouteImport.update({
+  id: '/(app)/notificacoes-todas',
+  path: '/notificacoes-todas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appNotificacoesRoute = appNotificacoesRouteImport.update({
+  id: '/(app)/notificacoes',
+  path: '/notificacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appMaisRoute = appMaisRouteImport.update({
+  id: '/(app)/mais',
+  path: '/mais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appHorariosRoute = appHorariosRouteImport.update({
+  id: '/(app)/horarios',
+  path: '/horarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appGoogleCalendarRoute = appGoogleCalendarRouteImport.update({
+  id: '/(app)/google-calendar',
+  path: '/google-calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appDashboardRoute = appDashboardRouteImport.update({
+  id: '/(app)/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appClientesRoute = appClientesRouteImport.update({
+  id: '/(app)/clientes',
+  path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appAvaliacoesRoute = appAvaliacoesRouteImport.update({
+  id: '/(app)/avaliacoes',
   path: '/avaliacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRoute = AppRouteImport.update({
-  id: '/app',
+const appAppRoute = appAppRouteImport.update({
+  id: '/(app)/app',
   path: '/app',
   getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuperLoginRoute = SuperLoginRouteImport.update({
-  id: '/super/login',
-  path: '/super/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServicoNovoRoute = ServicoNovoRouteImport.update({
-  id: '/servico/novo',
-  path: '/servico/novo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServicoIdRoute = ServicoIdRouteImport.update({
-  id: '/servico/$id',
-  path: '/servico/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AvaliarTokenRoute = AvaliarTokenRouteImport.update({
-  id: '/avaliar/$token',
-  path: '/avaliar/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AgendarSlugRoute = AgendarSlugRouteImport.update({
-  id: '/agendar/$slug',
-  path: '/agendar/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuperAppRouteRoute = SuperAppRouteRouteImport.update({
-  id: '/super/_app',
-  path: '/super',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuperAppIndexRoute = SuperAppIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppUsuariosRoute = SuperAppUsuariosRouteImport.update({
-  id: '/usuarios',
-  path: '/usuarios',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppTicketsRoute = SuperAppTicketsRouteImport.update({
-  id: '/tickets',
-  path: '/tickets',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppTemplatesRoute = SuperAppTemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppPlanosRoute = SuperAppPlanosRouteImport.update({
-  id: '/planos',
-  path: '/planos',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppInfraRoute = SuperAppInfraRouteImport.update({
-  id: '/infra',
-  path: '/infra',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppIndicacoesRoute = SuperAppIndicacoesRouteImport.update({
-  id: '/indicacoes',
-  path: '/indicacoes',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppFinanceiroRoute = SuperAppFinanceiroRouteImport.update({
-  id: '/financeiro',
-  path: '/financeiro',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppConfiguracoesRoute = SuperAppConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
-  getParentRoute: () => SuperAppRouteRoute,
-} as any)
-const SuperAppAuditoriaRoute = SuperAppAuditoriaRouteImport.update({
-  id: '/auditoria',
-  path: '/auditoria',
-  getParentRoute: () => SuperAppRouteRoute,
 } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp-webhook',
   path: '/api/public/mp-webhook',
   getParentRoute: () => rootRouteImport,
+} as any)
+const publicAvaliarTokenRoute = publicAvaliarTokenRouteImport.update({
+  id: '/(public)/avaliar/$token',
+  path: '/avaliar/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const publicAgendarSlugRoute = publicAgendarSlugRouteImport.update({
+  id: '/(public)/agendar/$slug',
+  path: '/agendar/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appServicoNovoRoute = appServicoNovoRouteImport.update({
+  id: '/(app)/servico/novo',
+  path: '/servico/novo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appServicoIdRoute = appServicoIdRouteImport.update({
+  id: '/(app)/servico/$id',
+  path: '/servico/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const adminSuperLoginRoute = adminSuperLoginRouteImport.update({
+  id: '/(admin)/super/login',
+  path: '/super/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const adminSuperAppRouteRoute = adminSuperAppRouteRouteImport.update({
+  id: '/(admin)/super/_app',
+  path: '/super',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const adminSuperAppIndexRoute = adminSuperAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => adminSuperAppRouteRoute,
 } as any)
 const ApiPublicMercadoPagoCallbackRoute =
   ApiPublicMercadoPagoCallbackRouteImport.update({
@@ -293,192 +248,238 @@ const ApiPublicMercadoPagoCallbackRoute =
     path: '/api/public/mercado-pago/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const adminSuperAppUsuariosRoute = adminSuperAppUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppTicketsRoute = adminSuperAppTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppTemplatesRoute = adminSuperAppTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppPlanosRoute = adminSuperAppPlanosRouteImport.update({
+  id: '/planos',
+  path: '/planos',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppInfraRoute = adminSuperAppInfraRouteImport.update({
+  id: '/infra',
+  path: '/infra',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppIndicacoesRoute = adminSuperAppIndicacoesRouteImport.update({
+  id: '/indicacoes',
+  path: '/indicacoes',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppFinanceiroRoute = adminSuperAppFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppConfiguracoesRoute =
+  adminSuperAppConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => adminSuperAppRouteRoute,
+  } as any)
+const adminSuperAppAuditoriaRoute = adminSuperAppAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/app': typeof AppRoute
-  '/avaliacoes': typeof AvaliacoesRoute
-  '/cadastro': typeof CadastroRoute
-  '/clientes': typeof ClientesRoute
-  '/contato': typeof ContatoRoute
-  '/dashboard': typeof DashboardRoute
-  '/exemplo-pagina': typeof ExemploPaginaRoute
-  '/google-calendar': typeof GoogleCalendarRoute
-  '/horarios': typeof HorariosRoute
-  '/login': typeof LoginRoute
-  '/mais': typeof MaisRoute
-  '/notificacoes': typeof NotificacoesRoute
-  '/notificacoes-todas': typeof NotificacoesTodasRoute
-  '/onboarding': typeof OnboardingRoute
-  '/pagamentos': typeof PagamentosRoute
-  '/perfil-profissional': typeof PerfilProfissionalRoute
-  '/perfil-publico': typeof PerfilPublicoRoute
-  '/personalizacao': typeof PersonalizacaoRoute
-  '/plano': typeof PlanoRoute
-  '/portfolio': typeof PortfolioRoute
-  '/precos': typeof PrecosRoute
-  '/recursos': typeof RecursosRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/saudacao': typeof SaudacaoRoute
-  '/servicos': typeof ServicosRoute
-  '/transacoes': typeof TransacoesRoute
-  '/use-no-celular': typeof UseNoCelularRoute
-  '/whatsapp': typeof WhatsappRoute
-  '/super': typeof SuperAppRouteRouteWithChildren
-  '/agendar/$slug': typeof AgendarSlugRoute
-  '/avaliar/$token': typeof AvaliarTokenRoute
-  '/servico/$id': typeof ServicoIdRoute
-  '/servico/novo': typeof ServicoNovoRoute
-  '/super/login': typeof SuperLoginRoute
+  '/app': typeof appAppRoute
+  '/avaliacoes': typeof appAvaliacoesRoute
+  '/clientes': typeof appClientesRoute
+  '/dashboard': typeof appDashboardRoute
+  '/google-calendar': typeof appGoogleCalendarRoute
+  '/horarios': typeof appHorariosRoute
+  '/mais': typeof appMaisRoute
+  '/notificacoes': typeof appNotificacoesRoute
+  '/notificacoes-todas': typeof appNotificacoesTodasRoute
+  '/onboarding': typeof appOnboardingRoute
+  '/pagamentos': typeof appPagamentosRoute
+  '/perfil-profissional': typeof appPerfilProfissionalRoute
+  '/personalizacao': typeof appPersonalizacaoRoute
+  '/plano': typeof appPlanoRoute
+  '/portfolio': typeof appPortfolioRoute
+  '/saudacao': typeof appSaudacaoRoute
+  '/servicos': typeof appServicosRoute
+  '/transacoes': typeof appTransacoesRoute
+  '/use-no-celular': typeof appUseNoCelularRoute
+  '/whatsapp': typeof appWhatsappRoute
+  '/exemplo-pagina': typeof publicExemploPaginaRoute
+  '/perfil-publico': typeof publicPerfilPublicoRoute
+  '/cadastro': typeof siteCadastroRoute
+  '/contato': typeof siteContatoRoute
+  '/login': typeof siteLoginRoute
+  '/precos': typeof sitePrecosRoute
+  '/recursos': typeof siteRecursosRoute
+  '/reset-password': typeof siteResetPasswordRoute
+  '/': typeof siteIndexRoute
+  '/super': typeof adminSuperAppRouteRouteWithChildren
+  '/super/login': typeof adminSuperLoginRoute
+  '/servico/$id': typeof appServicoIdRoute
+  '/servico/novo': typeof appServicoNovoRoute
+  '/agendar/$slug': typeof publicAgendarSlugRoute
+  '/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/super/auditoria': typeof SuperAppAuditoriaRoute
-  '/super/configuracoes': typeof SuperAppConfiguracoesRoute
-  '/super/financeiro': typeof SuperAppFinanceiroRoute
-  '/super/indicacoes': typeof SuperAppIndicacoesRoute
-  '/super/infra': typeof SuperAppInfraRoute
-  '/super/planos': typeof SuperAppPlanosRoute
-  '/super/templates': typeof SuperAppTemplatesRoute
-  '/super/tickets': typeof SuperAppTicketsRoute
-  '/super/usuarios': typeof SuperAppUsuariosRoute
-  '/super/': typeof SuperAppIndexRoute
+  '/super/auditoria': typeof adminSuperAppAuditoriaRoute
+  '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
+  '/super/financeiro': typeof adminSuperAppFinanceiroRoute
+  '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
+  '/super/infra': typeof adminSuperAppInfraRoute
+  '/super/planos': typeof adminSuperAppPlanosRoute
+  '/super/templates': typeof adminSuperAppTemplatesRoute
+  '/super/tickets': typeof adminSuperAppTicketsRoute
+  '/super/usuarios': typeof adminSuperAppUsuariosRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
+  '/super/': typeof adminSuperAppIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/app': typeof AppRoute
-  '/avaliacoes': typeof AvaliacoesRoute
-  '/cadastro': typeof CadastroRoute
-  '/clientes': typeof ClientesRoute
-  '/contato': typeof ContatoRoute
-  '/dashboard': typeof DashboardRoute
-  '/exemplo-pagina': typeof ExemploPaginaRoute
-  '/google-calendar': typeof GoogleCalendarRoute
-  '/horarios': typeof HorariosRoute
-  '/login': typeof LoginRoute
-  '/mais': typeof MaisRoute
-  '/notificacoes': typeof NotificacoesRoute
-  '/notificacoes-todas': typeof NotificacoesTodasRoute
-  '/onboarding': typeof OnboardingRoute
-  '/pagamentos': typeof PagamentosRoute
-  '/perfil-profissional': typeof PerfilProfissionalRoute
-  '/perfil-publico': typeof PerfilPublicoRoute
-  '/personalizacao': typeof PersonalizacaoRoute
-  '/plano': typeof PlanoRoute
-  '/portfolio': typeof PortfolioRoute
-  '/precos': typeof PrecosRoute
-  '/recursos': typeof RecursosRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/saudacao': typeof SaudacaoRoute
-  '/servicos': typeof ServicosRoute
-  '/transacoes': typeof TransacoesRoute
-  '/use-no-celular': typeof UseNoCelularRoute
-  '/whatsapp': typeof WhatsappRoute
-  '/agendar/$slug': typeof AgendarSlugRoute
-  '/avaliar/$token': typeof AvaliarTokenRoute
-  '/servico/$id': typeof ServicoIdRoute
-  '/servico/novo': typeof ServicoNovoRoute
-  '/super/login': typeof SuperLoginRoute
+  '/app': typeof appAppRoute
+  '/avaliacoes': typeof appAvaliacoesRoute
+  '/clientes': typeof appClientesRoute
+  '/dashboard': typeof appDashboardRoute
+  '/google-calendar': typeof appGoogleCalendarRoute
+  '/horarios': typeof appHorariosRoute
+  '/mais': typeof appMaisRoute
+  '/notificacoes': typeof appNotificacoesRoute
+  '/notificacoes-todas': typeof appNotificacoesTodasRoute
+  '/onboarding': typeof appOnboardingRoute
+  '/pagamentos': typeof appPagamentosRoute
+  '/perfil-profissional': typeof appPerfilProfissionalRoute
+  '/personalizacao': typeof appPersonalizacaoRoute
+  '/plano': typeof appPlanoRoute
+  '/portfolio': typeof appPortfolioRoute
+  '/saudacao': typeof appSaudacaoRoute
+  '/servicos': typeof appServicosRoute
+  '/transacoes': typeof appTransacoesRoute
+  '/use-no-celular': typeof appUseNoCelularRoute
+  '/whatsapp': typeof appWhatsappRoute
+  '/exemplo-pagina': typeof publicExemploPaginaRoute
+  '/perfil-publico': typeof publicPerfilPublicoRoute
+  '/cadastro': typeof siteCadastroRoute
+  '/contato': typeof siteContatoRoute
+  '/login': typeof siteLoginRoute
+  '/precos': typeof sitePrecosRoute
+  '/recursos': typeof siteRecursosRoute
+  '/reset-password': typeof siteResetPasswordRoute
+  '/': typeof siteIndexRoute
+  '/super/login': typeof adminSuperLoginRoute
+  '/servico/$id': typeof appServicoIdRoute
+  '/servico/novo': typeof appServicoNovoRoute
+  '/agendar/$slug': typeof publicAgendarSlugRoute
+  '/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/super/auditoria': typeof SuperAppAuditoriaRoute
-  '/super/configuracoes': typeof SuperAppConfiguracoesRoute
-  '/super/financeiro': typeof SuperAppFinanceiroRoute
-  '/super/indicacoes': typeof SuperAppIndicacoesRoute
-  '/super/infra': typeof SuperAppInfraRoute
-  '/super/planos': typeof SuperAppPlanosRoute
-  '/super/templates': typeof SuperAppTemplatesRoute
-  '/super/tickets': typeof SuperAppTicketsRoute
-  '/super/usuarios': typeof SuperAppUsuariosRoute
-  '/super': typeof SuperAppIndexRoute
+  '/super/auditoria': typeof adminSuperAppAuditoriaRoute
+  '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
+  '/super/financeiro': typeof adminSuperAppFinanceiroRoute
+  '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
+  '/super/infra': typeof adminSuperAppInfraRoute
+  '/super/planos': typeof adminSuperAppPlanosRoute
+  '/super/templates': typeof adminSuperAppTemplatesRoute
+  '/super/tickets': typeof adminSuperAppTicketsRoute
+  '/super/usuarios': typeof adminSuperAppUsuariosRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
+  '/super': typeof adminSuperAppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/app': typeof AppRoute
-  '/avaliacoes': typeof AvaliacoesRoute
-  '/cadastro': typeof CadastroRoute
-  '/clientes': typeof ClientesRoute
-  '/contato': typeof ContatoRoute
-  '/dashboard': typeof DashboardRoute
-  '/exemplo-pagina': typeof ExemploPaginaRoute
-  '/google-calendar': typeof GoogleCalendarRoute
-  '/horarios': typeof HorariosRoute
-  '/login': typeof LoginRoute
-  '/mais': typeof MaisRoute
-  '/notificacoes': typeof NotificacoesRoute
-  '/notificacoes-todas': typeof NotificacoesTodasRoute
-  '/onboarding': typeof OnboardingRoute
-  '/pagamentos': typeof PagamentosRoute
-  '/perfil-profissional': typeof PerfilProfissionalRoute
-  '/perfil-publico': typeof PerfilPublicoRoute
-  '/personalizacao': typeof PersonalizacaoRoute
-  '/plano': typeof PlanoRoute
-  '/portfolio': typeof PortfolioRoute
-  '/precos': typeof PrecosRoute
-  '/recursos': typeof RecursosRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/saudacao': typeof SaudacaoRoute
-  '/servicos': typeof ServicosRoute
-  '/transacoes': typeof TransacoesRoute
-  '/use-no-celular': typeof UseNoCelularRoute
-  '/whatsapp': typeof WhatsappRoute
-  '/super/_app': typeof SuperAppRouteRouteWithChildren
-  '/agendar/$slug': typeof AgendarSlugRoute
-  '/avaliar/$token': typeof AvaliarTokenRoute
-  '/servico/$id': typeof ServicoIdRoute
-  '/servico/novo': typeof ServicoNovoRoute
-  '/super/login': typeof SuperLoginRoute
+  '/(app)/app': typeof appAppRoute
+  '/(app)/avaliacoes': typeof appAvaliacoesRoute
+  '/(app)/clientes': typeof appClientesRoute
+  '/(app)/dashboard': typeof appDashboardRoute
+  '/(app)/google-calendar': typeof appGoogleCalendarRoute
+  '/(app)/horarios': typeof appHorariosRoute
+  '/(app)/mais': typeof appMaisRoute
+  '/(app)/notificacoes': typeof appNotificacoesRoute
+  '/(app)/notificacoes-todas': typeof appNotificacoesTodasRoute
+  '/(app)/onboarding': typeof appOnboardingRoute
+  '/(app)/pagamentos': typeof appPagamentosRoute
+  '/(app)/perfil-profissional': typeof appPerfilProfissionalRoute
+  '/(app)/personalizacao': typeof appPersonalizacaoRoute
+  '/(app)/plano': typeof appPlanoRoute
+  '/(app)/portfolio': typeof appPortfolioRoute
+  '/(app)/saudacao': typeof appSaudacaoRoute
+  '/(app)/servicos': typeof appServicosRoute
+  '/(app)/transacoes': typeof appTransacoesRoute
+  '/(app)/use-no-celular': typeof appUseNoCelularRoute
+  '/(app)/whatsapp': typeof appWhatsappRoute
+  '/(public)/exemplo-pagina': typeof publicExemploPaginaRoute
+  '/(public)/perfil-publico': typeof publicPerfilPublicoRoute
+  '/(site)/cadastro': typeof siteCadastroRoute
+  '/(site)/contato': typeof siteContatoRoute
+  '/(site)/login': typeof siteLoginRoute
+  '/(site)/precos': typeof sitePrecosRoute
+  '/(site)/recursos': typeof siteRecursosRoute
+  '/(site)/reset-password': typeof siteResetPasswordRoute
+  '/(site)/': typeof siteIndexRoute
+  '/(admin)/super/_app': typeof adminSuperAppRouteRouteWithChildren
+  '/(admin)/super/login': typeof adminSuperLoginRoute
+  '/(app)/servico/$id': typeof appServicoIdRoute
+  '/(app)/servico/novo': typeof appServicoNovoRoute
+  '/(public)/agendar/$slug': typeof publicAgendarSlugRoute
+  '/(public)/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/super/_app/auditoria': typeof SuperAppAuditoriaRoute
-  '/super/_app/configuracoes': typeof SuperAppConfiguracoesRoute
-  '/super/_app/financeiro': typeof SuperAppFinanceiroRoute
-  '/super/_app/indicacoes': typeof SuperAppIndicacoesRoute
-  '/super/_app/infra': typeof SuperAppInfraRoute
-  '/super/_app/planos': typeof SuperAppPlanosRoute
-  '/super/_app/templates': typeof SuperAppTemplatesRoute
-  '/super/_app/tickets': typeof SuperAppTicketsRoute
-  '/super/_app/usuarios': typeof SuperAppUsuariosRoute
-  '/super/_app/': typeof SuperAppIndexRoute
+  '/(admin)/super/_app/auditoria': typeof adminSuperAppAuditoriaRoute
+  '/(admin)/super/_app/configuracoes': typeof adminSuperAppConfiguracoesRoute
+  '/(admin)/super/_app/financeiro': typeof adminSuperAppFinanceiroRoute
+  '/(admin)/super/_app/indicacoes': typeof adminSuperAppIndicacoesRoute
+  '/(admin)/super/_app/infra': typeof adminSuperAppInfraRoute
+  '/(admin)/super/_app/planos': typeof adminSuperAppPlanosRoute
+  '/(admin)/super/_app/templates': typeof adminSuperAppTemplatesRoute
+  '/(admin)/super/_app/tickets': typeof adminSuperAppTicketsRoute
+  '/(admin)/super/_app/usuarios': typeof adminSuperAppUsuariosRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
+  '/(admin)/super/_app/': typeof adminSuperAppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/app'
     | '/avaliacoes'
-    | '/cadastro'
     | '/clientes'
-    | '/contato'
     | '/dashboard'
-    | '/exemplo-pagina'
     | '/google-calendar'
     | '/horarios'
-    | '/login'
     | '/mais'
     | '/notificacoes'
     | '/notificacoes-todas'
     | '/onboarding'
     | '/pagamentos'
     | '/perfil-profissional'
-    | '/perfil-publico'
     | '/personalizacao'
     | '/plano'
     | '/portfolio'
-    | '/precos'
-    | '/recursos'
-    | '/reset-password'
     | '/saudacao'
     | '/servicos'
     | '/transacoes'
     | '/use-no-celular'
     | '/whatsapp'
+    | '/exemplo-pagina'
+    | '/perfil-publico'
+    | '/cadastro'
+    | '/contato'
+    | '/login'
+    | '/precos'
+    | '/recursos'
+    | '/reset-password'
+    | '/'
     | '/super'
-    | '/agendar/$slug'
-    | '/avaliar/$token'
+    | '/super/login'
     | '/servico/$id'
     | '/servico/novo'
-    | '/super/login'
+    | '/agendar/$slug'
+    | '/avaliar/$token'
     | '/api/public/mp-webhook'
     | '/super/auditoria'
     | '/super/configuracoes'
@@ -489,44 +490,44 @@ export interface FileRouteTypes {
     | '/super/templates'
     | '/super/tickets'
     | '/super/usuarios'
-    | '/super/'
     | '/api/public/mercado-pago/callback'
+    | '/super/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/app'
     | '/avaliacoes'
-    | '/cadastro'
     | '/clientes'
-    | '/contato'
     | '/dashboard'
-    | '/exemplo-pagina'
     | '/google-calendar'
     | '/horarios'
-    | '/login'
     | '/mais'
     | '/notificacoes'
     | '/notificacoes-todas'
     | '/onboarding'
     | '/pagamentos'
     | '/perfil-profissional'
-    | '/perfil-publico'
     | '/personalizacao'
     | '/plano'
     | '/portfolio'
-    | '/precos'
-    | '/recursos'
-    | '/reset-password'
     | '/saudacao'
     | '/servicos'
     | '/transacoes'
     | '/use-no-celular'
     | '/whatsapp'
-    | '/agendar/$slug'
-    | '/avaliar/$token'
+    | '/exemplo-pagina'
+    | '/perfil-publico'
+    | '/cadastro'
+    | '/contato'
+    | '/login'
+    | '/precos'
+    | '/recursos'
+    | '/reset-password'
+    | '/'
+    | '/super/login'
     | '/servico/$id'
     | '/servico/novo'
-    | '/super/login'
+    | '/agendar/$slug'
+    | '/avaliar/$token'
     | '/api/public/mp-webhook'
     | '/super/auditoria'
     | '/super/configuracoes'
@@ -537,415 +538,303 @@ export interface FileRouteTypes {
     | '/super/templates'
     | '/super/tickets'
     | '/super/usuarios'
-    | '/super'
     | '/api/public/mercado-pago/callback'
+    | '/super'
   id:
     | '__root__'
-    | '/'
-    | '/app'
-    | '/avaliacoes'
-    | '/cadastro'
-    | '/clientes'
-    | '/contato'
-    | '/dashboard'
-    | '/exemplo-pagina'
-    | '/google-calendar'
-    | '/horarios'
-    | '/login'
-    | '/mais'
-    | '/notificacoes'
-    | '/notificacoes-todas'
-    | '/onboarding'
-    | '/pagamentos'
-    | '/perfil-profissional'
-    | '/perfil-publico'
-    | '/personalizacao'
-    | '/plano'
-    | '/portfolio'
-    | '/precos'
-    | '/recursos'
-    | '/reset-password'
-    | '/saudacao'
-    | '/servicos'
-    | '/transacoes'
-    | '/use-no-celular'
-    | '/whatsapp'
-    | '/super/_app'
-    | '/agendar/$slug'
-    | '/avaliar/$token'
-    | '/servico/$id'
-    | '/servico/novo'
-    | '/super/login'
+    | '/(app)/app'
+    | '/(app)/avaliacoes'
+    | '/(app)/clientes'
+    | '/(app)/dashboard'
+    | '/(app)/google-calendar'
+    | '/(app)/horarios'
+    | '/(app)/mais'
+    | '/(app)/notificacoes'
+    | '/(app)/notificacoes-todas'
+    | '/(app)/onboarding'
+    | '/(app)/pagamentos'
+    | '/(app)/perfil-profissional'
+    | '/(app)/personalizacao'
+    | '/(app)/plano'
+    | '/(app)/portfolio'
+    | '/(app)/saudacao'
+    | '/(app)/servicos'
+    | '/(app)/transacoes'
+    | '/(app)/use-no-celular'
+    | '/(app)/whatsapp'
+    | '/(public)/exemplo-pagina'
+    | '/(public)/perfil-publico'
+    | '/(site)/cadastro'
+    | '/(site)/contato'
+    | '/(site)/login'
+    | '/(site)/precos'
+    | '/(site)/recursos'
+    | '/(site)/reset-password'
+    | '/(site)/'
+    | '/(admin)/super/_app'
+    | '/(admin)/super/login'
+    | '/(app)/servico/$id'
+    | '/(app)/servico/novo'
+    | '/(public)/agendar/$slug'
+    | '/(public)/avaliar/$token'
     | '/api/public/mp-webhook'
-    | '/super/_app/auditoria'
-    | '/super/_app/configuracoes'
-    | '/super/_app/financeiro'
-    | '/super/_app/indicacoes'
-    | '/super/_app/infra'
-    | '/super/_app/planos'
-    | '/super/_app/templates'
-    | '/super/_app/tickets'
-    | '/super/_app/usuarios'
-    | '/super/_app/'
+    | '/(admin)/super/_app/auditoria'
+    | '/(admin)/super/_app/configuracoes'
+    | '/(admin)/super/_app/financeiro'
+    | '/(admin)/super/_app/indicacoes'
+    | '/(admin)/super/_app/infra'
+    | '/(admin)/super/_app/planos'
+    | '/(admin)/super/_app/templates'
+    | '/(admin)/super/_app/tickets'
+    | '/(admin)/super/_app/usuarios'
     | '/api/public/mercado-pago/callback'
+    | '/(admin)/super/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRoute
-  AvaliacoesRoute: typeof AvaliacoesRoute
-  CadastroRoute: typeof CadastroRoute
-  ClientesRoute: typeof ClientesRoute
-  ContatoRoute: typeof ContatoRoute
-  DashboardRoute: typeof DashboardRoute
-  ExemploPaginaRoute: typeof ExemploPaginaRoute
-  GoogleCalendarRoute: typeof GoogleCalendarRoute
-  HorariosRoute: typeof HorariosRoute
-  LoginRoute: typeof LoginRoute
-  MaisRoute: typeof MaisRoute
-  NotificacoesRoute: typeof NotificacoesRoute
-  NotificacoesTodasRoute: typeof NotificacoesTodasRoute
-  OnboardingRoute: typeof OnboardingRoute
-  PagamentosRoute: typeof PagamentosRoute
-  PerfilProfissionalRoute: typeof PerfilProfissionalRoute
-  PerfilPublicoRoute: typeof PerfilPublicoRoute
-  PersonalizacaoRoute: typeof PersonalizacaoRoute
-  PlanoRoute: typeof PlanoRoute
-  PortfolioRoute: typeof PortfolioRoute
-  PrecosRoute: typeof PrecosRoute
-  RecursosRoute: typeof RecursosRoute
-  ResetPasswordRoute: typeof ResetPasswordRoute
-  SaudacaoRoute: typeof SaudacaoRoute
-  ServicosRoute: typeof ServicosRoute
-  TransacoesRoute: typeof TransacoesRoute
-  UseNoCelularRoute: typeof UseNoCelularRoute
-  WhatsappRoute: typeof WhatsappRoute
-  SuperAppRouteRoute: typeof SuperAppRouteRouteWithChildren
-  AgendarSlugRoute: typeof AgendarSlugRoute
-  AvaliarTokenRoute: typeof AvaliarTokenRoute
-  ServicoIdRoute: typeof ServicoIdRoute
-  ServicoNovoRoute: typeof ServicoNovoRoute
-  SuperLoginRoute: typeof SuperLoginRoute
+  appAppRoute: typeof appAppRoute
+  appAvaliacoesRoute: typeof appAvaliacoesRoute
+  appClientesRoute: typeof appClientesRoute
+  appDashboardRoute: typeof appDashboardRoute
+  appGoogleCalendarRoute: typeof appGoogleCalendarRoute
+  appHorariosRoute: typeof appHorariosRoute
+  appMaisRoute: typeof appMaisRoute
+  appNotificacoesRoute: typeof appNotificacoesRoute
+  appNotificacoesTodasRoute: typeof appNotificacoesTodasRoute
+  appOnboardingRoute: typeof appOnboardingRoute
+  appPagamentosRoute: typeof appPagamentosRoute
+  appPerfilProfissionalRoute: typeof appPerfilProfissionalRoute
+  appPersonalizacaoRoute: typeof appPersonalizacaoRoute
+  appPlanoRoute: typeof appPlanoRoute
+  appPortfolioRoute: typeof appPortfolioRoute
+  appSaudacaoRoute: typeof appSaudacaoRoute
+  appServicosRoute: typeof appServicosRoute
+  appTransacoesRoute: typeof appTransacoesRoute
+  appUseNoCelularRoute: typeof appUseNoCelularRoute
+  appWhatsappRoute: typeof appWhatsappRoute
+  publicExemploPaginaRoute: typeof publicExemploPaginaRoute
+  publicPerfilPublicoRoute: typeof publicPerfilPublicoRoute
+  siteCadastroRoute: typeof siteCadastroRoute
+  siteContatoRoute: typeof siteContatoRoute
+  siteLoginRoute: typeof siteLoginRoute
+  sitePrecosRoute: typeof sitePrecosRoute
+  siteRecursosRoute: typeof siteRecursosRoute
+  siteResetPasswordRoute: typeof siteResetPasswordRoute
+  siteIndexRoute: typeof siteIndexRoute
+  adminSuperAppRouteRoute: typeof adminSuperAppRouteRouteWithChildren
+  adminSuperLoginRoute: typeof adminSuperLoginRoute
+  appServicoIdRoute: typeof appServicoIdRoute
+  appServicoNovoRoute: typeof appServicoNovoRoute
+  publicAgendarSlugRoute: typeof publicAgendarSlugRoute
+  publicAvaliarTokenRoute: typeof publicAvaliarTokenRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicMercadoPagoCallbackRoute: typeof ApiPublicMercadoPagoCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/whatsapp': {
-      id: '/whatsapp'
-      path: '/whatsapp'
-      fullPath: '/whatsapp'
-      preLoaderRoute: typeof WhatsappRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/use-no-celular': {
-      id: '/use-no-celular'
-      path: '/use-no-celular'
-      fullPath: '/use-no-celular'
-      preLoaderRoute: typeof UseNoCelularRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/transacoes': {
-      id: '/transacoes'
-      path: '/transacoes'
-      fullPath: '/transacoes'
-      preLoaderRoute: typeof TransacoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/servicos': {
-      id: '/servicos'
-      path: '/servicos'
-      fullPath: '/servicos'
-      preLoaderRoute: typeof ServicosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/saudacao': {
-      id: '/saudacao'
-      path: '/saudacao'
-      fullPath: '/saudacao'
-      preLoaderRoute: typeof SaudacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recursos': {
-      id: '/recursos'
-      path: '/recursos'
-      fullPath: '/recursos'
-      preLoaderRoute: typeof RecursosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/precos': {
-      id: '/precos'
-      path: '/precos'
-      fullPath: '/precos'
-      preLoaderRoute: typeof PrecosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portfolio': {
-      id: '/portfolio'
-      path: '/portfolio'
-      fullPath: '/portfolio'
-      preLoaderRoute: typeof PortfolioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/plano': {
-      id: '/plano'
-      path: '/plano'
-      fullPath: '/plano'
-      preLoaderRoute: typeof PlanoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/personalizacao': {
-      id: '/personalizacao'
-      path: '/personalizacao'
-      fullPath: '/personalizacao'
-      preLoaderRoute: typeof PersonalizacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/perfil-publico': {
-      id: '/perfil-publico'
-      path: '/perfil-publico'
-      fullPath: '/perfil-publico'
-      preLoaderRoute: typeof PerfilPublicoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/perfil-profissional': {
-      id: '/perfil-profissional'
-      path: '/perfil-profissional'
-      fullPath: '/perfil-profissional'
-      preLoaderRoute: typeof PerfilProfissionalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pagamentos': {
-      id: '/pagamentos'
-      path: '/pagamentos'
-      fullPath: '/pagamentos'
-      preLoaderRoute: typeof PagamentosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notificacoes-todas': {
-      id: '/notificacoes-todas'
-      path: '/notificacoes-todas'
-      fullPath: '/notificacoes-todas'
-      preLoaderRoute: typeof NotificacoesTodasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notificacoes': {
-      id: '/notificacoes'
-      path: '/notificacoes'
-      fullPath: '/notificacoes'
-      preLoaderRoute: typeof NotificacoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mais': {
-      id: '/mais'
-      path: '/mais'
-      fullPath: '/mais'
-      preLoaderRoute: typeof MaisRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/horarios': {
-      id: '/horarios'
-      path: '/horarios'
-      fullPath: '/horarios'
-      preLoaderRoute: typeof HorariosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/google-calendar': {
-      id: '/google-calendar'
-      path: '/google-calendar'
-      fullPath: '/google-calendar'
-      preLoaderRoute: typeof GoogleCalendarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/exemplo-pagina': {
-      id: '/exemplo-pagina'
-      path: '/exemplo-pagina'
-      fullPath: '/exemplo-pagina'
-      preLoaderRoute: typeof ExemploPaginaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contato': {
-      id: '/contato'
-      path: '/contato'
-      fullPath: '/contato'
-      preLoaderRoute: typeof ContatoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/clientes': {
-      id: '/clientes'
-      path: '/clientes'
-      fullPath: '/clientes'
-      preLoaderRoute: typeof ClientesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cadastro': {
-      id: '/cadastro'
-      path: '/cadastro'
-      fullPath: '/cadastro'
-      preLoaderRoute: typeof CadastroRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/avaliacoes': {
-      id: '/avaliacoes'
-      path: '/avaliacoes'
-      fullPath: '/avaliacoes'
-      preLoaderRoute: typeof AvaliacoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/(site)/': {
+      id: '/(site)/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof siteIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/super/login': {
-      id: '/super/login'
-      path: '/super/login'
-      fullPath: '/super/login'
-      preLoaderRoute: typeof SuperLoginRouteImport
+    '/(site)/reset-password': {
+      id: '/(site)/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof siteResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/servico/novo': {
-      id: '/servico/novo'
-      path: '/servico/novo'
-      fullPath: '/servico/novo'
-      preLoaderRoute: typeof ServicoNovoRouteImport
+    '/(site)/recursos': {
+      id: '/(site)/recursos'
+      path: '/recursos'
+      fullPath: '/recursos'
+      preLoaderRoute: typeof siteRecursosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/servico/$id': {
-      id: '/servico/$id'
-      path: '/servico/$id'
-      fullPath: '/servico/$id'
-      preLoaderRoute: typeof ServicoIdRouteImport
+    '/(site)/precos': {
+      id: '/(site)/precos'
+      path: '/precos'
+      fullPath: '/precos'
+      preLoaderRoute: typeof sitePrecosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/avaliar/$token': {
-      id: '/avaliar/$token'
-      path: '/avaliar/$token'
-      fullPath: '/avaliar/$token'
-      preLoaderRoute: typeof AvaliarTokenRouteImport
+    '/(site)/login': {
+      id: '/(site)/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof siteLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/agendar/$slug': {
-      id: '/agendar/$slug'
-      path: '/agendar/$slug'
-      fullPath: '/agendar/$slug'
-      preLoaderRoute: typeof AgendarSlugRouteImport
+    '/(site)/contato': {
+      id: '/(site)/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof siteContatoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/super/_app': {
-      id: '/super/_app'
-      path: '/super'
-      fullPath: '/super'
-      preLoaderRoute: typeof SuperAppRouteRouteImport
+    '/(site)/cadastro': {
+      id: '/(site)/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof siteCadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/super/_app/': {
-      id: '/super/_app/'
-      path: '/'
-      fullPath: '/super/'
-      preLoaderRoute: typeof SuperAppIndexRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(public)/perfil-publico': {
+      id: '/(public)/perfil-publico'
+      path: '/perfil-publico'
+      fullPath: '/perfil-publico'
+      preLoaderRoute: typeof publicPerfilPublicoRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/usuarios': {
-      id: '/super/_app/usuarios'
-      path: '/usuarios'
-      fullPath: '/super/usuarios'
-      preLoaderRoute: typeof SuperAppUsuariosRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(public)/exemplo-pagina': {
+      id: '/(public)/exemplo-pagina'
+      path: '/exemplo-pagina'
+      fullPath: '/exemplo-pagina'
+      preLoaderRoute: typeof publicExemploPaginaRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/tickets': {
-      id: '/super/_app/tickets'
-      path: '/tickets'
-      fullPath: '/super/tickets'
-      preLoaderRoute: typeof SuperAppTicketsRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/whatsapp': {
+      id: '/(app)/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/whatsapp'
+      preLoaderRoute: typeof appWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/templates': {
-      id: '/super/_app/templates'
-      path: '/templates'
-      fullPath: '/super/templates'
-      preLoaderRoute: typeof SuperAppTemplatesRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/use-no-celular': {
+      id: '/(app)/use-no-celular'
+      path: '/use-no-celular'
+      fullPath: '/use-no-celular'
+      preLoaderRoute: typeof appUseNoCelularRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/planos': {
-      id: '/super/_app/planos'
-      path: '/planos'
-      fullPath: '/super/planos'
-      preLoaderRoute: typeof SuperAppPlanosRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/transacoes': {
+      id: '/(app)/transacoes'
+      path: '/transacoes'
+      fullPath: '/transacoes'
+      preLoaderRoute: typeof appTransacoesRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/infra': {
-      id: '/super/_app/infra'
-      path: '/infra'
-      fullPath: '/super/infra'
-      preLoaderRoute: typeof SuperAppInfraRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/servicos': {
+      id: '/(app)/servicos'
+      path: '/servicos'
+      fullPath: '/servicos'
+      preLoaderRoute: typeof appServicosRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/indicacoes': {
-      id: '/super/_app/indicacoes'
-      path: '/indicacoes'
-      fullPath: '/super/indicacoes'
-      preLoaderRoute: typeof SuperAppIndicacoesRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/saudacao': {
+      id: '/(app)/saudacao'
+      path: '/saudacao'
+      fullPath: '/saudacao'
+      preLoaderRoute: typeof appSaudacaoRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/financeiro': {
-      id: '/super/_app/financeiro'
-      path: '/financeiro'
-      fullPath: '/super/financeiro'
-      preLoaderRoute: typeof SuperAppFinanceiroRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/portfolio': {
+      id: '/(app)/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof appPortfolioRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/configuracoes': {
-      id: '/super/_app/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/super/configuracoes'
-      preLoaderRoute: typeof SuperAppConfiguracoesRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/plano': {
+      id: '/(app)/plano'
+      path: '/plano'
+      fullPath: '/plano'
+      preLoaderRoute: typeof appPlanoRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/super/_app/auditoria': {
-      id: '/super/_app/auditoria'
-      path: '/auditoria'
-      fullPath: '/super/auditoria'
-      preLoaderRoute: typeof SuperAppAuditoriaRouteImport
-      parentRoute: typeof SuperAppRouteRoute
+    '/(app)/personalizacao': {
+      id: '/(app)/personalizacao'
+      path: '/personalizacao'
+      fullPath: '/personalizacao'
+      preLoaderRoute: typeof appPersonalizacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/perfil-profissional': {
+      id: '/(app)/perfil-profissional'
+      path: '/perfil-profissional'
+      fullPath: '/perfil-profissional'
+      preLoaderRoute: typeof appPerfilProfissionalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/pagamentos': {
+      id: '/(app)/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/pagamentos'
+      preLoaderRoute: typeof appPagamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/onboarding': {
+      id: '/(app)/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof appOnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/notificacoes-todas': {
+      id: '/(app)/notificacoes-todas'
+      path: '/notificacoes-todas'
+      fullPath: '/notificacoes-todas'
+      preLoaderRoute: typeof appNotificacoesTodasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/notificacoes': {
+      id: '/(app)/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/notificacoes'
+      preLoaderRoute: typeof appNotificacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/mais': {
+      id: '/(app)/mais'
+      path: '/mais'
+      fullPath: '/mais'
+      preLoaderRoute: typeof appMaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/horarios': {
+      id: '/(app)/horarios'
+      path: '/horarios'
+      fullPath: '/horarios'
+      preLoaderRoute: typeof appHorariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/google-calendar': {
+      id: '/(app)/google-calendar'
+      path: '/google-calendar'
+      fullPath: '/google-calendar'
+      preLoaderRoute: typeof appGoogleCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/dashboard': {
+      id: '/(app)/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof appDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/clientes': {
+      id: '/(app)/clientes'
+      path: '/clientes'
+      fullPath: '/clientes'
+      preLoaderRoute: typeof appClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/avaliacoes': {
+      id: '/(app)/avaliacoes'
+      path: '/avaliacoes'
+      fullPath: '/avaliacoes'
+      preLoaderRoute: typeof appAvaliacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/app': {
+      id: '/(app)/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof appAppRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/mp-webhook': {
       id: '/api/public/mp-webhook'
@@ -954,6 +843,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(public)/avaliar/$token': {
+      id: '/(public)/avaliar/$token'
+      path: '/avaliar/$token'
+      fullPath: '/avaliar/$token'
+      preLoaderRoute: typeof publicAvaliarTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(public)/agendar/$slug': {
+      id: '/(public)/agendar/$slug'
+      path: '/agendar/$slug'
+      fullPath: '/agendar/$slug'
+      preLoaderRoute: typeof publicAgendarSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/servico/novo': {
+      id: '/(app)/servico/novo'
+      path: '/servico/novo'
+      fullPath: '/servico/novo'
+      preLoaderRoute: typeof appServicoNovoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/servico/$id': {
+      id: '/(app)/servico/$id'
+      path: '/servico/$id'
+      fullPath: '/servico/$id'
+      preLoaderRoute: typeof appServicoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(admin)/super/login': {
+      id: '/(admin)/super/login'
+      path: '/super/login'
+      fullPath: '/super/login'
+      preLoaderRoute: typeof adminSuperLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(admin)/super/_app': {
+      id: '/(admin)/super/_app'
+      path: '/super'
+      fullPath: '/super'
+      preLoaderRoute: typeof adminSuperAppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(admin)/super/_app/': {
+      id: '/(admin)/super/_app/'
+      path: '/'
+      fullPath: '/super/'
+      preLoaderRoute: typeof adminSuperAppIndexRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
     '/api/public/mercado-pago/callback': {
       id: '/api/public/mercado-pago/callback'
       path: '/api/public/mercado-pago/callback'
@@ -961,75 +899,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMercadoPagoCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(admin)/super/_app/usuarios': {
+      id: '/(admin)/super/_app/usuarios'
+      path: '/usuarios'
+      fullPath: '/super/usuarios'
+      preLoaderRoute: typeof adminSuperAppUsuariosRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/tickets': {
+      id: '/(admin)/super/_app/tickets'
+      path: '/tickets'
+      fullPath: '/super/tickets'
+      preLoaderRoute: typeof adminSuperAppTicketsRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/templates': {
+      id: '/(admin)/super/_app/templates'
+      path: '/templates'
+      fullPath: '/super/templates'
+      preLoaderRoute: typeof adminSuperAppTemplatesRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/planos': {
+      id: '/(admin)/super/_app/planos'
+      path: '/planos'
+      fullPath: '/super/planos'
+      preLoaderRoute: typeof adminSuperAppPlanosRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/infra': {
+      id: '/(admin)/super/_app/infra'
+      path: '/infra'
+      fullPath: '/super/infra'
+      preLoaderRoute: typeof adminSuperAppInfraRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/indicacoes': {
+      id: '/(admin)/super/_app/indicacoes'
+      path: '/indicacoes'
+      fullPath: '/super/indicacoes'
+      preLoaderRoute: typeof adminSuperAppIndicacoesRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/financeiro': {
+      id: '/(admin)/super/_app/financeiro'
+      path: '/financeiro'
+      fullPath: '/super/financeiro'
+      preLoaderRoute: typeof adminSuperAppFinanceiroRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/configuracoes': {
+      id: '/(admin)/super/_app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/super/configuracoes'
+      preLoaderRoute: typeof adminSuperAppConfiguracoesRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/auditoria': {
+      id: '/(admin)/super/_app/auditoria'
+      path: '/auditoria'
+      fullPath: '/super/auditoria'
+      preLoaderRoute: typeof adminSuperAppAuditoriaRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
   }
 }
 
-interface SuperAppRouteRouteChildren {
-  SuperAppAuditoriaRoute: typeof SuperAppAuditoriaRoute
-  SuperAppConfiguracoesRoute: typeof SuperAppConfiguracoesRoute
-  SuperAppFinanceiroRoute: typeof SuperAppFinanceiroRoute
-  SuperAppIndicacoesRoute: typeof SuperAppIndicacoesRoute
-  SuperAppInfraRoute: typeof SuperAppInfraRoute
-  SuperAppPlanosRoute: typeof SuperAppPlanosRoute
-  SuperAppTemplatesRoute: typeof SuperAppTemplatesRoute
-  SuperAppTicketsRoute: typeof SuperAppTicketsRoute
-  SuperAppUsuariosRoute: typeof SuperAppUsuariosRoute
-  SuperAppIndexRoute: typeof SuperAppIndexRoute
+interface adminSuperAppRouteRouteChildren {
+  adminSuperAppAuditoriaRoute: typeof adminSuperAppAuditoriaRoute
+  adminSuperAppConfiguracoesRoute: typeof adminSuperAppConfiguracoesRoute
+  adminSuperAppFinanceiroRoute: typeof adminSuperAppFinanceiroRoute
+  adminSuperAppIndicacoesRoute: typeof adminSuperAppIndicacoesRoute
+  adminSuperAppInfraRoute: typeof adminSuperAppInfraRoute
+  adminSuperAppPlanosRoute: typeof adminSuperAppPlanosRoute
+  adminSuperAppTemplatesRoute: typeof adminSuperAppTemplatesRoute
+  adminSuperAppTicketsRoute: typeof adminSuperAppTicketsRoute
+  adminSuperAppUsuariosRoute: typeof adminSuperAppUsuariosRoute
+  adminSuperAppIndexRoute: typeof adminSuperAppIndexRoute
 }
 
-const SuperAppRouteRouteChildren: SuperAppRouteRouteChildren = {
-  SuperAppAuditoriaRoute: SuperAppAuditoriaRoute,
-  SuperAppConfiguracoesRoute: SuperAppConfiguracoesRoute,
-  SuperAppFinanceiroRoute: SuperAppFinanceiroRoute,
-  SuperAppIndicacoesRoute: SuperAppIndicacoesRoute,
-  SuperAppInfraRoute: SuperAppInfraRoute,
-  SuperAppPlanosRoute: SuperAppPlanosRoute,
-  SuperAppTemplatesRoute: SuperAppTemplatesRoute,
-  SuperAppTicketsRoute: SuperAppTicketsRoute,
-  SuperAppUsuariosRoute: SuperAppUsuariosRoute,
-  SuperAppIndexRoute: SuperAppIndexRoute,
+const adminSuperAppRouteRouteChildren: adminSuperAppRouteRouteChildren = {
+  adminSuperAppAuditoriaRoute: adminSuperAppAuditoriaRoute,
+  adminSuperAppConfiguracoesRoute: adminSuperAppConfiguracoesRoute,
+  adminSuperAppFinanceiroRoute: adminSuperAppFinanceiroRoute,
+  adminSuperAppIndicacoesRoute: adminSuperAppIndicacoesRoute,
+  adminSuperAppInfraRoute: adminSuperAppInfraRoute,
+  adminSuperAppPlanosRoute: adminSuperAppPlanosRoute,
+  adminSuperAppTemplatesRoute: adminSuperAppTemplatesRoute,
+  adminSuperAppTicketsRoute: adminSuperAppTicketsRoute,
+  adminSuperAppUsuariosRoute: adminSuperAppUsuariosRoute,
+  adminSuperAppIndexRoute: adminSuperAppIndexRoute,
 }
 
-const SuperAppRouteRouteWithChildren = SuperAppRouteRoute._addFileChildren(
-  SuperAppRouteRouteChildren,
-)
+const adminSuperAppRouteRouteWithChildren =
+  adminSuperAppRouteRoute._addFileChildren(adminSuperAppRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AppRoute: AppRoute,
-  AvaliacoesRoute: AvaliacoesRoute,
-  CadastroRoute: CadastroRoute,
-  ClientesRoute: ClientesRoute,
-  ContatoRoute: ContatoRoute,
-  DashboardRoute: DashboardRoute,
-  ExemploPaginaRoute: ExemploPaginaRoute,
-  GoogleCalendarRoute: GoogleCalendarRoute,
-  HorariosRoute: HorariosRoute,
-  LoginRoute: LoginRoute,
-  MaisRoute: MaisRoute,
-  NotificacoesRoute: NotificacoesRoute,
-  NotificacoesTodasRoute: NotificacoesTodasRoute,
-  OnboardingRoute: OnboardingRoute,
-  PagamentosRoute: PagamentosRoute,
-  PerfilProfissionalRoute: PerfilProfissionalRoute,
-  PerfilPublicoRoute: PerfilPublicoRoute,
-  PersonalizacaoRoute: PersonalizacaoRoute,
-  PlanoRoute: PlanoRoute,
-  PortfolioRoute: PortfolioRoute,
-  PrecosRoute: PrecosRoute,
-  RecursosRoute: RecursosRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
-  SaudacaoRoute: SaudacaoRoute,
-  ServicosRoute: ServicosRoute,
-  TransacoesRoute: TransacoesRoute,
-  UseNoCelularRoute: UseNoCelularRoute,
-  WhatsappRoute: WhatsappRoute,
-  SuperAppRouteRoute: SuperAppRouteRouteWithChildren,
-  AgendarSlugRoute: AgendarSlugRoute,
-  AvaliarTokenRoute: AvaliarTokenRoute,
-  ServicoIdRoute: ServicoIdRoute,
-  ServicoNovoRoute: ServicoNovoRoute,
-  SuperLoginRoute: SuperLoginRoute,
+  appAppRoute: appAppRoute,
+  appAvaliacoesRoute: appAvaliacoesRoute,
+  appClientesRoute: appClientesRoute,
+  appDashboardRoute: appDashboardRoute,
+  appGoogleCalendarRoute: appGoogleCalendarRoute,
+  appHorariosRoute: appHorariosRoute,
+  appMaisRoute: appMaisRoute,
+  appNotificacoesRoute: appNotificacoesRoute,
+  appNotificacoesTodasRoute: appNotificacoesTodasRoute,
+  appOnboardingRoute: appOnboardingRoute,
+  appPagamentosRoute: appPagamentosRoute,
+  appPerfilProfissionalRoute: appPerfilProfissionalRoute,
+  appPersonalizacaoRoute: appPersonalizacaoRoute,
+  appPlanoRoute: appPlanoRoute,
+  appPortfolioRoute: appPortfolioRoute,
+  appSaudacaoRoute: appSaudacaoRoute,
+  appServicosRoute: appServicosRoute,
+  appTransacoesRoute: appTransacoesRoute,
+  appUseNoCelularRoute: appUseNoCelularRoute,
+  appWhatsappRoute: appWhatsappRoute,
+  publicExemploPaginaRoute: publicExemploPaginaRoute,
+  publicPerfilPublicoRoute: publicPerfilPublicoRoute,
+  siteCadastroRoute: siteCadastroRoute,
+  siteContatoRoute: siteContatoRoute,
+  siteLoginRoute: siteLoginRoute,
+  sitePrecosRoute: sitePrecosRoute,
+  siteRecursosRoute: siteRecursosRoute,
+  siteResetPasswordRoute: siteResetPasswordRoute,
+  siteIndexRoute: siteIndexRoute,
+  adminSuperAppRouteRoute: adminSuperAppRouteRouteWithChildren,
+  adminSuperLoginRoute: adminSuperLoginRoute,
+  appServicoIdRoute: appServicoIdRoute,
+  appServicoNovoRoute: appServicoNovoRoute,
+  publicAgendarSlugRoute: publicAgendarSlugRoute,
+  publicAvaliarTokenRoute: publicAvaliarTokenRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicMercadoPagoCallbackRoute: ApiPublicMercadoPagoCallbackRoute,
 }
