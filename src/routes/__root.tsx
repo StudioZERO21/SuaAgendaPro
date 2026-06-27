@@ -246,25 +246,26 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-async function resolveSubdomain(): Promise<"site" | "app" | "admin"> {
-  let hostname = "suaagenda.pro";
-  if (typeof window !== "undefined") {
-    hostname = window.location.hostname;
-  } else {
-    try {
-      const { getRequest } = await import("@tanstack/react-start/server");
-      const req = getRequest();
-      hostname = req?.headers.get("host")?.split(":")[0] ?? "suaagenda.pro";
-    } catch { /* noop */ }
-  }
-  return hostname.startsWith("app.") ? "app"
-       : hostname.startsWith("admin.") ? "admin"
-       : "site";
+// Rotas que pertencem ao domínio app.suaagenda.pro
+const APP_ROUTE_PREFIXES = [
+  "/app", "/dashboard", "/clientes", "/servicos", "/servico",
+  "/horarios", "/portfolio", "/avaliacoes", "/notificacoes",
+  "/notificacoes-todas", "/perfil-profissional", "/personalizacao",
+  "/pagamentos", "/transacoes", "/plano", "/mais", "/onboarding",
+  "/whatsapp", "/google-calendar", "/saudacao", "/use-no-celular",
+];
+
+// Detecta subdomínio pelo path — seguro em SSR e no cliente sem server imports.
+// O subdomainMiddleware (src/start.ts) já garante que cada path chega no domínio certo.
+function subdomainFromPath(pathname: string): "site" | "app" | "admin" {
+  if (pathname.startsWith("/super")) return "admin";
+  if (APP_ROUTE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return "app";
+  return "site";
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  beforeLoad: async () => {
-    const subdomain = await resolveSubdomain();
+  beforeLoad: async ({ location }) => {
+    const subdomain = subdomainFromPath(location.pathname);
     return { subdomain };
   },
 
