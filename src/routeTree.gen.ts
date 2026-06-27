@@ -51,6 +51,7 @@ import { Route as adminSuperAppUsuariosRouteImport } from './routes/(admin)/supe
 import { Route as adminSuperAppTicketsRouteImport } from './routes/(admin)/super/_app/tickets'
 import { Route as adminSuperAppTemplatesRouteImport } from './routes/(admin)/super/_app/templates'
 import { Route as adminSuperAppPlanosRouteImport } from './routes/(admin)/super/_app/planos'
+import { Route as adminSuperAppMfaSetupRouteImport } from './routes/(admin)/super/_app/mfa-setup'
 import { Route as adminSuperAppInfraRouteImport } from './routes/(admin)/super/_app/infra'
 import { Route as adminSuperAppIndicacoesRouteImport } from './routes/(admin)/super/_app/indicacoes'
 import { Route as adminSuperAppFinanceiroRouteImport } from './routes/(admin)/super/_app/financeiro'
@@ -268,6 +269,11 @@ const adminSuperAppPlanosRoute = adminSuperAppPlanosRouteImport.update({
   path: '/planos',
   getParentRoute: () => adminSuperAppRouteRoute,
 } as any)
+const adminSuperAppMfaSetupRoute = adminSuperAppMfaSetupRouteImport.update({
+  id: '/mfa-setup',
+  path: '/mfa-setup',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
 const adminSuperAppInfraRoute = adminSuperAppInfraRouteImport.update({
   id: '/infra',
   path: '/infra',
@@ -337,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
   '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/super/infra': typeof adminSuperAppInfraRoute
+  '/super/mfa-setup': typeof adminSuperAppMfaSetupRoute
   '/super/planos': typeof adminSuperAppPlanosRoute
   '/super/templates': typeof adminSuperAppTemplatesRoute
   '/super/tickets': typeof adminSuperAppTicketsRoute
@@ -385,6 +392,7 @@ export interface FileRoutesByTo {
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
   '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/super/infra': typeof adminSuperAppInfraRoute
+  '/super/mfa-setup': typeof adminSuperAppMfaSetupRoute
   '/super/planos': typeof adminSuperAppPlanosRoute
   '/super/templates': typeof adminSuperAppTemplatesRoute
   '/super/tickets': typeof adminSuperAppTicketsRoute
@@ -435,6 +443,7 @@ export interface FileRoutesById {
   '/(admin)/super/_app/financeiro': typeof adminSuperAppFinanceiroRoute
   '/(admin)/super/_app/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/(admin)/super/_app/infra': typeof adminSuperAppInfraRoute
+  '/(admin)/super/_app/mfa-setup': typeof adminSuperAppMfaSetupRoute
   '/(admin)/super/_app/planos': typeof adminSuperAppPlanosRoute
   '/(admin)/super/_app/templates': typeof adminSuperAppTemplatesRoute
   '/(admin)/super/_app/tickets': typeof adminSuperAppTicketsRoute
@@ -486,6 +495,7 @@ export interface FileRouteTypes {
     | '/super/financeiro'
     | '/super/indicacoes'
     | '/super/infra'
+    | '/super/mfa-setup'
     | '/super/planos'
     | '/super/templates'
     | '/super/tickets'
@@ -534,6 +544,7 @@ export interface FileRouteTypes {
     | '/super/financeiro'
     | '/super/indicacoes'
     | '/super/infra'
+    | '/super/mfa-setup'
     | '/super/planos'
     | '/super/templates'
     | '/super/tickets'
@@ -583,6 +594,7 @@ export interface FileRouteTypes {
     | '/(admin)/super/_app/financeiro'
     | '/(admin)/super/_app/indicacoes'
     | '/(admin)/super/_app/infra'
+    | '/(admin)/super/_app/mfa-setup'
     | '/(admin)/super/_app/planos'
     | '/(admin)/super/_app/templates'
     | '/(admin)/super/_app/tickets'
@@ -927,6 +939,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminSuperAppPlanosRouteImport
       parentRoute: typeof adminSuperAppRouteRoute
     }
+    '/(admin)/super/_app/mfa-setup': {
+      id: '/(admin)/super/_app/mfa-setup'
+      path: '/mfa-setup'
+      fullPath: '/super/mfa-setup'
+      preLoaderRoute: typeof adminSuperAppMfaSetupRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
     '/(admin)/super/_app/infra': {
       id: '/(admin)/super/_app/infra'
       path: '/infra'
@@ -971,6 +990,7 @@ interface adminSuperAppRouteRouteChildren {
   adminSuperAppFinanceiroRoute: typeof adminSuperAppFinanceiroRoute
   adminSuperAppIndicacoesRoute: typeof adminSuperAppIndicacoesRoute
   adminSuperAppInfraRoute: typeof adminSuperAppInfraRoute
+  adminSuperAppMfaSetupRoute: typeof adminSuperAppMfaSetupRoute
   adminSuperAppPlanosRoute: typeof adminSuperAppPlanosRoute
   adminSuperAppTemplatesRoute: typeof adminSuperAppTemplatesRoute
   adminSuperAppTicketsRoute: typeof adminSuperAppTicketsRoute
@@ -984,6 +1004,7 @@ const adminSuperAppRouteRouteChildren: adminSuperAppRouteRouteChildren = {
   adminSuperAppFinanceiroRoute: adminSuperAppFinanceiroRoute,
   adminSuperAppIndicacoesRoute: adminSuperAppIndicacoesRoute,
   adminSuperAppInfraRoute: adminSuperAppInfraRoute,
+  adminSuperAppMfaSetupRoute: adminSuperAppMfaSetupRoute,
   adminSuperAppPlanosRoute: adminSuperAppPlanosRoute,
   adminSuperAppTemplatesRoute: adminSuperAppTemplatesRoute,
   adminSuperAppTicketsRoute: adminSuperAppTicketsRoute,
