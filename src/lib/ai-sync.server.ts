@@ -297,7 +297,7 @@ export async function runAiSync(): Promise<SyncStats> {
 
     const { data: reviews } = await supabaseAdmin
       .from("reviews")
-      .select("professional_id, service_id, rating, message, created_at")
+      .select("professional_id, rating, message, created_at")
       .eq("is_public", true)
       .gt("created_at", since)
       .order("created_at", { ascending: true });
@@ -305,16 +305,15 @@ export async function runAiSync(): Promise<SyncStats> {
     if (reviews?.length) {
       const rows = reviews.map(r => ({
         professional_id: r.professional_id,
-        service_id:      (r as any).service_id ?? null,
         rating:          r.rating,
         has_text:        Boolean((r as any).message?.trim()),
-        created_at:      isoDate(r.created_at), // só a data, sem hora
+        created_at:      isoDate(r.created_at),
       }));
 
       for (let i = 0; i < rows.length; i += 100) {
         await sql`
           INSERT INTO ai_reviews_anonymized
-            ${sql(rows.slice(i, i + 100), "professional_id","service_id","rating","has_text","created_at")}
+            ${sql(rows.slice(i, i + 100), "professional_id","rating","has_text","created_at")}
           ON CONFLICT DO NOTHING
         `;
       }
