@@ -37,6 +37,7 @@ export type PlanWithStats = Plan & {
   sub_trial: number;
   sub_suspended: number;
   sub_cancelled: number;
+  sub_especial: number;
   sub_total: number;
   revenue_cents: number;
   promotions: PlanPromotion[];
@@ -69,10 +70,10 @@ export const getPlansOverview = createServerFn({ method: "GET" })
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
     // Agrupa subscriptions por plano
-    const byPlan: Record<string, { active: number; trial: number; suspended: number; cancelled: number }> = {};
+    const byPlan: Record<string, { active: number; trial: number; suspended: number; cancelled: number; especial: number }> = {};
     for (const s of subs ?? []) {
-      if (!byPlan[s.plan_id]) byPlan[s.plan_id] = { active: 0, trial: 0, suspended: 0, cancelled: 0 };
-      const key = s.status as "active" | "trial" | "suspended" | "cancelled";
+      if (!byPlan[s.plan_id]) byPlan[s.plan_id] = { active: 0, trial: 0, suspended: 0, cancelled: 0, especial: 0 };
+      const key = s.status as "active" | "trial" | "suspended" | "cancelled" | "especial";
       if (key in byPlan[s.plan_id]) byPlan[s.plan_id][key]++;
     }
 
@@ -95,15 +96,16 @@ export const getPlansOverview = createServerFn({ method: "GET" })
     }
 
     const plansWithStats: PlanWithStats[] = (plans ?? []).map((pl) => {
-      const c = byPlan[pl.id] ?? { active: 0, trial: 0, suspended: 0, cancelled: 0 };
+      const c = byPlan[pl.id] ?? { active: 0, trial: 0, suspended: 0, cancelled: 0, especial: 0 };
       return {
         ...pl,
         features: (pl.features ?? []) as string[],
-        sub_active:    c.active,
+        sub_active:    c.active + c.especial,
         sub_trial:     c.trial,
         sub_suspended: c.suspended,
         sub_cancelled: c.cancelled,
-        sub_total:     c.active + c.trial + c.suspended + c.cancelled,
+        sub_especial:  c.especial,
+        sub_total:     c.active + c.trial + c.suspended + c.cancelled + c.especial,
         revenue_cents: c.active * pl.price_cents,
         promotions:    promosByPlan[pl.id] ?? [],
       };

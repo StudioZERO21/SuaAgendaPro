@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, User, Mail, Lock, Phone, Check, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { MobileShell } from "@/components/mobile-shell";
 import { BrandLogo } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { recordReferralVisit, linkReferralToUser } from "@/lib/referral.functions";
 
 export const Route = createFileRoute("/cadastro")({
   head: () => ({
@@ -47,6 +48,16 @@ function SignupPage() {
   const [errors, setErrors] = useState<Partial<Record<FieldId, string>>>({});
   const [showPwd, setShowPwd] = useState(false);
 
+  const refCode = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("ref") ?? null
+    : null;
+
+  useEffect(() => {
+    if (refCode) {
+      recordReferralVisit({ data: { code: refCode } }).catch(() => {});
+    }
+  }, [refCode]);
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
@@ -70,7 +81,7 @@ function SignupPage() {
     setErrors({});
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data: authData, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.senha,
       options: {
@@ -87,6 +98,14 @@ function SignupPage() {
       }
       return;
     }
+
+    // Vincular indicação se veio via link
+    if (refCode && authData?.user?.id) {
+      linkReferralToUser({
+        data: { code: refCode, refereeId: authData.user.id, refereeEmail: values.email },
+      }).catch(() => {});
+    }
+
     toast.success("Conta criada! Vamos personalizar seu studio ✨");
     navigate({ to: "/onboarding" });
   }

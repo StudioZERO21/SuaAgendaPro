@@ -69,9 +69,11 @@ import {
   adminGrantSpecial,
   adminCancelSubscription,
   adminChangePlan,
+  adminResetToTrial,
   type SuperUser,
 } from "@/lib/super-admin.functions";
 import { getAppRatings, type AppRatingRow } from "@/lib/app-rating.functions";
+import { getAuditLog, type AuditLogEntry } from "@/lib/super-audit.functions";
 import { withSuperToken } from "@/lib/super-client";
 
 export const Route = createFileRoute("/super/_app/usuarios")({
@@ -98,6 +100,7 @@ type Pro = {
   plan: string;
   planId: string;
   notes: string | null;
+  avatarUrl: string | null;
 };
 
 type AuditEntry = {
@@ -114,17 +117,18 @@ function superUserToPro(u: SuperUser): Pro {
   const fmt = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
   return {
-    id:     u.id,
-    name:   u.name  || u.email.split("@")[0] || "—",
-    email:  u.email,
-    phone:  u.phone || "—",
-    niche:  u.specialty || "—",
-    city:   "—",
-    status: u.status as Status,
-    joined: fmt(u.createdAt),
-    plan:   u.planName,
-    planId: u.planId,
-    notes:  u.notes,
+    id:        u.id,
+    name:      u.name  || u.email.split("@")[0] || "—",
+    email:     u.email,
+    phone:     u.phone || "—",
+    niche:     u.specialty || "—",
+    city:      "—",
+    status:    u.status as Status,
+    joined:    fmt(u.createdAt),
+    plan:      u.planName,
+    planId:    u.planId,
+    notes:     u.notes,
+    avatarUrl: u.avatarUrl,
   };
 }
 
@@ -148,6 +152,31 @@ const statusLabel: Record<Status, string> = {
 
 const PAGE_SIZE = 8;
 const AUDIT_PAGE_SIZE = 5;
+
+const DB_ACTION_LABEL: Record<string, { label: string; kind: AuditEntry["action"] }> = {
+  suspend_user:        { label: "Suspendeu",        kind: "desativacao"  },
+  unblock_user:        { label: "Reativou",         kind: "reativacao"   },
+  grant_especial:      { label: "Concedeu Especial",kind: "especial"     },
+  cancel_subscription: { label: "Cancelou",         kind: "cancelamento" },
+  change_plan:         { label: "Alterou plano",    kind: "reativacao"   },
+  reset_to_trial:      { label: "Resetou Trial",    kind: "reativacao"   },
+};
+
+function dbToAudit(entry: AuditLogEntry, proName: string): AuditEntry {
+  const mapped = DB_ACTION_LABEL[entry.action] ?? { label: entry.action, kind: "reativacao" as const };
+  const d = new Date(entry.performed_at);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const at = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return {
+    id:      entry.id,
+    proId:   entry.target_user_id ?? "",
+    proName,
+    action:  mapped.kind,
+    reason:  String((entry.details as any)?.notes ?? "(sem motivo)"),
+    actor:   "admin",
+    at,
+  };
+}
 
 function formatBRL(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -190,6 +219,10 @@ function UsuariosPage() {
   const [auditFrom, setAuditFrom] = useState<Date | undefined>();
   const [auditTo, setAuditTo] = useState<Date | undefined>();
 
+  // Audit do usuário carregado do banco
+  const [viewingAudit, setViewingAudit] = useState<AuditLogEntry[]>([]);
+  const [viewingAuditLoading, setViewingAuditLoading] = useState(false);
+
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
@@ -216,10 +249,12 @@ function UsuariosPage() {
       if (action === "especial")     await adminGrantSpecial({ data: withSuperToken({ userId: user.id, notes, userEmail: user.email }) });
       if (action === "cancelar")     await adminCancelSubscription({ data: withSuperToken({ userId: user.id, userEmail: user.email }) });
       if (action === "premium")      await adminChangePlan({ data: withSuperToken({ userId: user.id, planId: "premium", notes, userEmail: user.email }) });
+      if (action === "trial")        await adminResetToTrial({ data: withSuperToken({ userId: user.id, notes, userEmail: user.email }) });
       toast.success("Ação executada com sucesso");
       const auditAction = action === "desativar" ? "desativacao" :
                           action === "reativar"  ? "reativacao"  :
-                          action === "especial"  ? "especial"    : "cancelamento";
+                          action === "especial"  ? "especial"    :
+                          action === "trial"     ? "reativacao"  : "cancelamento";
       setAudit((prev) => [
         { id: crypto.randomUUID(), proId: user.id, proName: user.name,
           action: auditAction as AuditEntry["action"],
@@ -308,12 +343,19 @@ function UsuariosPage() {
     setAuditPage(1);
     setAuditFrom(undefined);
     setAuditTo(undefined);
+    setViewingAudit([]);
+    if (!viewing?.id) return;
+    setViewingAuditLoading(true);
+    getAuditLog({ data: withSuperToken({ userId: viewing.id, limit: 100, offset: 0 }) })
+      .then((r) => setViewingAudit(r.entries))
+      .catch(() => {})
+      .finally(() => setViewingAuditLoading(false));
   }, [viewing?.id]);
 
   function handleConfirmAction() {
     if (!confirming) return;
-    if (confirming.action === "desativar" && reason.trim().length < 5) {
-      toast.error("Informe um motivo (mín. 5 caracteres).");
+    if (reason.trim().length < 30) {
+      toast.error("Informe um motivo com pelo menos 30 caracteres.");
       return;
     }
     executeAction(confirming.user, confirming.action, reason.trim());
@@ -337,9 +379,12 @@ function UsuariosPage() {
     toast.success(`${filtered.length} registros exportados.`);
   }
 
-  const auditForViewing = viewing
-    ? audit.filter((a) => a.proId === viewing.id)
-    : [];
+  const auditForViewing = useMemo(
+    () => viewing
+      ? viewingAudit.map((e) => dbToAudit(e, viewing.name))
+      : [],
+    [viewing, viewingAudit],
+  );
 
   const filteredAudit = useMemo(() => {
     const term = auditQ.trim().toLowerCase();
@@ -508,7 +553,7 @@ function UsuariosPage() {
                             <Power className="mr-1.5 h-3.5 w-3.5" /> Reativar
                           </Button>
                         )}
-                        {(u.status === "active" || u.status === "trial") && (
+                        {(u.status === "active" || u.status === "trial" || u.status === "especial") && (
                           <Button size="sm" variant="destructive" onClick={() => setConfirming({ user: u, action: "desativar" })}>
                             <Power className="mr-1.5 h-3.5 w-3.5" /> Suspender
                           </Button>
@@ -577,12 +622,14 @@ function UsuariosPage() {
             <>
               <DialogHeader>
                 <div className="flex items-start gap-4">
-                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary-glow text-lg font-bold text-primary-foreground">
-                    {viewing.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join("")}
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl">
+                    {viewing.avatarUrl ? (
+                      <img src={viewing.avatarUrl} alt={viewing.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center bg-gradient-to-br from-primary to-primary-glow text-lg font-bold text-primary-foreground">
+                        {viewing.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      </div>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <DialogTitle className="truncate">{viewing.name}</DialogTitle>
@@ -642,7 +689,11 @@ function UsuariosPage() {
                 </TabsContent>
 
                 <TabsContent value="auditoria" className="pt-4">
-                  {auditForViewing.length === 0 ? (
+                  {viewingAuditLoading ? (
+                    <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                      Carregando auditoria…
+                    </div>
+                  ) : auditForViewing.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
                       Nenhuma ação registrada para este profissional.
                     </div>
@@ -813,6 +864,13 @@ function UsuariosPage() {
                 <Button variant="outline" onClick={() => setViewing(null)}>
                   Fechar
                 </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => { setConfirming({ user: viewing, action: "trial" }); setViewing(null); }}
+                >
+                  <Clock className="mr-1.5 h-4 w-4" />
+                  Resetar Trial
+                </Button>
                 {viewing.status !== "especial" && (
                   <Button
                     variant="secondary"
@@ -830,7 +888,7 @@ function UsuariosPage() {
                     Reativar
                   </Button>
                 )}
-                {(viewing.status === "active" || viewing.status === "trial") && (
+                {(viewing.status === "active" || viewing.status === "trial" || viewing.status === "especial") && (
                   <Button
                     variant="destructive"
                     onClick={() => { setConfirming({ user: viewing, action: "desativar" }); setViewing(null); }}
@@ -864,6 +922,8 @@ function UsuariosPage() {
                         ? "bg-rose-100 text-rose-700"
                         : confirming.action === "especial"
                         ? "bg-violet-100 text-violet-700"
+                        : confirming.action === "trial"
+                        ? "bg-amber-100 text-amber-700"
                         : "bg-emerald-100 text-emerald-700",
                     )}
                   >
@@ -876,6 +936,7 @@ function UsuariosPage() {
                       {confirming.action === "especial"  && "Conceder plano Especial?"}
                       {confirming.action === "cancelar"  && "Cancelar assinatura?"}
                       {confirming.action === "premium"   && "Mudar para Premium?"}
+                      {confirming.action === "trial"     && "Resetar para Trial (7 dias)?"}
                     </DialogTitle>
                     <DialogDescription>
                       {confirming.action === "desativar"
@@ -884,6 +945,8 @@ function UsuariosPage() {
                         ? `${confirming.user.name} voltará a ter acesso por 30 dias.`
                         : confirming.action === "especial"
                         ? `${confirming.user.name} receberá acesso vitalício sem cobrança.`
+                        : confirming.action === "trial"
+                        ? `${confirming.user.name} receberá 7 dias de trial a partir de hoje.`
                         : `Ação sobre ${confirming.user.name}. A ação será auditada.`}
                     </DialogDescription>
                   </div>
@@ -892,14 +955,18 @@ function UsuariosPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="reason">
-                  Motivo / observação{confirming.action === "desativar" ? " *" : " (opcional)"}
+                  Motivo / observação <span className="text-destructive">*</span>
+                  <span className={cn("ml-2 text-[11px] font-normal", reason.trim().length >= 30 ? "text-emerald-600" : "text-muted-foreground")}>
+                    ({reason.trim().length}/30 mín.)
+                  </span>
                 </Label>
                 <Textarea
                   id="reason"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Ex: solicitação do usuário, inadimplência confirmada…"
+                  placeholder="Ex: solicitação do usuário, inadimplência confirmada, teste de funcionalidade…"
                   rows={3}
+                  className={cn(reason.trim().length > 0 && reason.trim().length < 30 && "border-destructive focus-visible:ring-destructive")}
                 />
               </div>
 
@@ -912,7 +979,7 @@ function UsuariosPage() {
                   Cancelar
                 </Button>
                 <Button
-                  disabled={actionLoading}
+                  disabled={actionLoading || reason.trim().length < 30}
                   variant={confirming.action === "desativar" || confirming.action === "cancelar" ? "destructive" : "default"}
                   onClick={handleConfirmAction}
                 >

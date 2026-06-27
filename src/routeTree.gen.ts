@@ -46,9 +46,11 @@ import { Route as AgendarSlugRouteImport } from './routes/agendar.$slug'
 import { Route as SuperAppRouteRouteImport } from './routes/super/_app/route'
 import { Route as SuperAppIndexRouteImport } from './routes/super/_app/index'
 import { Route as SuperAppUsuariosRouteImport } from './routes/super/_app/usuarios'
+import { Route as SuperAppTicketsRouteImport } from './routes/super/_app/tickets'
 import { Route as SuperAppTemplatesRouteImport } from './routes/super/_app/templates'
 import { Route as SuperAppPlanosRouteImport } from './routes/super/_app/planos'
 import { Route as SuperAppInfraRouteImport } from './routes/super/_app/infra'
+import { Route as SuperAppIndicacoesRouteImport } from './routes/super/_app/indicacoes'
 import { Route as SuperAppFinanceiroRouteImport } from './routes/super/_app/financeiro'
 import { Route as SuperAppConfiguracoesRouteImport } from './routes/super/_app/configuracoes'
 import { Route as SuperAppAuditoriaRouteImport } from './routes/super/_app/auditoria'
@@ -240,6 +242,11 @@ const SuperAppUsuariosRoute = SuperAppUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => SuperAppRouteRoute,
 } as any)
+const SuperAppTicketsRoute = SuperAppTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => SuperAppRouteRoute,
+} as any)
 const SuperAppTemplatesRoute = SuperAppTemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
@@ -253,6 +260,11 @@ const SuperAppPlanosRoute = SuperAppPlanosRouteImport.update({
 const SuperAppInfraRoute = SuperAppInfraRouteImport.update({
   id: '/infra',
   path: '/infra',
+  getParentRoute: () => SuperAppRouteRoute,
+} as any)
+const SuperAppIndicacoesRoute = SuperAppIndicacoesRouteImport.update({
+  id: '/indicacoes',
+  path: '/indicacoes',
   getParentRoute: () => SuperAppRouteRoute,
 } as any)
 const SuperAppFinanceiroRoute = SuperAppFinanceiroRouteImport.update({
@@ -322,9 +334,11 @@ export interface FileRoutesByFullPath {
   '/super/auditoria': typeof SuperAppAuditoriaRoute
   '/super/configuracoes': typeof SuperAppConfiguracoesRoute
   '/super/financeiro': typeof SuperAppFinanceiroRoute
+  '/super/indicacoes': typeof SuperAppIndicacoesRoute
   '/super/infra': typeof SuperAppInfraRoute
   '/super/planos': typeof SuperAppPlanosRoute
   '/super/templates': typeof SuperAppTemplatesRoute
+  '/super/tickets': typeof SuperAppTicketsRoute
   '/super/usuarios': typeof SuperAppUsuariosRoute
   '/super/': typeof SuperAppIndexRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
@@ -368,9 +382,11 @@ export interface FileRoutesByTo {
   '/super/auditoria': typeof SuperAppAuditoriaRoute
   '/super/configuracoes': typeof SuperAppConfiguracoesRoute
   '/super/financeiro': typeof SuperAppFinanceiroRoute
+  '/super/indicacoes': typeof SuperAppIndicacoesRoute
   '/super/infra': typeof SuperAppInfraRoute
   '/super/planos': typeof SuperAppPlanosRoute
   '/super/templates': typeof SuperAppTemplatesRoute
+  '/super/tickets': typeof SuperAppTicketsRoute
   '/super/usuarios': typeof SuperAppUsuariosRoute
   '/super': typeof SuperAppIndexRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
@@ -416,9 +432,11 @@ export interface FileRoutesById {
   '/super/_app/auditoria': typeof SuperAppAuditoriaRoute
   '/super/_app/configuracoes': typeof SuperAppConfiguracoesRoute
   '/super/_app/financeiro': typeof SuperAppFinanceiroRoute
+  '/super/_app/indicacoes': typeof SuperAppIndicacoesRoute
   '/super/_app/infra': typeof SuperAppInfraRoute
   '/super/_app/planos': typeof SuperAppPlanosRoute
   '/super/_app/templates': typeof SuperAppTemplatesRoute
+  '/super/_app/tickets': typeof SuperAppTicketsRoute
   '/super/_app/usuarios': typeof SuperAppUsuariosRoute
   '/super/_app/': typeof SuperAppIndexRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
@@ -465,9 +483,11 @@ export interface FileRouteTypes {
     | '/super/auditoria'
     | '/super/configuracoes'
     | '/super/financeiro'
+    | '/super/indicacoes'
     | '/super/infra'
     | '/super/planos'
     | '/super/templates'
+    | '/super/tickets'
     | '/super/usuarios'
     | '/super/'
     | '/api/public/mercado-pago/callback'
@@ -511,9 +531,11 @@ export interface FileRouteTypes {
     | '/super/auditoria'
     | '/super/configuracoes'
     | '/super/financeiro'
+    | '/super/indicacoes'
     | '/super/infra'
     | '/super/planos'
     | '/super/templates'
+    | '/super/tickets'
     | '/super/usuarios'
     | '/super'
     | '/api/public/mercado-pago/callback'
@@ -558,9 +580,11 @@ export interface FileRouteTypes {
     | '/super/_app/auditoria'
     | '/super/_app/configuracoes'
     | '/super/_app/financeiro'
+    | '/super/_app/indicacoes'
     | '/super/_app/infra'
     | '/super/_app/planos'
     | '/super/_app/templates'
+    | '/super/_app/tickets'
     | '/super/_app/usuarios'
     | '/super/_app/'
     | '/api/public/mercado-pago/callback'
@@ -867,6 +891,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAppUsuariosRouteImport
       parentRoute: typeof SuperAppRouteRoute
     }
+    '/super/_app/tickets': {
+      id: '/super/_app/tickets'
+      path: '/tickets'
+      fullPath: '/super/tickets'
+      preLoaderRoute: typeof SuperAppTicketsRouteImport
+      parentRoute: typeof SuperAppRouteRoute
+    }
     '/super/_app/templates': {
       id: '/super/_app/templates'
       path: '/templates'
@@ -886,6 +917,13 @@ declare module '@tanstack/react-router' {
       path: '/infra'
       fullPath: '/super/infra'
       preLoaderRoute: typeof SuperAppInfraRouteImport
+      parentRoute: typeof SuperAppRouteRoute
+    }
+    '/super/_app/indicacoes': {
+      id: '/super/_app/indicacoes'
+      path: '/indicacoes'
+      fullPath: '/super/indicacoes'
+      preLoaderRoute: typeof SuperAppIndicacoesRouteImport
       parentRoute: typeof SuperAppRouteRoute
     }
     '/super/_app/financeiro': {
@@ -930,9 +968,11 @@ interface SuperAppRouteRouteChildren {
   SuperAppAuditoriaRoute: typeof SuperAppAuditoriaRoute
   SuperAppConfiguracoesRoute: typeof SuperAppConfiguracoesRoute
   SuperAppFinanceiroRoute: typeof SuperAppFinanceiroRoute
+  SuperAppIndicacoesRoute: typeof SuperAppIndicacoesRoute
   SuperAppInfraRoute: typeof SuperAppInfraRoute
   SuperAppPlanosRoute: typeof SuperAppPlanosRoute
   SuperAppTemplatesRoute: typeof SuperAppTemplatesRoute
+  SuperAppTicketsRoute: typeof SuperAppTicketsRoute
   SuperAppUsuariosRoute: typeof SuperAppUsuariosRoute
   SuperAppIndexRoute: typeof SuperAppIndexRoute
 }
@@ -941,9 +981,11 @@ const SuperAppRouteRouteChildren: SuperAppRouteRouteChildren = {
   SuperAppAuditoriaRoute: SuperAppAuditoriaRoute,
   SuperAppConfiguracoesRoute: SuperAppConfiguracoesRoute,
   SuperAppFinanceiroRoute: SuperAppFinanceiroRoute,
+  SuperAppIndicacoesRoute: SuperAppIndicacoesRoute,
   SuperAppInfraRoute: SuperAppInfraRoute,
   SuperAppPlanosRoute: SuperAppPlanosRoute,
   SuperAppTemplatesRoute: SuperAppTemplatesRoute,
+  SuperAppTicketsRoute: SuperAppTicketsRoute,
   SuperAppUsuariosRoute: SuperAppUsuariosRoute,
   SuperAppIndexRoute: SuperAppIndexRoute,
 }

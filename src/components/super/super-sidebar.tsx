@@ -10,6 +10,8 @@ import {
   MessageSquare,
   Settings,
   Server,
+  TicketCheck,
+  Share2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +33,8 @@ const NAV_PRINCIPAL = [
   { title: "Usuários",   to: "/super/usuarios",  icon: Users,           exact: false },
   { title: "Planos",     to: "/super/planos",    icon: CreditCard,      exact: false },
   { title: "Financeiro", to: "/super/financeiro",icon: DollarSign,      exact: false },
+  { title: "Tickets",    to: "/super/tickets",    icon: TicketCheck,     exact: false },
+  { title: "Indicações", to: "/super/indicacoes", icon: Share2,          exact: false },
 ];
 
 const NAV_SISTEMA = [

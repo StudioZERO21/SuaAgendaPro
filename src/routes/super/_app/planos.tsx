@@ -173,37 +173,46 @@ function PlanosPage() {
       </header>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-px overflow-hidden border border-border bg-border xl:grid-cols-4">
         {[
           {
             label: "MRR", icon: DollarSign, color: "text-emerald-600",
-            value: loading ? "—" : fmtBRL(data?.mrr_cents ?? 0),
+            value: loading ? null : fmtBRL(data?.mrr_cents ?? 0),
             sub: "receita recorrente mensal",
           },
           {
             label: "Assinantes ativos", icon: Users, color: "text-blue-600",
-            value: loading ? "—" : String(data?.total_active ?? 0),
+            value: loading ? null : String(data?.total_active ?? 0),
             sub: "com plano pago ativo",
           },
           {
             label: "Em trial", icon: Clock, color: "text-amber-600",
-            value: loading ? "—" : String(data?.total_trial ?? 0),
+            value: loading ? null : String(data?.total_trial ?? 0),
             sub: "testando gratuitamente",
           },
           {
             label: "Churn no mês", icon: TrendingDown, color: "text-rose-600",
-            value: loading ? "—" : String(data?.churn_this_month ?? 0),
+            value: loading ? null : String(data?.churn_this_month ?? 0),
             sub: "cancelamentos neste mês",
           },
         ].map((c, i) => (
-          <motion.div key={c.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-            className="border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-start justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{c.label}</p>
+          <motion.div
+            key={c.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: i * 0.06 }}
+            className="flex flex-col gap-4 bg-card p-5"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{c.label}</p>
               <c.icon className={cn("h-4 w-4", c.color)} />
             </div>
-            <p className="mt-3 font-display text-2xl font-bold">{c.value}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{c.sub}</p>
+            <div>
+              <p className="font-display text-3xl font-bold tabular-nums">
+                {c.value !== null ? c.value : <span className="animate-pulse text-muted-foreground">—</span>}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
+            </div>
           </motion.div>
         ))}
       </section>

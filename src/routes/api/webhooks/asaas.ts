@@ -162,6 +162,22 @@ export const ServerRoute = createServerFileRoute("/api/webhooks/asaas").methods(
       payload:          payload as any,
     });
 
+    // 7. Verificar e conceder recompensa de indicação no primeiro pagamento
+    if ((event === "PAYMENT_CONFIRMED" || event === "PAYMENT_RECEIVED") && newStatus === "active") {
+      const { data: conversion } = await (supabaseAdmin as any)
+        .from("referral_conversions")
+        .select("id, referrer_id")
+        .eq("referee_id", userId)
+        .eq("status", "registered")
+        .is("reward_granted_at", null)
+        .maybeSingle();
+
+      if (conversion) {
+        const { grantReferralReward } = await import("@/lib/super-referral.functions");
+        await grantReferralReward(supabaseAdmin, conversion.referrer_id, userId, conversion.id);
+      }
+    }
+
     return new Response("ok", { status: 200 });
   },
 });

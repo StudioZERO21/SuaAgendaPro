@@ -67,6 +67,7 @@ export type SuperUser = {
   phone:            string;
   slug:             string;
   specialty:        string;
+  avatarUrl:        string | null;
   planId:           string;
   planName:         string;
   status:           string;
@@ -88,7 +89,7 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" })
       .select(`
         status, plan_id, trial_ends_at, current_period_end, cancelled_at, notes, created_at,
         plans!inner(display_name),
-        profiles!inner(id, display_name, phone, slug, specialty)
+        profiles!inner(id, display_name, phone, slug, specialty, avatar_url)
       `)
       .order("created_at", { ascending: false });
 
@@ -113,6 +114,7 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" })
         phone:            p?.phone                   ?? "",
         slug:             p?.slug                    ?? "",
         specialty:        p?.specialty               ?? "",
+        avatarUrl:        p?.avatar_url              ?? null,
         planId:           r.plan_id,
         planName:         (r.plans as any)?.display_name ?? r.plan_id,
         status:           r.status,
@@ -220,6 +222,31 @@ export const adminSuspendUser = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
     await auditLog(supabaseAdmin, "suspend_user", data.userId, data.userEmail ?? "", { notes: data.notes });
+  });
+
+export const adminResetToTrial = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z.object({ _st, userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireSuperAuth(data._st ?? null);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const trialEndsAt = new Date(Date.now() + 7 * 86_400_000).toISOString();
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update({
+        plan_id:            "trial",
+        status:             "trial",
+        trial_ends_at:      trialEndsAt,
+        current_period_end: null,
+        cancelled_at:       null,
+        notes:              data.notes ?? "Trial reiniciado pelo admin",
+      })
+      .eq("user_id", data.userId);
+
+    if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "reset_to_trial", data.userId, data.userEmail ?? "", { notes: data.notes, trialEndsAt });
   });
 
 export const adminCancelSubscription = createServerFn({ method: "POST" })

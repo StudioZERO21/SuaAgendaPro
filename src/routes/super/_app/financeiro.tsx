@@ -129,10 +129,10 @@ function FinanceiroPage() {
   }
 
   const cards = [
-    { label: "MRR",            value: metrics ? fmt(metrics.mrr * 100) : "—", icon: DollarSign,  color: "text-emerald-600" },
-    { label: "Ativos pagantes", value: metrics ? String(metrics.activeUsers)    : "—", icon: Users,        color: "text-blue-600" },
-    { label: "Inadimplentes",  value: metrics ? String(metrics.suspendedUsers) : "—", icon: AlertTriangle, color: "text-orange-600" },
-    { label: "Churn/mês",      value: metrics ? String(metrics.churnThisMonth) : "—", icon: TrendingDown,  color: "text-rose-600" },
+    { label: "MRR",             value: metrics ? fmt(metrics.mrr * 100)        : null, icon: DollarSign,   color: "text-emerald-600", sub: "receita recorrente mensal" },
+    { label: "Ativos pagantes", value: metrics ? String(metrics.activeUsers)    : null, icon: Users,         color: "text-blue-600",    sub: "com plano pago ativo" },
+    { label: "Inadimplentes",   value: metrics ? String(metrics.suspendedUsers) : null, icon: AlertTriangle, color: "text-orange-600",  sub: "pagamento em atraso" },
+    { label: "Churn/mês",       value: metrics ? String(metrics.churnThisMonth) : null, icon: TrendingDown,  color: "text-rose-600",    sub: "cancelamentos neste mês" },
   ];
 
   return (
@@ -149,20 +149,25 @@ function FinanceiroPage() {
       </header>
 
       {/* KPI cards */}
-      <section className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-px overflow-hidden border border-border bg-border xl:grid-cols-4">
         {cards.map((c, i) => (
           <motion.div
             key={c.label}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07 }}
-            className="border border-border bg-card p-5 shadow-sm"
+            transition={{ duration: 0.4, delay: i * 0.06 }}
+            className="flex flex-col gap-4 bg-card p-5"
           >
-            <div className="flex items-start justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{c.label}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{c.label}</p>
               <c.icon className={cn("h-4 w-4", c.color)} />
             </div>
-            <p className="mt-3 text-2xl font-bold">{c.value}</p>
+            <div>
+              <p className="font-display text-3xl font-bold tabular-nums">
+                {c.value !== null ? c.value : <span className="animate-pulse text-muted-foreground">—</span>}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
+            </div>
           </motion.div>
         ))}
       </section>
