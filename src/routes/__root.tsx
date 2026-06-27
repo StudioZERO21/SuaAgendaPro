@@ -246,36 +246,64 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#ec4899" },
-      { title: "SuaAgenda.Pro — Agenda premium para profissionais da beleza" },
-      {
-        name: "description",
-        content:
-          "Sua agenda, seu tempo, mais clientes. App de agendamento premium para profissionais autônomos da beleza.",
-      },
-      { property: "og:title", content: "SuaAgenda.Pro" },
-      {
-        property: "og:description",
-        content: "Agenda premium para profissionais da beleza.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.json" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Space+Grotesk:wght@400;500;600;700&display=swap",
-      },
-    ],
-  }),
+  beforeLoad: async () => {
+    let hostname = "suaagenda.pro";
+    if (typeof window !== "undefined") {
+      hostname = window.location.hostname;
+    } else {
+      try {
+        const { getWebRequest } = await import("@tanstack/react-start/server");
+        const req = getWebRequest();
+        hostname = req?.headers.get("host")?.split(":")[0] ?? "suaagenda.pro";
+      } catch { /* noop */ }
+    }
+    const subdomain: "site" | "app" | "admin" =
+      hostname.startsWith("app.") ? "app" :
+      hostname.startsWith("admin.") ? "admin" :
+      "site";
+    return { subdomain };
+  },
+
+  head: ({ context }) => {
+    const subdomain = (context as any).subdomain as "site" | "app" | "admin" ?? "site";
+    const isApp   = subdomain === "app";
+    const isAdmin = subdomain === "admin";
+
+    const title = isApp
+      ? "Minha Agenda — SuaAgenda.Pro"
+      : isAdmin
+      ? "Super Admin — SuaAgenda.Pro"
+      : "SuaAgenda.Pro — Agenda premium para profissionais da beleza";
+
+    const description = isApp
+      ? "Sua agenda de atendimentos."
+      : "Sua agenda, seu tempo, mais clientes. App de agendamento premium para profissionais autônomos da beleza.";
+
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+        { name: "theme-color", content: "#ec4899" },
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: "SuaAgenda.Pro" },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "manifest", href: isApp ? "/app-manifest.json" : "/manifest.json" },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Space+Grotesk:wght@400;500;600;700&display=swap",
+        },
+      ],
+    };
+  },
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -367,7 +395,10 @@ function RootComponent() {
   }, [user?.id]);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
+    if (!("serviceWorker" in navigator)) return;
+    const hostname = window.location.hostname;
+    const isAppDomain = hostname.startsWith("app.") || hostname === "localhost";
+    if (isAppDomain) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, []);

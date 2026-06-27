@@ -4,7 +4,7 @@ const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
-  "/",
+  "/app",
   "/offline.html",
 ];
 
@@ -90,7 +90,7 @@ self.addEventListener("push", (event) => {
 // Notification click: open/focus the app
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = event.notification.data?.url ?? "/";
+  const target = event.notification.data?.url ?? "/app";
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
