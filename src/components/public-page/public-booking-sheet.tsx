@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -30,12 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,11 +51,95 @@ import {
   type PublicService,
 } from "@/lib/public-page-types";
 import { hexToHsl } from "@/lib/themes";
+
+/* ------------------------ Theme context ------------------------ */
+
+export type PublicBookingTheme = {
+  primary: string;
+  ctaBg: string;
+  ctaText: string;
+  bg: string;
+  card: string;
+  surface: string;
+  text: string;
+  textMuted: string;
+  border: string;
+  tagBg: string;
+  serviceIcon: string;
+  headingFont: string;
+  bodyFont: string;
+  cardRadius: string;
+  btnRadius: string;
+};
+
+const DEFAULT_BOOKING_THEME: PublicBookingTheme = {
+  primary: "#ec4899",
+  ctaBg: "#ec4899",
+  ctaText: "#ffffff",
+  bg: "#ffffff",
+  card: "#ffffff",
+  surface: "#f5f5f5",
+  text: "#1a1a1a",
+  textMuted: "#666666",
+  border: "#e5e5e5",
+  tagBg: "rgba(236,72,153,0.1)",
+  serviceIcon: "#ec4899",
+  headingFont: "'Playfair Display', serif",
+  bodyFont: "'Lato', sans-serif",
+  cardRadius: "12px",
+  btnRadius: "12px",
+};
+
+const BookingThemeContext = createContext<PublicBookingTheme>(DEFAULT_BOOKING_THEME);
+
+function useBookingTheme() {
+  return useContext(BookingThemeContext);
+}
+
+function buildBookingCssVars(theme: PublicBookingTheme): React.CSSProperties {
+  return {
+    backgroundColor: theme.bg,
+    color: theme.text,
+    fontFamily: theme.bodyFont,
+    "--primary": hexToHsl(theme.primary),
+    "--primary-foreground": hexToHsl(theme.ctaText),
+    "--background": hexToHsl(theme.bg),
+    "--foreground": hexToHsl(theme.text),
+    "--card": hexToHsl(theme.card),
+    "--card-foreground": hexToHsl(theme.text),
+    "--popover": hexToHsl(theme.card),
+    "--popover-foreground": hexToHsl(theme.text),
+    "--secondary": hexToHsl(theme.surface),
+    "--secondary-foreground": hexToHsl(theme.text),
+    "--muted": hexToHsl(theme.surface),
+    "--muted-foreground": hexToHsl(theme.textMuted),
+    "--border": hexToHsl(theme.border),
+    "--input": hexToHsl(theme.border),
+    "--ring": hexToHsl(theme.primary),
+    "--gradient-primary": `linear-gradient(135deg, ${theme.ctaBg} 0%, ${theme.primary} 100%)`,
+    "--gradient-soft": `linear-gradient(135deg, ${theme.primary}22 0%, ${theme.primary}11 100%)`,
+    "--shadow-glow": `0 10px 30px -10px ${theme.ctaBg}66`,
+  } as React.CSSProperties;
+}
+
+function ctaButtonStyle(theme: PublicBookingTheme): React.CSSProperties {
+  return {
+    background: theme.ctaBg,
+    color: theme.ctaText,
+    borderRadius: theme.btnRadius,
+  };
+}
+
 /* ------------------------ Booking flow ------------------------ */
 
 type Step = 1 | 2 | 3 | 4;
 
 type DayItem = { date: Date; key: string; day: string; weekday: string; month: string };
+
+/** Data local YYYY-MM-DD (evita deslocamento de fuso com toISOString). */
+function localDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function getNextAvailableDays(
   openDays: number[],
@@ -84,7 +163,7 @@ function getNextAvailableDays(
     if (!openSet.has(d.getDay())) continue;
 
     // pula dias dentro de bloqueios/travamentos
-    const key = d.toISOString().slice(0, 10);
+    const key = localDateKey(d);
     const blocked = scheduleBlocks.some((b) => key >= b.start_date && key <= b.end_date);
     if (blocked) continue;
 
@@ -112,6 +191,7 @@ export function BookingSheet({
   mpConnected,
   scheduleBlocks,
   openDays,
+  theme,
   themeColors,
 }: {
   open: boolean;
@@ -126,12 +206,11 @@ export function BookingSheet({
   mpConnected: boolean;
   scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
   openDays: number[];
-  themeColors?: {
-    primary: string; ctaBg: string; ctaText: string;
-    bg?: string; card?: string; surface?: string;
-    text?: string; textMuted?: string; border?: string;
-  };
+  theme?: PublicBookingTheme;
+  /** @deprecated Use `theme` instead */
+  themeColors?: PublicBookingTheme;
 }) {
+  const resolvedTheme = theme ?? themeColors ?? DEFAULT_BOOKING_THEME;
   const [step, setStep] = useState<Step>(preselect ? 2 : 1);
   const [service, setService] = useState<PublicService | undefined>(preselect);
   const [date, setDate] = useState<string | undefined>();
@@ -163,11 +242,18 @@ export function BookingSheet({
     let cancelled = false;
     setLoadingSlots(true);
     setTime(undefined);
-    getPublicSlots(professionalId, date, service.duration)
+    getPublicSlots({
+      data: {
+        professionalId,
+        date,
+        durationMin: service.duration,
+      },
+    })
       .then((result) => {
         if (!cancelled) setSlots(result);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("[BookingSheet] slots:", err);
         if (!cancelled) setSlots([]);
       })
       .finally(() => {
@@ -247,157 +333,214 @@ export function BookingSheet({
     setStep(2);
   }
 
-  const cssVars = themeColors
-    ? ({
-        "--primary":              hexToHsl(themeColors.primary),
-        "--primary-foreground":   hexToHsl(themeColors.ctaText),
-        "--gradient-primary":     `linear-gradient(135deg, ${themeColors.ctaBg} 0%, ${themeColors.primary} 100%)`,
-        "--gradient-soft":        `linear-gradient(135deg, ${themeColors.primary}1a 0%, ${themeColors.primary}0d 100%)`,
-        "--shadow-glow":          `0 10px 30px -10px ${themeColors.ctaBg}66`,
-        ...(themeColors.bg ? {
-          "--background":         hexToHsl(themeColors.bg),
-          "--card":               hexToHsl(themeColors.card ?? themeColors.bg),
-          "--card-foreground":    hexToHsl(themeColors.text ?? "#ffffff"),
-          "--popover":            hexToHsl(themeColors.card ?? themeColors.bg),
-          "--popover-foreground": hexToHsl(themeColors.text ?? "#ffffff"),
-          "--foreground":         hexToHsl(themeColors.text ?? "#ffffff"),
-          "--secondary":          hexToHsl(themeColors.surface ?? themeColors.bg),
-          "--secondary-foreground": hexToHsl(themeColors.text ?? "#ffffff"),
-          "--muted":              hexToHsl(themeColors.surface ?? themeColors.bg),
-          "--muted-foreground":   hexToHsl(themeColors.textMuted ?? "#888888"),
-          "--border":             hexToHsl(themeColors.border ?? "#333333"),
-          "--input":              hexToHsl(themeColors.border ?? "#333333"),
-          "--ring":               hexToHsl(themeColors.primary),
-        } : {}),
-      } as React.CSSProperties)
-    : {};
+  const cssVars = buildBookingCssVars(resolvedTheme);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
+
+  const progressPct = Math.round((step / 4) * 100);
+
+  const bookingModal = open ? createPortal(
+    <BookingThemeContext.Provider value={resolvedTheme}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Novo agendamento"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 200,
+          display: "flex",
+          justifyContent: "center",
+          background: resolvedTheme.bg,
+        }}
+      >
+        <div
+          style={{
+            ...cssVars,
+            width: "100%",
+            maxWidth: 430,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          {done ? (
+            <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+              <SuccessView
+                service={service!}
+                date={date!}
+                time={time!}
+                name={name}
+                professionalName={professionalName}
+                onClose={() => handleClose(false)}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Header — fundo sólido do tema */}
+              <div
+                style={{
+                  flexShrink: 0,
+                  background: resolvedTheme.surface,
+                  borderBottom: `1px solid ${resolvedTheme.border}`,
+                  padding: "14px 18px 12px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <button
+                    type="button"
+                    onClick={step === 1 ? () => handleClose(false) : back}
+                    aria-label="Voltar"
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      border: "none",
+                      background: resolvedTheme.card,
+                      color: resolvedTheme.text,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                  <span style={{ fontFamily: resolvedTheme.headingFont, color: resolvedTheme.text, fontSize: 15, fontWeight: 700 }}>
+                    Novo agendamento
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleClose(false)}
+                    aria-label="Fechar"
+                    style={{ background: "transparent", border: "none", color: resolvedTheme.textMuted, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <Stepper step={step} />
+              </div>
+
+              {/* Barra de progresso */}
+              <div style={{ height: 3, background: resolvedTheme.border, flexShrink: 0 }}>
+                <div style={{ height: "100%", width: `${progressPct}%`, background: resolvedTheme.primary, transition: "width 0.3s ease" }} />
+              </div>
+
+              {/* Corpo scrollável */}
+              <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "20px 18px" }}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -12 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    {step === 1 && (
+                      <StepServices
+                        services={services}
+                        value={service}
+                        onChange={(s) => {
+                          setService(s);
+                          next();
+                        }}
+                      />
+                    )}
+                    {step === 2 && (
+                      <StepDateTime
+                        days={days}
+                        date={date}
+                        time={time}
+                        slots={slots}
+                        loadingSlots={loadingSlots}
+                        onDate={setDate}
+                        onTime={setTime}
+                      />
+                    )}
+                    {step === 3 && (
+                      <StepDetails
+                        professionalId={professionalId}
+                        name={name}
+                        phone={phone}
+                        email={email}
+                        notes={notes}
+                        onName={setName}
+                        onPhone={setPhone}
+                        onEmail={setEmail}
+                        onNotes={setNotes}
+                      />
+                    )}
+                    {step === 4 && service && date && time && (
+                      <StepReview
+                        service={service}
+                        date={date}
+                        time={time}
+                        name={name}
+                        phone={phone}
+                        email={email}
+                        notes={notes}
+                        accepted={acceptedPolicy}
+                        onAcceptedChange={setAcceptedPolicy}
+                        onOpenPolicy={() => setPolicyOpen(true)}
+                        pix={pix}
+                      />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {step > 1 && (
+                <div
+                  style={{
+                    flexShrink: 0,
+                    borderTop: `1px solid ${resolvedTheme.border}`,
+                    background: resolvedTheme.surface,
+                    padding: "14px 18px",
+                  }}
+                >
+                  {step === 4 ? (
+                    <Button
+                      onClick={confirm}
+                      size="lg"
+                      disabled={!acceptedPolicy}
+                      className="h-14 w-full text-base font-semibold disabled:opacity-50"
+                      style={ctaButtonStyle(resolvedTheme)}
+                    >
+                      <Wallet className="mr-2 h-5 w-5" /> Pagar sinal e confirmar
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={next}
+                      size="lg"
+                      disabled={
+                        (step === 2 && (!date || !time)) ||
+                        (step === 3 && (!name.trim() || phone.replace(/\D/g, "").length < 10 || (email.length > 0 && !isValidEmail(email))))
+                      }
+                      className="h-14 w-full text-base font-semibold disabled:opacity-50"
+                      style={ctaButtonStyle(resolvedTheme)}
+                    >
+                      Continuar <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </BookingThemeContext.Provider>,
+    document.body,
+  ) : null;
 
   return (
     <>
-    <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl p-0" style={cssVars}>
-        <div>
-        {done ? (
-          <SuccessView
-            service={service!}
-            date={date!}
-            time={time!}
-            name={name}
-            professionalName={professionalName}
-            onClose={() => handleClose(false)}
-          />
-        ) : (
-          <>
-            <SheetHeader className="sticky top-0 z-10 border-b border-border/60 bg-card/95 px-5 pb-3 pt-4 backdrop-blur">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={step === 1 ? () => handleClose(false) : back}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary"
-                  aria-label="Voltar"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                <SheetTitle className="font-display text-base">Novo agendamento</SheetTitle>
-                <div className="w-9" />
-              </div>
-              <Stepper step={step} />
-            </SheetHeader>
-
-            <div className="px-5 py-5">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: 12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -12 }}
-                  transition={{ duration: 0.18 }}
-                >
-                  {step === 1 && (
-                    <StepServices
-                      services={services}
-                      value={service}
-                      onChange={(s) => {
-                        setService(s);
-                        next();
-                      }}
-                    />
-                  )}
-                  {step === 2 && (
-                    <StepDateTime
-                      days={days}
-                      date={date}
-                      time={time}
-                      slots={slots}
-                      loadingSlots={loadingSlots}
-                      onDate={setDate}
-                      onTime={setTime}
-                    />
-                  )}
-                  {step === 3 && (
-                    <StepDetails
-                      professionalId={professionalId}
-                      name={name}
-                      phone={phone}
-                      email={email}
-                      notes={notes}
-                      onName={setName}
-                      onPhone={setPhone}
-                      onEmail={setEmail}
-                      onNotes={setNotes}
-                    />
-                  )}
-                  {step === 4 && service && date && time && (
-                    <StepReview
-                      service={service}
-                      date={date}
-                      time={time}
-                      name={name}
-                      phone={phone}
-                      email={email}
-                      notes={notes}
-                      accepted={acceptedPolicy}
-                      onAcceptedChange={setAcceptedPolicy}
-                      onOpenPolicy={() => setPolicyOpen(true)}
-                      pix={pix}
-                    />
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {step > 1 && (
-              <div className="sticky bottom-0 border-t border-border/60 bg-card/95 px-5 py-4 backdrop-blur">
-                {step === 4 ? (
-                  <Button
-                    onClick={confirm}
-                    size="lg"
-                    disabled={!acceptedPolicy}
-                    className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold shadow-glow disabled:opacity-50"
-                    style={themeColors ? { background: themeColors.ctaBg, color: themeColors.ctaText } : {}}
-                  >
-                    <Wallet className="mr-2 h-5 w-5" /> Pagar sinal e confirmar
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={next}
-                    size="lg"
-                    disabled={
-                      (step === 2 && (!date || !time)) ||
-                      (step === 3 && (!name.trim() || phone.replace(/\D/g, "").length < 10 || (email.length > 0 && !isValidEmail(email))))
-                    }
-                    className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold shadow-glow disabled:opacity-50"
-                    style={themeColors ? { background: themeColors.ctaBg, color: themeColors.ctaText } : {}}
-                  >
-                    Continuar <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                )}
-              </div>
-            )}
-          </>
-        )}
-        </div>
-      </SheetContent>
-    </Sheet>
+    {bookingModal}
     <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} professionalName={professionalName} />
     {service && (
       <PaymentDialog
@@ -432,6 +575,7 @@ export function BookingSheet({
 }
 
 function Stepper({ step }: { step: Step }) {
+  const theme = useBookingTheme();
   const labels = ["Serviço", "Data", "Dados", "Revisão"];
   return (
     <div className="mt-3 flex items-center gap-1.5">
@@ -442,16 +586,23 @@ function Stepper({ step }: { step: Step }) {
         return (
           <div key={l} className="flex flex-1 flex-col items-center gap-1">
             <div
-              className={cn(
-                "h-1.5 w-full rounded-full transition-all",
-                done || active ? "bg-primary" : "bg-secondary",
-              )}
+              style={{
+                height: 6,
+                width: "100%",
+                borderRadius: 999,
+                background: done || active ? theme.primary : theme.border,
+                transition: "background 0.2s",
+              }}
             />
             <span
-              className={cn(
-                "text-[10px] font-medium uppercase tracking-wider",
-                active ? "text-primary" : "text-muted-foreground",
-              )}
+              style={{
+                fontFamily: theme.bodyFont,
+                fontSize: 10,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: active ? theme.primary : theme.textMuted,
+              }}
             >
               {l}
             </span>
@@ -471,10 +622,11 @@ function StepServices({
   value?: PublicService;
   onChange: (s: PublicService) => void;
 }) {
+  const theme = useBookingTheme();
   return (
     <div>
-      <h3 className="font-display text-xl font-bold">Escolha o serviço</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Você pode reagendar quando precisar.</p>
+      <h3 style={{ fontFamily: theme.headingFont, color: theme.text, fontSize: 20, fontWeight: 700, margin: 0 }}>Escolha o serviço</h3>
+      <p style={{ fontFamily: theme.bodyFont, color: theme.textMuted, fontSize: 14, marginTop: 4 }}>Você pode reagendar quando precisar.</p>
       <div className="mt-4 space-y-2">
         {services.map((s) => {
           const cat = categoryMeta(s.category);
@@ -482,22 +634,46 @@ function StepServices({
           return (
             <button
               key={s.id}
+              type="button"
               onClick={() => onChange(s)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left shadow-card transition active:scale-[0.99]",
-                selected ? "border-primary ring-2 ring-primary/30" : "border-border/60 hover:border-primary/40",
-              )}
+              style={{
+                display: "flex",
+                width: "100%",
+                alignItems: "center",
+                gap: 12,
+                borderRadius: theme.cardRadius,
+                border: `1.5px solid ${selected ? theme.primary : theme.border}`,
+                background: theme.card,
+                padding: 14,
+                textAlign: "left",
+                cursor: "pointer",
+                boxShadow: selected ? `0 0 0 2px ${theme.primary}33` : "none",
+              }}
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-soft text-xl">
+              <div
+                style={{
+                  display: "flex",
+                  height: 48,
+                  width: 48,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: theme.cardRadius,
+                  background: theme.tagBg,
+                  fontSize: 20,
+                  flexShrink: 0,
+                }}
+              >
                 {cat.emoji}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold">{s.name}</div>
-                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" /> {s.duration} min
+                <div style={{ fontFamily: theme.bodyFont, color: theme.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
+                <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: theme.textMuted }}>
+                  <Clock size={12} /> {s.duration} min
                 </div>
               </div>
-              <div className="font-display text-lg font-bold text-gradient">{formatPrice(s.price)}</div>
+              <div style={{ fontFamily: theme.headingFont, fontSize: 16, fontWeight: 700, color: theme.primary, flexShrink: 0 }}>
+                {formatPrice(s.price)}
+              </div>
             </button>
           );
         })}
@@ -523,49 +699,59 @@ function StepDateTime({
   onDate: (k: string) => void;
   onTime: (t: string) => void;
 }) {
+  const theme = useBookingTheme();
   return (
     <div>
-      <h3 className="font-display text-xl font-bold">Quando você quer vir?</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Próximas datas disponíveis.</p>
+      <h3 style={{ fontFamily: theme.headingFont, color: theme.text, fontSize: 20, fontWeight: 700, margin: 0 }}>Quando você quer vir?</h3>
+      <p style={{ fontFamily: theme.bodyFont, color: theme.textMuted, fontSize: 14, marginTop: 4 }}>Próximas datas disponíveis.</p>
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {days.length === 0 && (
-          <p className="text-sm text-muted-foreground">Nenhuma data disponível nos próximos meses.</p>
+          <p style={{ fontSize: 14, color: theme.textMuted }}>Nenhuma data disponível nos próximos meses.</p>
         )}
         {days.map((d) => {
           const selected = d.key === date;
           return (
             <button
               key={d.key}
+              type="button"
               onClick={() => onDate(d.key)}
-              className={cn(
-                "flex min-w-[64px] flex-col items-center gap-0.5 rounded-2xl border px-3 py-3 text-center transition active:scale-95",
-                selected
-                  ? "border-primary gradient-primary text-white shadow-glow"
-                  : "border-border/60 bg-card hover:border-primary/40",
-              )}
+              style={{
+                display: "flex",
+                minWidth: 64,
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                borderRadius: theme.cardRadius,
+                border: `1.5px solid ${selected ? theme.primary : theme.border}`,
+                background: selected ? theme.ctaBg : theme.card,
+                color: selected ? theme.ctaText : theme.text,
+                padding: "12px 10px",
+                textAlign: "center",
+                cursor: "pointer",
+              }}
             >
-              <span className={cn("text-[10px] font-semibold tracking-wider", selected ? "text-white/80" : "text-muted-foreground")}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.05em", opacity: selected ? 0.85 : 1, color: selected ? theme.ctaText : theme.textMuted }}>
                 {d.weekday}
               </span>
-              <span className="font-display text-xl font-bold leading-none">{d.day}</span>
-              <span className={cn("text-[10px]", selected ? "text-white/80" : "text-muted-foreground")}>{d.month}</span>
+              <span style={{ fontFamily: theme.headingFont, fontSize: 20, fontWeight: 700, lineHeight: 1 }}>{d.day}</span>
+              <span style={{ fontSize: 10, opacity: selected ? 0.85 : 1, color: selected ? theme.ctaText : theme.textMuted }}>{d.month}</span>
             </button>
           );
         })}
       </div>
 
-      <h4 className="mt-6 mb-3 text-sm font-semibold">Horários disponíveis</h4>
+      <h4 style={{ marginTop: 24, marginBottom: 12, fontSize: 14, fontWeight: 600, color: theme.text }}>Horários disponíveis</h4>
       {loadingSlots ? (
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded-2xl bg-secondary" />
+            <div key={i} style={{ height: 48, borderRadius: theme.cardRadius, background: theme.surface, animation: "pulse 1.5s infinite" }} />
           ))}
         </div>
       ) : !date ? (
-        <p className="text-sm text-muted-foreground">Selecione uma data para ver os horários.</p>
+        <p style={{ fontSize: 14, color: theme.textMuted }}>Selecione uma data para ver os horários.</p>
       ) : slots.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhum horário disponível nesta data.</p>
+        <p style={{ fontSize: 14, color: theme.textMuted }}>Nenhum horário disponível nesta data.</p>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {slots.map((t) => {
@@ -573,13 +759,18 @@ function StepDateTime({
             return (
               <button
                 key={t}
+                type="button"
                 onClick={() => onTime(t)}
-                className={cn(
-                  "rounded-2xl border py-3 text-sm font-semibold transition active:scale-95",
-                  selected
-                    ? "border-primary gradient-primary text-white shadow-glow"
-                    : "border-border/60 bg-card hover:border-primary/40",
-                )}
+                style={{
+                  borderRadius: theme.cardRadius,
+                  border: `1.5px solid ${selected ? theme.primary : theme.border}`,
+                  background: selected ? theme.ctaBg : theme.card,
+                  color: selected ? theme.ctaText : theme.text,
+                  padding: "12px 6px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
               >
                 {t}
               </button>
@@ -612,6 +803,7 @@ function StepDetails({
   onEmail: (v: string) => void;
   onNotes: (v: string) => void;
 }) {
+  const theme = useBookingTheme();
   const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "found" | "notfound">("idle");
   const phoneDigits = phone.replace(/\D/g, "");
   const phoneReady = phoneDigits.length >= 10;
@@ -650,8 +842,8 @@ function StepDetails({
 
   return (
     <div>
-      <h3 className="font-display text-xl font-bold">Seus dados</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Para confirmarmos seu agendamento via WhatsApp.</p>
+      <h3 style={{ fontFamily: theme.headingFont, color: theme.text, fontSize: 20, fontWeight: 700, margin: 0 }}>Seus dados</h3>
+      <p style={{ fontFamily: theme.bodyFont, color: theme.textMuted, fontSize: 14, marginTop: 4 }}>Para confirmarmos seu agendamento via WhatsApp.</p>
       <div className="mt-4 space-y-4">
 
         {/* WhatsApp — sempre habilitado, campo principal */}
@@ -753,24 +945,33 @@ function StepReview({
   onOpenPolicy: () => void;
   pix: PublicPixSettings;
 }) {
+  const theme = useBookingTheme();
   const d = new Date(date + "T00:00:00");
   const fmt = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
   return (
     <div>
-      <h3 className="font-display text-xl font-bold">Tudo certo?</h3>
-      <p className="mt-1 text-sm text-muted-foreground">Revise antes de confirmar.</p>
+      <h3 style={{ fontFamily: theme.headingFont, color: theme.text, fontSize: 20, fontWeight: 700, margin: 0 }}>Tudo certo?</h3>
+      <p style={{ fontFamily: theme.bodyFont, color: theme.textMuted, fontSize: 14, marginTop: 4 }}>Revise antes de confirmar.</p>
 
-      <div className="mt-4 overflow-hidden rounded-3xl border border-border/60 shadow-card">
-        <div className="gradient-soft p-5">
-          <Badge variant="secondary" className="bg-white/70">{categoryMeta(service.category).label}</Badge>
-          <div className="mt-2 font-display text-2xl font-bold">{service.name}</div>
-          <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {service.duration} min</span>
+      <div
+        style={{
+          marginTop: 16,
+          overflow: "hidden",
+          borderRadius: theme.cardRadius,
+          border: `1px solid ${theme.border}`,
+          boxShadow: `0 4px 16px ${theme.border}44`,
+        }}
+      >
+        <div style={{ background: theme.tagBg, padding: 20 }}>
+          <Badge variant="secondary" style={{ background: theme.card, color: theme.text }}>{categoryMeta(service.category).label}</Badge>
+          <div style={{ marginTop: 8, fontFamily: theme.headingFont, fontSize: 22, fontWeight: 700, color: theme.text }}>{service.name}</div>
+          <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 12, fontSize: 14, color: theme.textMuted }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Clock size={14} /> {service.duration} min</span>
             <span>·</span>
-            <span className="font-semibold text-gradient">{formatPrice(service.price)}</span>
+            <span style={{ fontWeight: 600, color: theme.primary }}>{formatPrice(service.price)}</span>
           </div>
         </div>
-        <div className="divide-y divide-border/60 bg-card">
+        <div style={{ background: theme.card, borderTop: `1px solid ${theme.border}` }}>
           <Row icon={<CalendarDays className="h-4 w-4" />} label="Data" value={fmt.charAt(0).toUpperCase() + fmt.slice(1)} />
           <Row icon={<Clock className="h-4 w-4" />} label="Horário" value={time} />
           <Row icon={<User className="h-4 w-4" />} label="Cliente" value={name} />
@@ -780,10 +981,18 @@ function StepReview({
         </div>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-3xl border border-primary/20 bg-card shadow-card">
-        <div className="flex items-center gap-3 border-b border-border/60 bg-secondary/40 px-5 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-primary text-white">
-            <Wallet className="h-4 w-4" />
+      <div
+        style={{
+          marginTop: 20,
+          overflow: "hidden",
+          borderRadius: theme.cardRadius,
+          border: `1px solid ${theme.primary}33`,
+          background: theme.card,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${theme.border}`, background: theme.surface, padding: "12px 20px" }}>
+          <div style={{ display: "flex", height: 36, width: 36, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: theme.ctaBg, color: theme.ctaText }}>
+            <Wallet size={16} />
           </div>
           <div className="flex-1">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -953,6 +1162,7 @@ function SuccessView({
   professionalName: string;
   onClose: () => void;
 }) {
+  const theme = useBookingTheme();
   const d = new Date(date + "T00:00:00");
   const fmt = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
   return (
@@ -961,36 +1171,73 @@ function SuccessView({
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", duration: 0.6 }}
-        className="mx-auto flex h-20 w-20 items-center justify-center rounded-full gradient-primary text-white shadow-glow"
+        style={{
+          margin: "0 auto",
+          display: "flex",
+          height: 80,
+          width: 80,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "50%",
+          background: theme.ctaBg,
+          color: theme.ctaText,
+          boxShadow: `0 8px 24px ${theme.ctaBg}55`,
+        }}
       >
-        <CheckCircle2 className="h-10 w-10" />
+        <CheckCircle2 size={40} />
       </motion.div>
-      <h3 className="mt-5 font-display text-2xl font-bold">Agendamento solicitado!</h3>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {name?.split(" ")[0] || "Você"}, seu horário com <span className="font-semibold">{professionalName}</span> está reservado.
+      <h3 style={{ marginTop: 20, fontFamily: theme.headingFont, fontSize: 24, fontWeight: 700, color: theme.text }}>Agendamento solicitado!</h3>
+      <p style={{ marginTop: 8, fontSize: 14, color: theme.textMuted, lineHeight: 1.6 }}>
+        {name?.split(" ")[0] || "Você"}, seu horário com <span style={{ fontWeight: 600, color: theme.text }}>{professionalName}</span> está reservado.
         <br />Enviamos a confirmação para seu WhatsApp e e-mail.
       </p>
 
-      <div className="mx-auto mt-6 max-w-sm rounded-3xl border border-border/60 gradient-soft p-5 text-left shadow-card">
-        <div className="font-display text-lg font-bold">{service.name}</div>
-        <div className="mt-2 flex items-center gap-2 text-sm">
-          <CalendarDays className="h-4 w-4 text-primary" />
+      <div
+        style={{
+          margin: "24px auto 0",
+          maxWidth: 360,
+          borderRadius: theme.cardRadius,
+          border: `1px solid ${theme.border}`,
+          background: theme.tagBg,
+          padding: 20,
+          textAlign: "left",
+        }}
+      >
+        <div style={{ fontFamily: theme.headingFont, fontSize: 18, fontWeight: 700, color: theme.text }}>{service.name}</div>
+        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: theme.textMuted }}>
+          <CalendarDays size={16} color={theme.primary} />
           <span className="capitalize">{fmt}</span>
         </div>
-        <div className="mt-1 flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-primary" /> {time} · {service.duration} min
+        <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: theme.textMuted }}>
+          <Clock size={16} color={theme.primary} /> {time} · {service.duration} min
         </div>
       </div>
 
-      <div className="mx-auto mt-3 flex max-w-sm items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-secondary/40 px-4 py-2 text-xs text-muted-foreground">
-        <ShieldCheck className="h-4 w-4 text-primary" />
-        Sinal de <strong className="text-foreground">{formatPrice(Math.round(service.price_cents * 0.3) / 100)}</strong> pago via PIX pessoal.
+      <div
+        style={{
+          margin: "12px auto 0",
+          maxWidth: 360,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          borderRadius: theme.cardRadius,
+          border: `1px solid ${theme.primary}33`,
+          background: theme.surface,
+          padding: "8px 16px",
+          fontSize: 12,
+          color: theme.textMuted,
+        }}
+      >
+        <ShieldCheck size={16} color={theme.primary} />
+        Sinal de <strong style={{ color: theme.text }}>{formatPrice(Math.round(service.price_cents * 0.3) / 100)}</strong> pago via PIX pessoal.
       </div>
 
       <Button
         onClick={onClose}
         size="lg"
-        className="mt-6 h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow"
+        className="mt-6 h-14 w-full text-base font-semibold"
+        style={ctaButtonStyle(theme)}
       >
         Concluir
       </Button>
