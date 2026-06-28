@@ -13,6 +13,7 @@ import {
   TicketCheck,
   Share2,
   ShieldCheck,
+  HelpCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const NAV_PRINCIPAL = [
 ];
 
 const NAV_SISTEMA = [
+  { title: "FAQ",           to: "/super/faq",          icon: HelpCircle,     exact: false },
   { title: "Templates",    to: "/super/templates",    icon: MessageSquare,  exact: false },
   { title: "Auditoria",    to: "/super/auditoria",    icon: ClipboardList,  exact: false },
   { title: "Infra",        to: "/super/infra",        icon: Server,         exact: false },

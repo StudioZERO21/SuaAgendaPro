@@ -39,6 +39,7 @@ import { Route as appClientesRouteImport } from './routes/(app)/clientes'
 import { Route as appAvaliacoesRouteImport } from './routes/(app)/avaliacoes'
 import { Route as appAppRouteImport } from './routes/(app)/app'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
+import { Route as ApiFaqSearchRouteImport } from './routes/api/faq/search'
 import { Route as publicAvaliarTokenRouteImport } from './routes/(public)/avaliar.$token'
 import { Route as publicAgendarSlugRouteImport } from './routes/(public)/agendar.$slug'
 import { Route as appServicoNovoRouteImport } from './routes/(app)/servico.novo'
@@ -55,6 +56,7 @@ import { Route as adminSuperAppMfaSetupRouteImport } from './routes/(admin)/supe
 import { Route as adminSuperAppInfraRouteImport } from './routes/(admin)/super/_app/infra'
 import { Route as adminSuperAppIndicacoesRouteImport } from './routes/(admin)/super/_app/indicacoes'
 import { Route as adminSuperAppFinanceiroRouteImport } from './routes/(admin)/super/_app/financeiro'
+import { Route as adminSuperAppFaqRouteImport } from './routes/(admin)/super/_app/faq'
 import { Route as adminSuperAppConfiguracoesRouteImport } from './routes/(admin)/super/_app/configuracoes'
 import { Route as adminSuperAppAuditoriaRouteImport } from './routes/(admin)/super/_app/auditoria'
 
@@ -208,6 +210,11 @@ const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   path: '/api/public/mp-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFaqSearchRoute = ApiFaqSearchRouteImport.update({
+  id: '/api/faq/search',
+  path: '/api/faq/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const publicAvaliarTokenRoute = publicAvaliarTokenRouteImport.update({
   id: '/(public)/avaliar/$token',
   path: '/avaliar/$token',
@@ -289,6 +296,11 @@ const adminSuperAppFinanceiroRoute = adminSuperAppFinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => adminSuperAppRouteRoute,
 } as any)
+const adminSuperAppFaqRoute = adminSuperAppFaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
 const adminSuperAppConfiguracoesRoute =
   adminSuperAppConfiguracoesRouteImport.update({
     id: '/configuracoes',
@@ -337,9 +349,11 @@ export interface FileRoutesByFullPath {
   '/servico/novo': typeof appServicoNovoRoute
   '/agendar/$slug': typeof publicAgendarSlugRoute
   '/avaliar/$token': typeof publicAvaliarTokenRoute
+  '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
   '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
+  '/super/faq': typeof adminSuperAppFaqRoute
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
   '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/super/infra': typeof adminSuperAppInfraRoute
@@ -386,9 +400,11 @@ export interface FileRoutesByTo {
   '/servico/novo': typeof appServicoNovoRoute
   '/agendar/$slug': typeof publicAgendarSlugRoute
   '/avaliar/$token': typeof publicAvaliarTokenRoute
+  '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
   '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
+  '/super/faq': typeof adminSuperAppFaqRoute
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
   '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/super/infra': typeof adminSuperAppInfraRoute
@@ -437,9 +453,11 @@ export interface FileRoutesById {
   '/(app)/servico/novo': typeof appServicoNovoRoute
   '/(public)/agendar/$slug': typeof publicAgendarSlugRoute
   '/(public)/avaliar/$token': typeof publicAvaliarTokenRoute
+  '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/(admin)/super/_app/auditoria': typeof adminSuperAppAuditoriaRoute
   '/(admin)/super/_app/configuracoes': typeof adminSuperAppConfiguracoesRoute
+  '/(admin)/super/_app/faq': typeof adminSuperAppFaqRoute
   '/(admin)/super/_app/financeiro': typeof adminSuperAppFinanceiroRoute
   '/(admin)/super/_app/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/(admin)/super/_app/infra': typeof adminSuperAppInfraRoute
@@ -489,9 +507,11 @@ export interface FileRouteTypes {
     | '/servico/novo'
     | '/agendar/$slug'
     | '/avaliar/$token'
+    | '/api/faq/search'
     | '/api/public/mp-webhook'
     | '/super/auditoria'
     | '/super/configuracoes'
+    | '/super/faq'
     | '/super/financeiro'
     | '/super/indicacoes'
     | '/super/infra'
@@ -538,9 +558,11 @@ export interface FileRouteTypes {
     | '/servico/novo'
     | '/agendar/$slug'
     | '/avaliar/$token'
+    | '/api/faq/search'
     | '/api/public/mp-webhook'
     | '/super/auditoria'
     | '/super/configuracoes'
+    | '/super/faq'
     | '/super/financeiro'
     | '/super/indicacoes'
     | '/super/infra'
@@ -588,9 +610,11 @@ export interface FileRouteTypes {
     | '/(app)/servico/novo'
     | '/(public)/agendar/$slug'
     | '/(public)/avaliar/$token'
+    | '/api/faq/search'
     | '/api/public/mp-webhook'
     | '/(admin)/super/_app/auditoria'
     | '/(admin)/super/_app/configuracoes'
+    | '/(admin)/super/_app/faq'
     | '/(admin)/super/_app/financeiro'
     | '/(admin)/super/_app/indicacoes'
     | '/(admin)/super/_app/infra'
@@ -639,6 +663,7 @@ export interface RootRouteChildren {
   appServicoNovoRoute: typeof appServicoNovoRoute
   publicAgendarSlugRoute: typeof publicAgendarSlugRoute
   publicAvaliarTokenRoute: typeof publicAvaliarTokenRoute
+  ApiFaqSearchRoute: typeof ApiFaqSearchRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicMercadoPagoCallbackRoute: typeof ApiPublicMercadoPagoCallbackRoute
 }
@@ -855,6 +880,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/faq/search': {
+      id: '/api/faq/search'
+      path: '/api/faq/search'
+      fullPath: '/api/faq/search'
+      preLoaderRoute: typeof ApiFaqSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(public)/avaliar/$token': {
       id: '/(public)/avaliar/$token'
       path: '/avaliar/$token'
@@ -967,6 +999,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminSuperAppFinanceiroRouteImport
       parentRoute: typeof adminSuperAppRouteRoute
     }
+    '/(admin)/super/_app/faq': {
+      id: '/(admin)/super/_app/faq'
+      path: '/faq'
+      fullPath: '/super/faq'
+      preLoaderRoute: typeof adminSuperAppFaqRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
     '/(admin)/super/_app/configuracoes': {
       id: '/(admin)/super/_app/configuracoes'
       path: '/configuracoes'
@@ -987,6 +1026,7 @@ declare module '@tanstack/react-router' {
 interface adminSuperAppRouteRouteChildren {
   adminSuperAppAuditoriaRoute: typeof adminSuperAppAuditoriaRoute
   adminSuperAppConfiguracoesRoute: typeof adminSuperAppConfiguracoesRoute
+  adminSuperAppFaqRoute: typeof adminSuperAppFaqRoute
   adminSuperAppFinanceiroRoute: typeof adminSuperAppFinanceiroRoute
   adminSuperAppIndicacoesRoute: typeof adminSuperAppIndicacoesRoute
   adminSuperAppInfraRoute: typeof adminSuperAppInfraRoute
@@ -1001,6 +1041,7 @@ interface adminSuperAppRouteRouteChildren {
 const adminSuperAppRouteRouteChildren: adminSuperAppRouteRouteChildren = {
   adminSuperAppAuditoriaRoute: adminSuperAppAuditoriaRoute,
   adminSuperAppConfiguracoesRoute: adminSuperAppConfiguracoesRoute,
+  adminSuperAppFaqRoute: adminSuperAppFaqRoute,
   adminSuperAppFinanceiroRoute: adminSuperAppFinanceiroRoute,
   adminSuperAppIndicacoesRoute: adminSuperAppIndicacoesRoute,
   adminSuperAppInfraRoute: adminSuperAppInfraRoute,
@@ -1051,6 +1092,7 @@ const rootRouteChildren: RootRouteChildren = {
   appServicoNovoRoute: appServicoNovoRoute,
   publicAgendarSlugRoute: publicAgendarSlugRoute,
   publicAvaliarTokenRoute: publicAvaliarTokenRoute,
+  ApiFaqSearchRoute: ApiFaqSearchRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicMercadoPagoCallbackRoute: ApiPublicMercadoPagoCallbackRoute,
 }
