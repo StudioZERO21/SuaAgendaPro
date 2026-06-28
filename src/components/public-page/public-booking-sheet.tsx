@@ -55,6 +55,7 @@ import {
   formatPublicPrice as formatPrice,
   type PublicService,
 } from "@/lib/public-page-types";
+import { hexToHsl } from "@/lib/themes";
 /* ------------------------ Booking flow ------------------------ */
 
 type Step = 1 | 2 | 3 | 4;
@@ -111,6 +112,7 @@ export function BookingSheet({
   mpConnected,
   scheduleBlocks,
   openDays,
+  themeColors,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -124,6 +126,11 @@ export function BookingSheet({
   mpConnected: boolean;
   scheduleBlocks: { start_date: string; end_date: string; reason: string }[];
   openDays: number[];
+  themeColors?: {
+    primary: string; ctaBg: string; ctaText: string;
+    bg?: string; card?: string; surface?: string;
+    text?: string; textMuted?: string; border?: string;
+  };
 }) {
   const [step, setStep] = useState<Step>(preselect ? 2 : 1);
   const [service, setService] = useState<PublicService | undefined>(preselect);
@@ -240,10 +247,36 @@ export function BookingSheet({
     setStep(2);
   }
 
+  const cssVars = themeColors
+    ? ({
+        "--primary":              hexToHsl(themeColors.primary),
+        "--primary-foreground":   hexToHsl(themeColors.ctaText),
+        "--gradient-primary":     `linear-gradient(135deg, ${themeColors.ctaBg} 0%, ${themeColors.primary} 100%)`,
+        "--gradient-soft":        `linear-gradient(135deg, ${themeColors.primary}1a 0%, ${themeColors.primary}0d 100%)`,
+        "--shadow-glow":          `0 10px 30px -10px ${themeColors.ctaBg}66`,
+        ...(themeColors.bg ? {
+          "--background":         hexToHsl(themeColors.bg),
+          "--card":               hexToHsl(themeColors.card ?? themeColors.bg),
+          "--card-foreground":    hexToHsl(themeColors.text ?? "#ffffff"),
+          "--popover":            hexToHsl(themeColors.card ?? themeColors.bg),
+          "--popover-foreground": hexToHsl(themeColors.text ?? "#ffffff"),
+          "--foreground":         hexToHsl(themeColors.text ?? "#ffffff"),
+          "--secondary":          hexToHsl(themeColors.surface ?? themeColors.bg),
+          "--secondary-foreground": hexToHsl(themeColors.text ?? "#ffffff"),
+          "--muted":              hexToHsl(themeColors.surface ?? themeColors.bg),
+          "--muted-foreground":   hexToHsl(themeColors.textMuted ?? "#888888"),
+          "--border":             hexToHsl(themeColors.border ?? "#333333"),
+          "--input":              hexToHsl(themeColors.border ?? "#333333"),
+          "--ring":               hexToHsl(themeColors.primary),
+        } : {}),
+      } as React.CSSProperties)
+    : {};
+
   return (
     <>
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl p-0">
+      <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl p-0" style={cssVars}>
+        <div>
         {done ? (
           <SuccessView
             service={service!}
@@ -339,7 +372,8 @@ export function BookingSheet({
                     onClick={confirm}
                     size="lg"
                     disabled={!acceptedPolicy}
-                    className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-50"
+                    className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold shadow-glow disabled:opacity-50"
+                    style={themeColors ? { background: themeColors.ctaBg, color: themeColors.ctaText } : {}}
                   >
                     <Wallet className="mr-2 h-5 w-5" /> Pagar sinal e confirmar
                   </Button>
@@ -351,7 +385,8 @@ export function BookingSheet({
                       (step === 2 && (!date || !time)) ||
                       (step === 3 && (!name.trim() || phone.replace(/\D/g, "").length < 10 || (email.length > 0 && !isValidEmail(email))))
                     }
-                    className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-50"
+                    className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold shadow-glow disabled:opacity-50"
+                    style={themeColors ? { background: themeColors.ctaBg, color: themeColors.ctaText } : {}}
                   >
                     Continuar <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
@@ -360,6 +395,7 @@ export function BookingSheet({
             )}
           </>
         )}
+        </div>
       </SheetContent>
     </Sheet>
     <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} professionalName={professionalName} />

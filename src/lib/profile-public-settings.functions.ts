@@ -23,6 +23,7 @@ export type PublicProfileSettings = {
   cancellationPolicy:  string;
   welcomeMessage:      string;
   uiSettings:          UiSettings;
+  templateId:          string;
 };
 
 const DEFAULT_UI: UiSettings = { accent: "rose", font: "playfair", theme: "light", highContrast: false };
@@ -40,6 +41,7 @@ const DEFAULT_SETTINGS: PublicProfileSettings = {
   cancellationPolicy: "",
   welcomeMessage:     "",
   uiSettings:         DEFAULT_UI,
+  templateId:         "bloom_soft",
 };
 
 const uiSchema = z.object({
@@ -60,6 +62,7 @@ const schema = z.object({
   cancellationPolicy: z.string().max(600).default(""),
   welcomeMessage:     z.string().max(300).default(""),
   uiSettings:         uiSchema,
+  templateId:         z.string().default("bloom_soft"),
 });
 
 function parseUi(raw: unknown): UiSettings {
@@ -72,7 +75,7 @@ export const getPublicProfileSettings = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<PublicProfileSettings> => {
     const { data } = await context.supabase
       .from("profiles")
-      .select("slug, banner_url, cover_url, business_name, theme_color, gradient_color_2, show_prices, show_portfolio, accept_online, cancellation_policy, welcome_message, ui_settings")
+      .select("slug, banner_url, cover_url, business_name, theme_color, gradient_color_2, show_prices, show_portfolio, accept_online, cancellation_policy, welcome_message, ui_settings, template_id")
       .eq("id", context.userId)
       .maybeSingle();
 
@@ -90,6 +93,7 @@ export const getPublicProfileSettings = createServerFn({ method: "GET" })
       cancellationPolicy: data.cancellation_policy ?? "",
       welcomeMessage:     data.welcome_message     ?? "",
       uiSettings:         parseUi(data.ui_settings),
+      templateId:         (data as any).template_id ?? "bloom_soft",
     };
   });
 
@@ -110,6 +114,7 @@ export const savePublicProfileSettings = createServerFn({ method: "POST" })
         cancellation_policy: data.cancellationPolicy || null,
         welcome_message:     data.welcomeMessage || null,
         ui_settings:         data.uiSettings,
+        template_id:         data.templateId,
       })
       .eq("id", context.userId);
 
@@ -131,5 +136,6 @@ export const savePublicProfileSettings = createServerFn({ method: "POST" })
       slug:           prof?.slug             ?? "",
       bannerUrl:      prof?.banner_url       ?? "",
       gradientColor2: prof?.gradient_color_2 ?? "",
+      logoUrl:        "",
     };
   });

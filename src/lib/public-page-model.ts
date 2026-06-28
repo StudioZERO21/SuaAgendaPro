@@ -128,6 +128,8 @@ export function buildPublicPageModel(loaderData: PublicData): PublicPageModel {
       accept_online: p.accept_online,
       pix: loaderData.pix,
       mpConnected: loaderData.mpConnected,
+      templateId: (p as any).template_id || 'bloom_soft',
+      customColors: (p as any).custom_colors || null,
     },
     services: mappedServices,
     portfolio: mappedPortfolio,

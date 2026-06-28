@@ -16,7 +16,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
 
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, slug, display_name, bio, phone, avatar_url, banner_url, cover_url, city, state, street, street_number, neighborhood, social_links, specialty, theme_color, gradient_color_2, show_prices, accept_online")
+      .select("id, slug, display_name, bio, phone, avatar_url, banner_url, cover_url, city, state, street, street_number, neighborhood, social_links, specialty, theme_color, gradient_color_2, show_prices, accept_online, template_id, custom_colors")
       .eq("slug", data.slug)
       .eq("is_active", true)
       .single();

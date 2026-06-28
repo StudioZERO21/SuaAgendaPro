@@ -64,6 +64,8 @@ export type PublicPageProfile = {
   accept_online: boolean;
   pix: PublicPixSettings;
   mpConnected: boolean;
+  templateId: string;
+  customColors: Record<string, string> | null;
 };
 
 export type PublicPageModel = {

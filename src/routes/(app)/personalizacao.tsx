@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
-import { ArrowLeft, Save, Sun, Moon, Monitor, Upload, Check, Eye, Globe, DollarSign, Image as ImageIcon, CalendarCheck, Loader2, HelpCircle, Link2, Copy, X } from "lucide-react";
+import { ArrowLeft, Save, Sun, Moon, Monitor, Upload, Check, Eye, DollarSign, Image as ImageIcon, CalendarCheck, Loader2, HelpCircle, Link2, Copy, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -46,15 +46,8 @@ import {
   applyPersonalization,
   type Personalization,
 } from "@/lib/personalization";
+import { THEMES } from "@/lib/themes";
 
-const THEME_PRESETS = [
-  { label: "Rosa",       color: "#ec4899" },
-  { label: "Dourado",    color: "#b45309" },
-  { label: "Azul",       color: "#0369a1" },
-  { label: "Verde",      color: "#047857" },
-  { label: "Violeta",    color: "#6d28d9" },
-  { label: "Noir",       color: "#1f1230" },
-];
 
 function PersonalizacaoPage() {
   const navigate   = useNavigate();
@@ -77,6 +70,7 @@ function PersonalizacaoPage() {
     slug: "", bannerUrl: "", logoUrl: "", businessName: "", themeColor: "#ec4899", gradientColor2: "",
     showPrices: true, showPortfolio: true, acceptOnline: true, cancellationPolicy: "", welcomeMessage: "",
     uiSettings: { accent: "rose", font: "playfair", theme: "light", highContrast: false },
+    templateId: "bloom_soft",
   });
 
   useEffect(() => {
@@ -273,6 +267,15 @@ function PersonalizacaoPage() {
       if (dbErr) throw dbErr;
       setPub((s) => ({ ...s, bannerUrl: publicUrl }));
       setBannerCropSrc(null);
+      // Invalida o cache da página pública
+      await saveSettingsFn({
+        data: {
+          ...pub,
+          bannerUrl: publicUrl,
+          uiSettings: { accent: data.accent, font: data.font, theme: data.theme, highContrast: data.highContrast },
+        },
+      }).catch(() => {/* silent — cache invalidation best-effort */});
+      qc.invalidateQueries({ queryKey: ["public-profile-settings"] });
       toast.success("Banner salvo! A página pública já está atualizada.");
     } catch {
       toast.error("Erro ao processar banner.");
@@ -802,100 +805,6 @@ function PersonalizacaoPage() {
             <p className="text-[11px] text-muted-foreground">Aparece como destaque na sua página pública.</p>
           </div>
 
-          {/* Cor do perfil público */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5 text-xs">
-              <Globe className="h-3.5 w-3.5" /> Cor principal do link público
-            </Label>
-            <div className="flex flex-wrap gap-3">
-              {THEME_PRESETS.map((p) => {
-                const active = pub.themeColor === p.color;
-                return (
-                  <button
-                    key={p.color}
-                    onClick={() => setPub((s) => ({ ...s, themeColor: p.color }))}
-                    aria-label={p.label}
-                    title={p.label}
-                    className={cn(
-                      "relative h-10 w-10 rounded-full ring-offset-2 ring-offset-card transition",
-                      active && "ring-2 ring-foreground",
-                    )}
-                    style={{ background: p.color }}
-                  >
-                    {active && <Check className="absolute inset-0 m-auto h-4 w-4 text-white" />}
-                  </button>
-                );
-              })}
-              <label
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground"
-                title="Cor personalizada"
-              >
-                #
-                <input
-                  type="color"
-                  value={pub.themeColor}
-                  onChange={(e) => setPub((s) => ({ ...s, themeColor: e.target.value }))}
-                  className="sr-only"
-                />
-              </label>
-            </div>
-          </div>
-
-          {/* Segunda cor do gradiente (rodapé) */}
-          <div className="space-y-2">
-            <Label className="text-xs">Segunda cor do gradiente (rodapé)</Label>
-            <p className="text-[11px] text-muted-foreground">
-              Cor final do gradiente no rodapé do seu link. Se não escolher, usa a cor principal com transparência.
-            </p>
-            {/* Preview do gradiente */}
-            <div
-              className="h-8 w-full rounded-xl"
-              style={{
-                background: pub.gradientColor2
-                  ? `linear-gradient(135deg, ${pub.themeColor}, ${pub.gradientColor2})`
-                  : `linear-gradient(135deg, ${pub.themeColor}, ${pub.themeColor}88)`,
-              }}
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              {THEME_PRESETS.map((p) => {
-                const active = pub.gradientColor2 === p.color;
-                return (
-                  <button
-                    key={p.color}
-                    onClick={() => setPub((s) => ({ ...s, gradientColor2: active ? "" : p.color }))}
-                    aria-label={p.label}
-                    title={p.label}
-                    className={cn(
-                      "relative h-9 w-9 rounded-full ring-offset-2 ring-offset-card transition",
-                      active && "ring-2 ring-foreground",
-                    )}
-                    style={{ background: p.color }}
-                  >
-                    {active && <Check className="absolute inset-0 m-auto h-3.5 w-3.5 text-white" />}
-                  </button>
-                );
-              })}
-              <label
-                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground"
-                title="Cor personalizada"
-              >
-                #
-                <input
-                  type="color"
-                  value={pub.gradientColor2 || pub.themeColor}
-                  onChange={(e) => setPub((s) => ({ ...s, gradientColor2: e.target.value }))}
-                  className="sr-only"
-                />
-              </label>
-              {pub.gradientColor2 && (
-                <button type="button" onClick={() => setPub((s) => ({ ...s, gradientColor2: "" }))}
-                  className="text-[11px] font-semibold text-muted-foreground underline underline-offset-2">
-                  Remover
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Toggles */}
           <div className="space-y-3">
             {[
@@ -943,6 +852,51 @@ function PersonalizacaoPage() {
               value={pub.cancellationPolicy}
               onChange={(e) => setPub((s) => ({ ...s, cancellationPolicy: e.target.value }))}
             />
+          </div>
+
+          {/* Template da página pública */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">Template da página pública</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Escolha o visual do seu link de agendamento. Cada template tem paleta de cores, fontes e layout próprios.
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {Object.values(THEMES).map((t) => {
+                const active = pub.templateId === t.id;
+                // Derive hero bg for preview swatch
+                const heroColor = t.colors.hero.startsWith("linear") ? t.colors.ctaBg : t.colors.hero;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setPub((s) => ({ ...s, templateId: t.id }))}
+                    className={cn(
+                      "relative flex flex-col gap-2 rounded-2xl border p-3 text-left transition",
+                      active ? "border-primary bg-primary/8 ring-1 ring-primary/40" : "border-border bg-secondary/30 hover:border-border/80",
+                    )}
+                  >
+                    {/* Color palette preview */}
+                    <div className="flex h-10 w-full overflow-hidden rounded-lg">
+                      <div className="flex-[2]" style={{ background: heroColor }} />
+                      <div className="flex-1" style={{ background: t.colors.primary }} />
+                      <div className="flex-1" style={{ background: t.colors.ctaBg }} />
+                      <div className="flex-1" style={{ background: t.colors.bg }} />
+                    </div>
+                    {/* Info */}
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold leading-tight">{t.name}</span>
+                        {active && <Check className="h-3 w-3 text-primary" />}
+                      </div>
+                      <span className="inline-block rounded-full px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider"
+                        style={{ background: heroColor + "33", color: heroColor === "#ffffff" ? "#666" : heroColor }}>
+                        {t.category}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
         </section>

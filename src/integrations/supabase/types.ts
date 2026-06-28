@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          details: Json
+          id: string
+          performed_at: string
+          target_user_email: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          details?: Json
+          id?: string
+          performed_at?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          details?: Json
+          id?: string
+          performed_at?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_log_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           cancel_reason: string | null
@@ -85,6 +169,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointments_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
@@ -115,6 +206,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_customers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -174,6 +272,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "billing_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
       blocked_dates: {
@@ -206,6 +311,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "blocked_dates_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
       clients: {
@@ -214,6 +326,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          internal_notes: string | null
           is_vip: boolean
           last_appointment_at: string | null
           name: string
@@ -229,6 +342,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          internal_notes?: string | null
           is_vip?: boolean
           last_appointment_at?: string | null
           name: string
@@ -244,6 +358,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          internal_notes?: string | null
           is_vip?: boolean
           last_appointment_at?: string | null
           name?: string
@@ -260,6 +375,179 @@ export type Database = {
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faq_categories: {
+        Row: {
+          created_at: string
+          description: string
+          enabled: boolean
+          icon: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          icon?: string
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          icon?: string
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      faq_items: {
+        Row: {
+          ai_view_count: number
+          answer: string
+          category_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          keywords: string[]
+          last_viewed_at: string | null
+          question: string
+          sort_order: number
+          subcategory_id: string | null
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          ai_view_count?: number
+          answer: string
+          category_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          keywords?: string[]
+          last_viewed_at?: string | null
+          question: string
+          sort_order?: number
+          subcategory_id?: string | null
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          ai_view_count?: number
+          answer?: string
+          category_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          keywords?: string[]
+          last_viewed_at?: string | null
+          question?: string
+          sort_order?: number
+          subcategory_id?: string | null
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faq_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "faq_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faq_items_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "faq_subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faq_subcategories: {
+        Row: {
+          category_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faq_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "faq_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faq_view_logs: {
+        Row: {
+          created_at: string
+          faq_id: string
+          id: string
+          query_text: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          faq_id: string
+          id?: string
+          query_text?: string | null
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          faq_id?: string
+          id?: string
+          query_text?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faq_view_logs_faq_id_fkey"
+            columns: ["faq_id"]
+            isOneToOne: false
+            referencedRelation: "faq_items"
             referencedColumns: ["id"]
           },
         ]
@@ -315,6 +603,45 @@ export type Database = {
           redirect_uri?: string | null
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      message_templates: {
+        Row: {
+          body: string
+          created_at: string
+          event: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string | null
+          type: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          event: string
+          id?: string
+          is_active?: boolean
+          name: string
+          subject?: string | null
+          type: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          event?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string | null
+          type?: string
+          updated_at?: string
+          variables?: Json
         }
         Relationships: []
       }
@@ -410,6 +737,53 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_promotions: {
+        Row: {
+          created_at: string
+          deadline_at: string | null
+          discount_pct: number
+          duration_months: number | null
+          id: string
+          is_active: boolean
+          name: string
+          plan_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deadline_at?: string | null
+          discount_pct: number
+          duration_months?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          plan_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deadline_at?: string | null
+          discount_pct?: number
+          duration_months?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          plan_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_promotions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           billing_cycle: string
@@ -489,6 +863,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "portfolio_items_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "portfolio_items_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
@@ -558,6 +939,7 @@ export type Database = {
           city: string | null
           cover_url: string | null
           created_at: string
+          custom_colors: Json | null
           display_name: string
           gradient_color_2: string | null
           id: string
@@ -573,6 +955,7 @@ export type Database = {
           state: string | null
           street: string | null
           street_number: string | null
+          template_id: string
           theme_color: string
           ui_settings: Json | null
           updated_at: string
@@ -596,6 +979,7 @@ export type Database = {
           city?: string | null
           cover_url?: string | null
           created_at?: string
+          custom_colors?: Json | null
           display_name?: string
           gradient_color_2?: string | null
           id: string
@@ -611,6 +995,7 @@ export type Database = {
           state?: string | null
           street?: string | null
           street_number?: string | null
+          template_id?: string
           theme_color?: string
           ui_settings?: Json | null
           updated_at?: string
@@ -634,6 +1019,7 @@ export type Database = {
           city?: string | null
           cover_url?: string | null
           created_at?: string
+          custom_colors?: Json | null
           display_name?: string
           gradient_color_2?: string | null
           id?: string
@@ -649,6 +1035,7 @@ export type Database = {
           state?: string | null
           street?: string | null
           street_number?: string | null
+          template_id?: string
           theme_color?: string
           ui_settings?: Json | null
           updated_at?: string
@@ -689,6 +1076,135 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_conversions: {
+        Row: {
+          clicked_at: string
+          created_at: string
+          first_paid_at: string | null
+          id: string
+          link_id: string
+          referee_email: string | null
+          referee_id: string | null
+          referrer_id: string
+          registered_at: string | null
+          reward_granted_at: string | null
+          status: string
+        }
+        Insert: {
+          clicked_at?: string
+          created_at?: string
+          first_paid_at?: string | null
+          id?: string
+          link_id: string
+          referee_email?: string | null
+          referee_id?: string | null
+          referrer_id: string
+          registered_at?: string | null
+          reward_granted_at?: string | null
+          status?: string
+        }
+        Update: {
+          clicked_at?: string
+          created_at?: string
+          first_paid_at?: string | null
+          id?: string
+          link_id?: string
+          referee_email?: string | null
+          referee_id?: string | null
+          referrer_id?: string
+          registered_at?: string | null
+          reward_granted_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_conversions_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "referral_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_conversions_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_conversions_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_conversions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_conversions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_links: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          referrer_id: string
+          total_clicks: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          referrer_id: string
+          total_clicks?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          referrer_id?: string
+          total_clicks?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_links_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_links_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_tokens: {
         Row: {
           created_at: string
@@ -717,6 +1233,13 @@ export type Database = {
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_tokens_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -766,6 +1289,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reviews_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
       schedule_blocks: {
@@ -802,6 +1332,13 @@ export type Database = {
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_blocks_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -861,6 +1398,13 @@ export type Database = {
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -929,7 +1473,119 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      super_admin_mfa: {
+        Row: {
+          created_at: string
+          email: string
+          enabled: boolean
+          totp_secret: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          enabled?: boolean
+          totp_secret: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          enabled?: boolean
+          totp_secret?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          attachments: Json
+          category: string
+          closed_at: string | null
+          created_at: string
+          description: string
+          first_response_at: string | null
+          id: string
+          notes: Json
+          occurred_at: string
+          priority: string
+          resolved_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          attachments?: Json
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          description: string
+          first_response_at?: string | null
+          id?: string
+          notes?: Json
+          occurred_at: string
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          attachments?: Json
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          description?: string
+          first_response_at?: string | null
+          id?: string
+          notes?: Json
+          occurred_at?: string
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
       }
       whatsapp_messages: {
         Row: {
@@ -980,6 +1636,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "whatsapp_messages_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
       working_hours: {
@@ -1027,11 +1690,59 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "working_hours_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_with_email: {
+        Row: {
+          accept_online: boolean | null
+          address_complement: string | null
+          auth_email: string | null
+          avatar_url: string | null
+          banner_url: string | null
+          bio: string | null
+          business_name: string | null
+          cancellation_policy: string | null
+          cep: string | null
+          city: string | null
+          cover_url: string | null
+          created_at: string | null
+          display_name: string | null
+          gradient_color_2: string | null
+          id: string | null
+          is_active: boolean | null
+          neighborhood: string | null
+          onboarding_completed: boolean | null
+          phone: string | null
+          show_portfolio: boolean | null
+          show_prices: boolean | null
+          slug: string | null
+          social_links: Json | null
+          specialty: string | null
+          state: string | null
+          street: string | null
+          street_number: string | null
+          theme_color: string | null
+          ui_settings: Json | null
+          updated_at: string | null
+          welcome_message: string | null
+          whatsapp_enabled: boolean | null
+          whatsapp_greeting: string | null
+          whatsapp_msg_cancellation: string | null
+          whatsapp_msg_confirmation: string | null
+          whatsapp_msg_reminder: string | null
+          whatsapp_templates: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_available_slots: {
@@ -1045,12 +1756,17 @@ export type Database = {
           slot_time: string
         }[]
       }
+      get_infra_stats: { Args: never; Returns: Json }
       get_review_stats: {
         Args: { p_professional_id: string }
         Returns: {
           avg_rating: number
           total_count: number
         }[]
+      }
+      increment_faq_view: {
+        Args: { p_id: string; p_is_ai: boolean }
+        Returns: undefined
       }
       submit_review_with_token: {
         Args: {
@@ -1225,3 +1941,4 @@ export const Constants = {
     },
   },
 } as const
+
