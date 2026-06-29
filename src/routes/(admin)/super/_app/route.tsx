@@ -7,14 +7,14 @@ import {
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SuperSidebar } from "@/components/super/super-sidebar";
-import { getSuperAuth } from "@/lib/super-auth";
+import { clearSuperAuth, isSuperTokenValid } from "@/lib/super-auth";
 
 export const Route = createFileRoute("/(admin)/super/_app")({
-  // Pathless layout for the authenticated super-admin area.
-  // Login lives at /super/login (outside this layout).
   ssr: false,
   beforeLoad: () => {
-    if (!getSuperAuth()) {
+    // Verifica presença E validade do TTL do token — sem chamada ao servidor
+    if (!isSuperTokenValid()) {
+      clearSuperAuth();
       throw redirect({ to: "/super/login" });
     }
   },
@@ -25,14 +25,24 @@ function SuperLayout() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
 
-  // Defensive client-side guard: if storage is cleared during the session,
-  // bounce back to login.
   useEffect(() => {
-    if (!getSuperAuth()) {
+    // Guarda inicial
+    if (!isSuperTokenValid()) {
+      clearSuperAuth();
       navigate({ to: "/super/login", replace: true });
       return;
     }
     setReady(true);
+
+    // Polling a cada 30s: redireciona silenciosamente ao expirar
+    const interval = setInterval(() => {
+      if (!isSuperTokenValid()) {
+        clearSuperAuth();
+        navigate({ to: "/super/login", replace: true });
+      }
+    }, 30_000);
+
+    return () => clearInterval(interval);
   }, [navigate]);
 
   if (!ready) return null;

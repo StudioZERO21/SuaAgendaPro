@@ -10,7 +10,6 @@ export function getSuperToken(): string | null {
 export function setSuperToken(token: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem(SUPER_AUTH_KEY, token);
-  // Cookie para que o servidor receba o token automaticamente em cada requisição
   document.cookie = `${COOKIE_NAME}=${encodeURIComponent(token)}; path=/; SameSite=Strict; max-age=${COOKIE_TTL}`;
 }
 
@@ -20,7 +19,26 @@ export function clearSuperAuth() {
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
 }
 
-// Mantido para compatibilidade com route.tsx existente
+/** Verifica localmente se o token existe E não está expirado (sem chamada ao servidor). */
+export function isSuperTokenValid(): boolean {
+  const token = getSuperToken();
+  if (!token) return false;
+  try {
+    // Token format (base64url): "email:exp:sig"
+    const decoded     = atob(token.replace(/-/g, "+").replace(/_/g, "/"));
+    const lastColon   = decoded.lastIndexOf(":");
+    const payloadPart = decoded.slice(0, lastColon);
+    // Rejeita tokens de estado intermediário (mfa: ou pwd:)
+    if (payloadPart.startsWith("mfa:") || payloadPart.startsWith("pwd:")) return false;
+    const colonIdx = payloadPart.lastIndexOf(":");
+    const exp      = parseInt(payloadPart.slice(colonIdx + 1), 10);
+    return !isNaN(exp) && Date.now() < exp;
+  } catch {
+    return false;
+  }
+}
+
+/** @deprecated Use isSuperTokenValid() — mantido para compatibilidade */
 export function getSuperAuth() {
-  return getSuperToken() ? { role: "super_admin" as const } : null;
+  return isSuperTokenValid() ? { role: "super_admin" as const } : null;
 }

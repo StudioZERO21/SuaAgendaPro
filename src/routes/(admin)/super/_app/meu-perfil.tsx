@@ -12,7 +12,8 @@ import { cn }       from "@/lib/utils";
 import { toast }    from "sonner";
 import { withSuperToken, getSuperToken } from "@/lib/super-client";
 import { getMyProfile, updateMyName, changeMyPassword, listSuperAdmins, createSuperAdmin, removeSuperAdmin, type SuperAdminProfile, type SuperAdminListItem } from "@/lib/super-profile.functions";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { clearSuperAuth } from "@/lib/super-auth";
 
 export const Route = createFileRoute("/(admin)/super/_app/meu-perfil")({
   ssr: false,
@@ -29,6 +30,7 @@ function SectionCard({ children, className }: { children: React.ReactNode; class
 }
 
 function MeuPerfilPage() {
+  const navigate = useNavigate();
   const [profile, setProfile]   = useState<SuperAdminProfile | null>(null);
   const [admins,  setAdmins]    = useState<SuperAdminListItem[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -87,8 +89,9 @@ function MeuPerfilPage() {
     setSaving(true);
     try {
       await changeMyPassword({ data: withSuperToken({ currentPassword: curPwd, newPassword: newPwd }) });
-      toast.success("Senha alterada com sucesso.");
-      setCurPwd(""); setNewPwd(""); setConfPwd("");
+      toast.success("Senha alterada! Faça login novamente com a nova senha.");
+      clearSuperAuth();
+      setTimeout(() => navigate({ to: "/super/login", replace: true }), 1500);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Erro ao alterar senha");
     } finally { setSaving(false); }
