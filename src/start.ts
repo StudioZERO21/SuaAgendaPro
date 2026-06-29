@@ -62,7 +62,7 @@ function isLocalDev(hostname: string): boolean {
 function isPassthrough(path: string): boolean {
   if (
     path.startsWith("/api/") ||
-    path.startsWith("/_server/") ||
+    path.startsWith("/_server") || // cobre /_server/ E /_serverFn/ (server functions)
     path.startsWith("/_build/") ||
     path.startsWith("/_nitro/") ||
     path.startsWith("/@")
