@@ -1,19 +1,10 @@
-# docker-compose.yml — SuaAgenda.Pro (produção)
+# docker-compose.yml — SuaAgenda.Pro (produção com Traefik)
 #
-# PRIMEIRO DEPLOY (sem SSL):
-#   1. Copie .env.production.example → .env.production e preencha as variáveis
-#   2. docker compose up -d --build
-#   3. Emita os certificados:
-#        docker exec suaagendapro-nginx certbot certonly --webroot \
-#          -w /var/www/certbot \
-#          -d suaagenda.pro -d www.suaagenda.pro \
-#          -d app.suaagenda.pro -d super.suaagenda.pro
-#   4. Troque a conf nginx: substitua suaagendapro-init.conf por suaagendapro.conf
-#        cp nginx/sites/suaagendapro.conf nginx/sites/active.conf
-#   5. docker compose restart nginx
+# O Traefik já está rodando no VPS e gerencia SSL/HTTPS automaticamente.
+# NÃO use este arquivo com o gerenciador visual da Hostinger.
+# Use via Terminal: bash deploy.sh
 #
-# DEPLOYS SEGUINTES:
-#   docker compose pull && docker compose up -d --build
+# Variáveis obrigatórias em .env.production (ver .env.production.example)
 
 services:
   app:
@@ -29,52 +20,15 @@ services:
       - .env.production
     environment:
       - NODE_ENV=production
-    networks:
-      - suaagendapro-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.suaagendapro.rule=Host(`suaagenda.pro`) || Host(`www.suaagenda.pro`) || Host(`app.suaagenda.pro`) || Host(`super.suaagenda.pro`)"
+      - "traefik.http.routers.suaagendapro.entrypoints=websecure"
+      - "traefik.http.routers.suaagendapro.tls.certresolver=letsencrypt"
+      - "traefik.http.services.suaagendapro.loadbalancer.server.port=8080"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/api/health',(r)=>{process.exit(r.statusCode===200?0:1)})"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 30s
-
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: suaagendapro-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      # PRIMEIRO DEPLOY: usa conf HTTP-only para certbot funcionar
-      # APÓS SSL:       substitua pela linha abaixo
-      - ./nginx/sites/suaagendapro-init.conf:/etc/nginx/conf.d/default.conf:ro
-      # - ./nginx/sites/suaagendapro.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - certbot-www:/var/www/certbot:ro
-      - nginx-cache:/var/cache/nginx
-    depends_on:
-      app:
-        condition: service_healthy
-    networks:
-      - suaagendapro-net
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: suaagendapro-certbot
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
-    # Renovação automática — roda e sai; nginx recarrega via cron/watch
-    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done"
-    networks:
-      - suaagendapro-net
-
-volumes:
-  nginx-cache:
-  certbot-www:
-
-networks:
-  suaagendapro-net:
-    driver: bridge
