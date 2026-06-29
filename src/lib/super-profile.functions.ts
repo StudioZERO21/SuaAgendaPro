@@ -36,8 +36,22 @@ export const updateMyName = createServerFn({ method: "POST" })
     await requireSuperAuth(data._st);
     const email = await getSuperAuthEmail(data._st);
     if (!email) throw new Error("Unauthorized");
-    const { updateDbSuperAdminName } = await import("./super-totp.server");
-    await updateDbSuperAdminName(email, data.name.trim());
+    const { getDbSuperAdmin, updateDbSuperAdminName, getSuperAdmins, upsertDbSuperAdmin, hashPassword } =
+      await import("./super-totp.server");
+    const dbAdmin = await getDbSuperAdmin(email);
+    if (dbAdmin) {
+      await updateDbSuperAdminName(email, data.name.trim());
+    } else {
+      // Primeiro acesso — cria o registro migrando credenciais do env var
+      const envAdmin = getSuperAdmins().find((a) => a.email.toLowerCase() === email.toLowerCase());
+      if (!envAdmin) throw new Error("Admin não encontrado nas credenciais do servidor.");
+      await upsertDbSuperAdmin({
+        email:                email.toLowerCase(),
+        name:                 data.name.trim(),
+        password_hash:        hashPassword(envAdmin.password),
+        must_change_password: envAdmin.must_change_password ?? false,
+      });
+    }
     return { ok: true };
   });
 
