@@ -83,6 +83,7 @@ import {
 import { getAppRatings, type AppRatingRow } from "@/lib/app-rating.functions";
 import { getAuditLog, type AuditLogEntry } from "@/lib/super-audit.functions";
 import { withSuperToken } from "@/lib/super-client";
+import { listResetRequests, approveResetRequest, rejectResetRequest, type ResetRequest } from "@/lib/user-password.functions";
 
 export const Route = createFileRoute("/(admin)/super/_app/usuarios")({
   head: () => ({
@@ -238,6 +239,39 @@ function UsuariosPage() {
   const [viewingAudit, setViewingAudit] = useState<AuditLogEntry[]>([]);
   const [viewingAuditLoading, setViewingAuditLoading] = useState(false);
 
+  // Solicitações de reset de senha
+  const [resetRequests, setResetRequests] = useState<ResetRequest[]>([]);
+  const [resetActioning, setResetActioning] = useState<string | null>(null);
+
+  const loadResetRequests = useCallback(async () => {
+    try {
+      const data = await listResetRequests({ data: withSuperToken() });
+      setResetRequests(data);
+    } catch { /* silencioso — não bloqueia o carregamento de usuários */ }
+  }, []);
+
+  async function handleApproveReset(req: ResetRequest) {
+    setResetActioning(req.id);
+    try {
+      await approveResetRequest({ data: withSuperToken({ requestId: req.id }) });
+      toast.success(`Reset aprovado para ${req.userEmail}. Email enviado!`);
+      await loadResetRequests();
+    } catch (err: any) {
+      toast.error("Erro ao aprovar: " + (err?.message ?? ""));
+    } finally { setResetActioning(null); }
+  }
+
+  async function handleRejectReset(req: ResetRequest) {
+    setResetActioning(req.id);
+    try {
+      await rejectResetRequest({ data: withSuperToken({ requestId: req.id }) });
+      toast.success("Solicitação rejeitada.");
+      await loadResetRequests();
+    } catch (err: any) {
+      toast.error("Erro ao rejeitar: " + (err?.message ?? ""));
+    } finally { setResetActioning(null); }
+  }
+
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
@@ -256,7 +290,7 @@ function UsuariosPage() {
     }
   }, []);
 
-  useEffect(() => { loadUsers(); }, [loadUsers]);
+  useEffect(() => { loadUsers(); loadResetRequests(); }, [loadUsers, loadResetRequests]);
 
   async function executeAction(user: Pro, action: string, notes: string) {
     setActionLoading(true);
@@ -482,6 +516,46 @@ function UsuariosPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
+      {/* ── Solicitações de reset de senha pendentes ── */}
+      {resetRequests.filter((r) => r.status === "pending").length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+          <div className="mb-3 flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-amber-600" />
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              Solicitações de reset de senha ({resetRequests.filter((r) => r.status === "pending").length} pendente{resetRequests.filter((r) => r.status === "pending").length !== 1 ? "s" : ""})
+            </p>
+          </div>
+          <div className="space-y-2">
+            {resetRequests.filter((r) => r.status === "pending").map((req) => (
+              <div key={req.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-white px-4 py-3 dark:border-amber-900 dark:bg-card">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{req.userName ?? req.userEmail}</p>
+                  <p className="truncate text-xs text-muted-foreground">{req.userEmail}</p>
+                  {req.reason && (
+                    <p className="mt-0.5 text-xs text-muted-foreground italic">"{req.reason}"</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">
+                    Solicitado em {new Date(req.requestedAt).toLocaleString("pt-BR")}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Button size="sm" disabled={resetActioning === req.id} onClick={() => handleApproveReset(req)}
+                    className="rounded-xl gradient-primary text-white">
+                    {resetActioning === req.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    <span className="ml-1.5">Aprovar</span>
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={resetActioning === req.id} onClick={() => handleRejectReset(req)}
+                    className="rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50">
+                    <XCircle className="h-3.5 w-3.5" />
+                    <span className="ml-1.5">Rejeitar</span>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">

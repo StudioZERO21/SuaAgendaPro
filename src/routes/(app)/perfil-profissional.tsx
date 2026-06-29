@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Save, Camera, Upload, X, Loader2, Plus, Share2 } from "lucide-react";
+import { ArrowLeft, Save, Camera, Upload, X, Loader2, Plus, Share2, Lock, Eye, EyeOff, ShieldAlert, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import Cropper, { type Area } from "react-easy-crop";
 import { MobileShell } from "@/components/mobile-shell";
@@ -19,6 +19,9 @@ import { cn } from "@/lib/utils";
 import { PhoneInputBR } from "@/components/ui/phone-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PROFESSIONAL_SPECIALTIES } from "@/lib/professional-specialties";
+import { validatePassword, STRENGTH_COLOR, STRENGTH_LABEL } from "@/lib/password-security";
+import { changeUserPassword, requestPasswordReset } from "@/lib/user-password.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/(app)/perfil-profissional")({
   head: () => ({
@@ -135,6 +138,59 @@ function PerfilProfissionalPage() {
     if (!final) return;
     setSpecialty(final);
     setEditingSpecialty(false);
+  }
+
+  // Segurança — troca de senha
+  const [secCurPwd,    setSecCurPwd]    = useState("");
+  const [secNewPwd,    setSecNewPwd]    = useState("");
+  const [secConfPwd,   setSecConfPwd]   = useState("");
+  const [showSecPwd,   setShowSecPwd]   = useState(false);
+  const [secSaving,    setSecSaving]    = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetReason,  setResetReason]  = useState("");
+  const [resetSent,    setResetSent]    = useState(false);
+
+  const secValidation = validatePassword(secNewPwd);
+  const secStrengthPct = secNewPwd.length === 0 ? 0 : Math.max(15, (secValidation.score + 1) * 25);
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!secValidation.valid) { toast.error(secValidation.errors[0]); return; }
+    if (secNewPwd !== secConfPwd) { toast.error("As senhas não coincidem."); return; }
+    if (secNewPwd === secCurPwd) { toast.error("A nova senha deve ser diferente da atual."); return; }
+    setSecSaving(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Sessão expirada. Faça login novamente.");
+      await changeUserPassword({
+        data: { currentPassword: secCurPwd, newPassword: secNewPwd },
+        headers: { authorization: `Bearer ${token}` },
+      });
+      toast.success("Senha alterada com sucesso! Faça login novamente.");
+      setSecCurPwd(""); setSecNewPwd(""); setSecConfPwd("");
+      await supabase.auth.signOut();
+      navigate({ to: "/login", replace: true });
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao alterar senha.");
+    } finally { setSecSaving(false); }
+  }
+
+  async function handleRequestReset() {
+    setResetLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Sessão expirada.");
+      await requestPasswordReset({
+        data: { reason: resetReason.trim() || undefined },
+        headers: { authorization: `Bearer ${token}` },
+      });
+      setResetSent(true);
+      toast.success("Solicitação enviada! O time irá analisar e enviar um link por email.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao solicitar reset.");
+    } finally { setResetLoading(false); }
   }
 
   // DB-backed social links
@@ -569,6 +625,178 @@ function PerfilProfissionalPage() {
               <p className="text-xs text-muted-foreground">Exibe os valores dos serviços na página pública.</p>
             </div>
             <Switch checked={showPrices} onCheckedChange={setShowPrices} />
+          </div>
+        </section>
+
+        {/* ── Segurança — Troca de senha ── */}
+        <section className="space-y-5 rounded-3xl border border-border bg-card p-5 shadow-card">
+          <div className="flex items-center gap-2">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl gradient-primary">
+              <Lock className="h-4 w-4 text-white" />
+            </div>
+            <h2 className="font-display text-base font-bold">Segurança</h2>
+          </div>
+
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Alterar senha</p>
+
+            {/* Senha atual */}
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-cur-pwd">Senha atual</Label>
+              <div className="relative">
+                <Input
+                  id="sec-cur-pwd"
+                  type={showSecPwd ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={secCurPwd}
+                  onChange={(e) => setSecCurPwd(e.target.value)}
+                  className="pr-10 rounded-xl"
+                  required
+                />
+                <button type="button" onClick={() => setShowSecPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showSecPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Nova senha */}
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-new-pwd">Nova senha</Label>
+              <div className="relative">
+                <Input
+                  id="sec-new-pwd"
+                  type={showSecPwd ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={secNewPwd}
+                  onChange={(e) => setSecNewPwd(e.target.value)}
+                  className="pr-10 rounded-xl"
+                  required
+                />
+                <button type="button" onClick={() => setShowSecPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showSecPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {/* Barra de força */}
+              {secNewPwd.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex h-1.5 gap-1 overflow-hidden rounded-full">
+                    {[0,1,2,3].map((i) => (
+                      <div key={i} className={cn(
+                        "h-full flex-1 rounded-full transition-all duration-300",
+                        i <= secValidation.score ? STRENGTH_COLOR[secValidation.strength] : "bg-border"
+                      )} />
+                    ))}
+                  </div>
+                  <p className={cn("text-[11px] font-semibold",
+                    secValidation.score <= 1 ? "text-destructive" :
+                    secValidation.score === 2 ? "text-amber-600" : "text-emerald-600"
+                  )}>
+                    Força: {STRENGTH_LABEL[secValidation.strength]}
+                  </p>
+
+                  {/* Checklist de requisitos */}
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-1">
+                    {[
+                      [secValidation.checks.length,    "12+ caracteres"],
+                      [secValidation.checks.uppercase, "Maiúscula (A-Z)"],
+                      [secValidation.checks.lowercase, "Minúscula (a-z)"],
+                      [secValidation.checks.number,    "Número (0-9)"],
+                      [secValidation.checks.special,   "Símbolo (!@#...)"],
+                      [secValidation.checks.notCommon, "Não é comum"],
+                    ].map(([ok, label]) => (
+                      <span key={label as string} className={cn(
+                        "flex items-center gap-1 text-[11px]",
+                        ok ? "text-emerald-600" : "text-muted-foreground"
+                      )}>
+                        {ok
+                          ? <CheckCircle2 className="h-3 w-3 shrink-0" />
+                          : <XCircle className="h-3 w-3 shrink-0 text-border" />}
+                        {label as string}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirmar nova senha */}
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-conf-pwd">Confirmar nova senha</Label>
+              <div className="relative">
+                <Input
+                  id="sec-conf-pwd"
+                  type={showSecPwd ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={secConfPwd}
+                  onChange={(e) => setSecConfPwd(e.target.value)}
+                  className={cn("pr-10 rounded-xl", secConfPwd && secConfPwd !== secNewPwd && "border-destructive focus-visible:ring-destructive")}
+                  required
+                />
+                <button type="button" onClick={() => setShowSecPwd((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showSecPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {secConfPwd && secConfPwd !== secNewPwd && (
+                <p className="text-[11px] text-destructive">As senhas não coincidem.</p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={secSaving || !secValidation.valid || secNewPwd !== secConfPwd || !secCurPwd}
+              className="w-full rounded-xl gradient-primary text-white"
+            >
+              {secSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+              Alterar senha
+            </Button>
+          </form>
+
+          {/* Divisor */}
+          <div className="border-t border-border" />
+
+          {/* Reset de senha via super admin */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-500" />
+              <p className="text-sm font-semibold">Não consegue acessar?</p>
+            </div>
+            {resetSent ? (
+              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-emerald-700 dark:bg-emerald-950/30">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <p className="text-sm">Solicitação enviada! Você receberá um email assim que for aprovado.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Esqueceu a senha? Solicite um reset — nossa equipe irá analisar e enviar um link por email.
+                </p>
+                <textarea
+                  value={resetReason}
+                  onChange={(e) => setResetReason(e.target.value)}
+                  placeholder="Motivo (opcional): ex. esqueci minha senha..."
+                  rows={2}
+                  maxLength={300}
+                  className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={resetLoading}
+                  onClick={handleRequestReset}
+                  className="w-full rounded-xl"
+                >
+                  {resetLoading
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <ShieldAlert className="mr-2 h-4 w-4" />}
+                  Solicitar reset de senha
+                </Button>
+              </div>
+            )}
           </div>
         </section>
       </main>
