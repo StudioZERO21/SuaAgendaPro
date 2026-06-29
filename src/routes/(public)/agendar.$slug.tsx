@@ -6,7 +6,7 @@ import { buildPublicPageModel } from "@/lib/public-page-model";
 import { getPublicOpenStatus as getOpenStatus } from "@/lib/public-page-types";
 import { getTheme, GOOGLE_FONTS_URL } from "@/lib/themes";
 import { BookingSheet } from "@/components/public-page/public-booking-sheet";
-import type { PublicService } from "@/lib/public-page-types";
+import type { PublicService, PortfolioItem } from "@/lib/public-page-types";
 
 export const Route = createFileRoute("/(public)/agendar/$slug")({
   head: ({ params }) => ({
@@ -116,6 +116,8 @@ function PublicBookingPage() {
   const [ctaExpanded, setCtaExpanded] = useState(false);
   const [showServices, setShowServices] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
+  const [portfolioPreview, setPortfolioPreview] = useState<PortfolioItem | null>(null);
+  const [portfolioGalleryOpen, setPortfolioGalleryOpen] = useState(false);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
   const avatarRef = useRef<HTMLImageElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -238,7 +240,7 @@ function PublicBookingPage() {
 
         {/* ── SCROLLABLE CONTENT ──────────────────────────────────────────── */}
         <div ref={scrollRef} style={S.scroll}>
-        <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
 
           {/* ── HERO: LUXE / PREMIUM ──────────────────────────────────────── */}
           {isPremium && (
@@ -390,7 +392,7 @@ function PublicBookingPage() {
                 <p style={{ fontFamily: f.body, color: c.primary, fontSize: 9, letterSpacing: 4, textTransform: "uppercase" as const, margin: "0 0 4px" }}>STUDIO</p>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
                   <div>
-                    <h1 style={{ fontFamily: f.heading, color: "#ffffff", fontSize: 50, fontWeight: 700, lineHeight: 0.85, margin: 0, textTransform: "uppercase" as const, letterSpacing: 1 }}>{profile.name.toUpperCase()}</h1>
+                    <h1 style={{ fontFamily: f.heading, color: "#ffffff", fontSize: 50, fontWeight: 700, lineHeight: 0.85, margin: 0, textTransform: "uppercase" as const, letterSpacing: -2 }}>{profile.name.toUpperCase()}</h1>
                     <p style={{ fontFamily: f.body, color: "rgba(255,255,255,0.5)", fontSize: 10, letterSpacing: 3, textTransform: "uppercase" as const, margin: "8px 0 0" }}>{profile.tagline || "Profissional"}</p>
                   </div>
                   <div style={{ textAlign: "right", paddingBottom: 4 }}>
@@ -428,20 +430,32 @@ function PublicBookingPage() {
 
           {/* ── PORTFÓLIO ─────────────────────────────────────────────────── */}
           {portfolio.length > 0 && (
-            <div style={{ background: c.surface, padding: "20px 18px" }}>
+            <div style={{ background: c.surface, padding: "26px 20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <h2 style={{ ...S.sectionTitle, marginBottom: 0 }}>Portfólio</h2>
-                <span style={{ fontFamily: f.body, color: c.primary, fontSize: 13, fontWeight: 600 }}>{portfolio.length} fotos</span>
+                <button
+                  type="button"
+                  onClick={() => setPortfolioGalleryOpen(true)}
+                  style={{ fontFamily: f.body, color: c.primary, fontSize: 13, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  Ver tudo →
+                </button>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {portfolio.slice(0, 6).map((p, i) => (
-                  <div key={p.id} style={{ aspectRatio: "1", borderRadius: sh.photo, background: theme.portfolioGradients[i % 6], overflow: "hidden", position: "relative" }}>
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPortfolioPreview(p)}
+                    aria-label={p.title || p.category || "Ver foto do portfólio"}
+                    style={{ aspectRatio: "1", borderRadius: sh.photo, background: theme.portfolioGradients[i % 6], overflow: "hidden", position: "relative", border: "none", padding: 0, cursor: "pointer", display: "block", width: "100%" }}
+                  >
                     <img src={p.src} alt={p.title || "Portfólio"} loading={i < 3 ? "eager" : "lazy"} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
                     <div style={{ position: "absolute", inset: 0, background: theme.portfolioOverlay }} />
                     <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "5px 4px", textAlign: "center" }}>
                       <span style={{ fontFamily: f.body, fontSize: 9, color: theme.portfolioLabelColor, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.5px" }}>{p.title || p.category}</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -558,11 +572,8 @@ function PublicBookingPage() {
             </div>
           )}
 
-          {/* spacer pushes footer to bottom on short pages */}
-          <div style={{ flex: 1 }} />
-
           {/* ── FOOTER ────────────────────────────────────────────────────── */}
-          <div style={{ background: c.footerBg, padding: "20px 18px 80px", borderTop: `1px solid ${c.border}` }}>
+          <div style={{ background: c.footerBg, padding: "26px 20px 14px", borderTop: `1px solid ${c.border}` }}>
 
             {/* Siga */}
             <div style={{ marginBottom: 16 }}>
@@ -651,7 +662,7 @@ function PublicBookingPage() {
             )}
 
             {/* Copyright */}
-            <div style={{ textAlign: "center", paddingTop: 14, borderTop: `1px solid ${c.border}` }}>
+            <div style={{ textAlign: "center", paddingTop: 14, paddingBottom: 4, borderTop: `1px solid ${c.border}` }}>
               <span style={{ fontFamily: f.body, color: c.textSec, fontSize: 11 }}>© {new Date().getFullYear()} {profile.name} · </span>
               <a href="/" style={{ fontFamily: f.body, color: c.primary, fontSize: 11, fontWeight: 600, textDecoration: "none" }}>SuaAgenda.Pro</a>
             </div>
@@ -660,7 +671,7 @@ function PublicBookingPage() {
         </div>{/* end scroll */}
 
         {/* ── FLOATING CTA ─────────────────────────────────────────────────── */}
-        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, zIndex: 80, pointerEvents: "none", display: bookingOpen ? "none" : "flex", justifyContent: ctaExpanded ? "center" : "flex-end", padding: ctaExpanded ? "0" : "0 20px" }}>
+        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, zIndex: 80, pointerEvents: "none", display: bookingOpen || portfolioPreview || portfolioGalleryOpen ? "none" : "flex", justifyContent: ctaExpanded ? "center" : "flex-end", padding: ctaExpanded ? "0" : "0 20px" }}>
           {!ctaExpanded ? (
             <button
               onClick={() => setCtaExpanded(true)}
@@ -693,7 +704,81 @@ function PublicBookingPage() {
           82%  { transform: translateX(-2px) scale(1.01); }
           100% { opacity: 1; transform: translateX(0) scale(1); }
         }
+        @keyframes sheetUp {
+          from { opacity: 0; transform: translateY(100%); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
+
+      {/* ── PORTFÓLIO: GALERIA COMPLETA ───────────────────────────────────── */}
+      {portfolioGalleryOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Galeria do portfólio"
+          onClick={() => setPortfolioGalleryOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 430, maxHeight: "88vh", background: c.bg, borderRadius: "20px 20px 0 0", overflow: "hidden", display: "flex", flexDirection: "column", animation: "sheetUp 0.32s ease both" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px", borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}>
+              <h3 style={{ fontFamily: f.heading, color: c.sectionTitle, fontSize: 18, fontWeight: 700, margin: 0 }}>Portfólio</h3>
+              <button type="button" onClick={() => setPortfolioGalleryOpen(false)} aria-label="Fechar galeria" style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: 999, width: 32, height: 32, cursor: "pointer", color: c.textSec, fontSize: 18, lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ overflowY: "auto", padding: "16px 20px 28px", WebkitOverflowScrolling: "touch" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {portfolio.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => { setPortfolioGalleryOpen(false); setPortfolioPreview(p); }}
+                    aria-label={p.title || p.category || "Ver foto"}
+                    style={{ aspectRatio: "1", borderRadius: sh.photo, background: theme.portfolioGradients[i % 6], overflow: "hidden", position: "relative", border: "none", padding: 0, cursor: "pointer", display: "block", width: "100%" }}
+                  >
+                    <img src={p.src} alt={p.title || "Portfólio"} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
+                    <div style={{ position: "absolute", inset: 0, background: theme.portfolioOverlay }} />
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "5px 4px", textAlign: "center" }}>
+                      <span style={{ fontFamily: f.body, fontSize: 9, color: theme.portfolioLabelColor, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.5px" }}>{p.title || p.category}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PORTFÓLIO: PREVIEW DA FOTO ────────────────────────────────────── */}
+      {portfolioPreview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualizar foto do portfólio"
+          onClick={() => setPortfolioPreview(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 95, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: "relative", width: "100%", maxWidth: 430, maxHeight: "92vh", background: c.bg, borderRadius: "20px 20px 0 0", overflow: "hidden", overflowY: "auto", animation: "sheetUp 0.32s ease both" }}
+          >
+            <div style={{ aspectRatio: "9/16", maxHeight: "62vh", width: "100%", overflow: "hidden", background: "#000" }}>
+              <img src={portfolioPreview.src} alt={portfolioPreview.title || "Trabalho"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            </div>
+            <div style={{ padding: "18px 20px 24px" }}>
+              {portfolioPreview.category && (
+                <p style={{ fontFamily: f.body, color: c.primary, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "1.2px", margin: "0 0 6px" }}>{portfolioPreview.category}</p>
+              )}
+              <h3 style={{ fontFamily: f.heading, color: c.text, fontSize: 20, fontWeight: 700, margin: "0 0 8px" }}>{portfolioPreview.title || "Sem título"}</h3>
+              {portfolioPreview.description && (
+                <p style={{ fontFamily: f.body, color: c.textSec, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{portfolioPreview.description}</p>
+              )}
+            </div>
+            <button type="button" onClick={() => setPortfolioPreview(null)} aria-label="Fechar preview" style={{ position: "absolute", top: 14, right: 14, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: 999, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 22, lineHeight: 1 }}>×</button>
+          </div>
+        </div>
+      )}
 
       {/* ── BOOKING SHEET ─────────────────────────────────────────────────── */}
       <BookingSheet
@@ -714,16 +799,22 @@ function PublicBookingPage() {
         openDays={profile.hours
           .map((h, i) => (h.closed ? -1 : i))
           .filter((i) => i >= 0)}
-        themeColors={{
-          primary:   c.primary,
-          ctaBg:     c.ctaBg,
-          ctaText:   c.ctaText,
-          bg:        c.bg,
-          card:      c.card,
-          surface:   c.surface,
-          text:      c.text,
-          textMuted: c.textSec,
-          border:    c.border,
+        theme={{
+          primary:      c.primary,
+          ctaBg:        c.ctaBg,
+          ctaText:      c.ctaText,
+          bg:           c.bg,
+          card:         c.card,
+          surface:      c.surface,
+          text:         c.text,
+          textMuted:    c.textSec,
+          border:       c.border,
+          tagBg:        c.tagBg,
+          serviceIcon:  c.serviceIcon,
+          headingFont:  f.heading,
+          bodyFont:     f.body,
+          cardRadius:   sh.card,
+          btnRadius:    sh.btn,
         }}
       />
     </div>

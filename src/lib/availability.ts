@@ -41,6 +41,15 @@ export function getAvailableSlots(
   return slots;
 }
 
+/** Returns the browser's local UTC offset as an ISO suffix, e.g. "-03:00" for BRT. */
+export function localTzSuffix(): string {
+  const off = new Date().getTimezoneOffset(); // positive = behind UTC (e.g. 180 for UTC-3)
+  const sign = off > 0 ? "-" : "+";
+  const h = String(Math.floor(Math.abs(off) / 60)).padStart(2, "0");
+  const m = String(Math.abs(off) % 60).padStart(2, "0");
+  return `${sign}${h}:${m}`;
+}
+
 export function isoToDateStr(iso: string): string {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

@@ -792,7 +792,7 @@ function Itens({ cats, subs, items, onRefresh }: {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pergunta</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Categoria</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">Consultas</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Consultas / IA</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ações</th>
               </tr>
@@ -823,12 +823,10 @@ function Itens({ cats, subs, items, onRefresh }: {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center hidden lg:table-cell">
+                  <td className="px-4 py-3 text-center">
                     <div>
                       <p className="text-sm font-bold text-foreground">{item.viewCount + item.aiViewCount}</p>
-                      {item.aiViewCount > 0 && (
-                        <p className="text-[10px] text-purple-500">{item.aiViewCount} IA</p>
-                      )}
+                      <p className="text-[10px] text-purple-500">{item.aiViewCount} IA</p>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -839,16 +837,18 @@ function Itens({ cats, subs, items, onRefresh }: {
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => setModal({ ...item })}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        title="Editar"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-rose-50 hover:text-rose-600"
+                        title="Excluir"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

@@ -10,14 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as siteIndexRouteImport } from './routes/(site)/index'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as siteTrocarSenhaRouteImport } from './routes/(site)/trocar-senha'
 import { Route as siteResetPasswordRouteImport } from './routes/(site)/reset-password'
+import { Route as siteRedefinirSenhaRouteImport } from './routes/(site)/redefinir-senha'
 import { Route as siteRecursosRouteImport } from './routes/(site)/recursos'
 import { Route as sitePrecosRouteImport } from './routes/(site)/precos'
 import { Route as siteLoginRouteImport } from './routes/(site)/login'
 import { Route as siteContatoRouteImport } from './routes/(site)/contato'
 import { Route as siteCadastroRouteImport } from './routes/(site)/cadastro'
 import { Route as publicPerfilPublicoRouteImport } from './routes/(public)/perfil-publico'
-import { Route as publicExemploPaginaRouteImport } from './routes/(public)/exemplo-pagina'
 import { Route as appWhatsappRouteImport } from './routes/(app)/whatsapp'
 import { Route as appUseNoCelularRouteImport } from './routes/(app)/use-no-celular'
 import { Route as appTransacoesRouteImport } from './routes/(app)/transacoes'
@@ -48,11 +50,14 @@ import { Route as adminSuperLoginRouteImport } from './routes/(admin)/super/logi
 import { Route as adminSuperAppRouteRouteImport } from './routes/(admin)/super/_app/route'
 import { Route as adminSuperAppIndexRouteImport } from './routes/(admin)/super/_app/index'
 import { Route as ApiPublicMercadoPagoCallbackRouteImport } from './routes/api/public/mercado-pago.callback'
+import { Route as ApiPublicGoogleCalendarCallbackRouteImport } from './routes/api/public/google-calendar.callback'
 import { Route as adminSuperAppUsuariosRouteImport } from './routes/(admin)/super/_app/usuarios'
 import { Route as adminSuperAppTicketsRouteImport } from './routes/(admin)/super/_app/tickets'
 import { Route as adminSuperAppTemplatesRouteImport } from './routes/(admin)/super/_app/templates'
+import { Route as adminSuperAppSistemaRouteImport } from './routes/(admin)/super/_app/sistema'
 import { Route as adminSuperAppPlanosRouteImport } from './routes/(admin)/super/_app/planos'
 import { Route as adminSuperAppMfaSetupRouteImport } from './routes/(admin)/super/_app/mfa-setup'
+import { Route as adminSuperAppMeuPerfilRouteImport } from './routes/(admin)/super/_app/meu-perfil'
 import { Route as adminSuperAppInfraRouteImport } from './routes/(admin)/super/_app/infra'
 import { Route as adminSuperAppIndicacoesRouteImport } from './routes/(admin)/super/_app/indicacoes'
 import { Route as adminSuperAppFinanceiroRouteImport } from './routes/(admin)/super/_app/financeiro'
@@ -65,9 +70,24 @@ const siteIndexRoute = siteIndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const siteTrocarSenhaRoute = siteTrocarSenhaRouteImport.update({
+  id: '/(site)/trocar-senha',
+  path: '/trocar-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const siteResetPasswordRoute = siteResetPasswordRouteImport.update({
   id: '/(site)/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const siteRedefinirSenhaRoute = siteRedefinirSenhaRouteImport.update({
+  id: '/(site)/redefinir-senha',
+  path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const siteRecursosRoute = siteRecursosRouteImport.update({
@@ -98,11 +118,6 @@ const siteCadastroRoute = siteCadastroRouteImport.update({
 const publicPerfilPublicoRoute = publicPerfilPublicoRouteImport.update({
   id: '/(public)/perfil-publico',
   path: '/perfil-publico',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const publicExemploPaginaRoute = publicExemploPaginaRouteImport.update({
-  id: '/(public)/exemplo-pagina',
-  path: '/exemplo-pagina',
   getParentRoute: () => rootRouteImport,
 } as any)
 const appWhatsappRoute = appWhatsappRouteImport.update({
@@ -256,6 +271,12 @@ const ApiPublicMercadoPagoCallbackRoute =
     path: '/api/public/mercado-pago/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGoogleCalendarCallbackRoute =
+  ApiPublicGoogleCalendarCallbackRouteImport.update({
+    id: '/api/public/google-calendar/callback',
+    path: '/api/public/google-calendar/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const adminSuperAppUsuariosRoute = adminSuperAppUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -271,6 +292,11 @@ const adminSuperAppTemplatesRoute = adminSuperAppTemplatesRouteImport.update({
   path: '/templates',
   getParentRoute: () => adminSuperAppRouteRoute,
 } as any)
+const adminSuperAppSistemaRoute = adminSuperAppSistemaRouteImport.update({
+  id: '/sistema',
+  path: '/sistema',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
 const adminSuperAppPlanosRoute = adminSuperAppPlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
@@ -279,6 +305,11 @@ const adminSuperAppPlanosRoute = adminSuperAppPlanosRouteImport.update({
 const adminSuperAppMfaSetupRoute = adminSuperAppMfaSetupRouteImport.update({
   id: '/mfa-setup',
   path: '/mfa-setup',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
+const adminSuperAppMeuPerfilRoute = adminSuperAppMeuPerfilRouteImport.update({
+  id: '/meu-perfil',
+  path: '/meu-perfil',
   getParentRoute: () => adminSuperAppRouteRoute,
 } as any)
 const adminSuperAppInfraRoute = adminSuperAppInfraRouteImport.update({
@@ -334,14 +365,16 @@ export interface FileRoutesByFullPath {
   '/transacoes': typeof appTransacoesRoute
   '/use-no-celular': typeof appUseNoCelularRoute
   '/whatsapp': typeof appWhatsappRoute
-  '/exemplo-pagina': typeof publicExemploPaginaRoute
   '/perfil-publico': typeof publicPerfilPublicoRoute
   '/cadastro': typeof siteCadastroRoute
   '/contato': typeof siteContatoRoute
   '/login': typeof siteLoginRoute
   '/precos': typeof sitePrecosRoute
   '/recursos': typeof siteRecursosRoute
+  '/redefinir-senha': typeof siteRedefinirSenhaRoute
   '/reset-password': typeof siteResetPasswordRoute
+  '/trocar-senha': typeof siteTrocarSenhaRoute
+  '/api/health': typeof ApiHealthRoute
   '/': typeof siteIndexRoute
   '/super': typeof adminSuperAppRouteRouteWithChildren
   '/super/login': typeof adminSuperLoginRoute
@@ -357,11 +390,14 @@ export interface FileRoutesByFullPath {
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
   '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/super/infra': typeof adminSuperAppInfraRoute
+  '/super/meu-perfil': typeof adminSuperAppMeuPerfilRoute
   '/super/mfa-setup': typeof adminSuperAppMfaSetupRoute
   '/super/planos': typeof adminSuperAppPlanosRoute
+  '/super/sistema': typeof adminSuperAppSistemaRoute
   '/super/templates': typeof adminSuperAppTemplatesRoute
   '/super/tickets': typeof adminSuperAppTicketsRoute
   '/super/usuarios': typeof adminSuperAppUsuariosRoute
+  '/api/public/google-calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
   '/super/': typeof adminSuperAppIndexRoute
 }
@@ -386,14 +422,16 @@ export interface FileRoutesByTo {
   '/transacoes': typeof appTransacoesRoute
   '/use-no-celular': typeof appUseNoCelularRoute
   '/whatsapp': typeof appWhatsappRoute
-  '/exemplo-pagina': typeof publicExemploPaginaRoute
   '/perfil-publico': typeof publicPerfilPublicoRoute
   '/cadastro': typeof siteCadastroRoute
   '/contato': typeof siteContatoRoute
   '/login': typeof siteLoginRoute
   '/precos': typeof sitePrecosRoute
   '/recursos': typeof siteRecursosRoute
+  '/redefinir-senha': typeof siteRedefinirSenhaRoute
   '/reset-password': typeof siteResetPasswordRoute
+  '/trocar-senha': typeof siteTrocarSenhaRoute
+  '/api/health': typeof ApiHealthRoute
   '/': typeof siteIndexRoute
   '/super/login': typeof adminSuperLoginRoute
   '/servico/$id': typeof appServicoIdRoute
@@ -408,11 +446,14 @@ export interface FileRoutesByTo {
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
   '/super/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/super/infra': typeof adminSuperAppInfraRoute
+  '/super/meu-perfil': typeof adminSuperAppMeuPerfilRoute
   '/super/mfa-setup': typeof adminSuperAppMfaSetupRoute
   '/super/planos': typeof adminSuperAppPlanosRoute
+  '/super/sistema': typeof adminSuperAppSistemaRoute
   '/super/templates': typeof adminSuperAppTemplatesRoute
   '/super/tickets': typeof adminSuperAppTicketsRoute
   '/super/usuarios': typeof adminSuperAppUsuariosRoute
+  '/api/public/google-calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
   '/super': typeof adminSuperAppIndexRoute
 }
@@ -438,14 +479,16 @@ export interface FileRoutesById {
   '/(app)/transacoes': typeof appTransacoesRoute
   '/(app)/use-no-celular': typeof appUseNoCelularRoute
   '/(app)/whatsapp': typeof appWhatsappRoute
-  '/(public)/exemplo-pagina': typeof publicExemploPaginaRoute
   '/(public)/perfil-publico': typeof publicPerfilPublicoRoute
   '/(site)/cadastro': typeof siteCadastroRoute
   '/(site)/contato': typeof siteContatoRoute
   '/(site)/login': typeof siteLoginRoute
   '/(site)/precos': typeof sitePrecosRoute
   '/(site)/recursos': typeof siteRecursosRoute
+  '/(site)/redefinir-senha': typeof siteRedefinirSenhaRoute
   '/(site)/reset-password': typeof siteResetPasswordRoute
+  '/(site)/trocar-senha': typeof siteTrocarSenhaRoute
+  '/api/health': typeof ApiHealthRoute
   '/(site)/': typeof siteIndexRoute
   '/(admin)/super/_app': typeof adminSuperAppRouteRouteWithChildren
   '/(admin)/super/login': typeof adminSuperLoginRoute
@@ -461,11 +504,14 @@ export interface FileRoutesById {
   '/(admin)/super/_app/financeiro': typeof adminSuperAppFinanceiroRoute
   '/(admin)/super/_app/indicacoes': typeof adminSuperAppIndicacoesRoute
   '/(admin)/super/_app/infra': typeof adminSuperAppInfraRoute
+  '/(admin)/super/_app/meu-perfil': typeof adminSuperAppMeuPerfilRoute
   '/(admin)/super/_app/mfa-setup': typeof adminSuperAppMfaSetupRoute
   '/(admin)/super/_app/planos': typeof adminSuperAppPlanosRoute
+  '/(admin)/super/_app/sistema': typeof adminSuperAppSistemaRoute
   '/(admin)/super/_app/templates': typeof adminSuperAppTemplatesRoute
   '/(admin)/super/_app/tickets': typeof adminSuperAppTicketsRoute
   '/(admin)/super/_app/usuarios': typeof adminSuperAppUsuariosRoute
+  '/api/public/google-calendar/callback': typeof ApiPublicGoogleCalendarCallbackRoute
   '/api/public/mercado-pago/callback': typeof ApiPublicMercadoPagoCallbackRoute
   '/(admin)/super/_app/': typeof adminSuperAppIndexRoute
 }
@@ -492,14 +538,16 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/use-no-celular'
     | '/whatsapp'
-    | '/exemplo-pagina'
     | '/perfil-publico'
     | '/cadastro'
     | '/contato'
     | '/login'
     | '/precos'
     | '/recursos'
+    | '/redefinir-senha'
     | '/reset-password'
+    | '/trocar-senha'
+    | '/api/health'
     | '/'
     | '/super'
     | '/super/login'
@@ -515,11 +563,14 @@ export interface FileRouteTypes {
     | '/super/financeiro'
     | '/super/indicacoes'
     | '/super/infra'
+    | '/super/meu-perfil'
     | '/super/mfa-setup'
     | '/super/planos'
+    | '/super/sistema'
     | '/super/templates'
     | '/super/tickets'
     | '/super/usuarios'
+    | '/api/public/google-calendar/callback'
     | '/api/public/mercado-pago/callback'
     | '/super/'
   fileRoutesByTo: FileRoutesByTo
@@ -544,14 +595,16 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/use-no-celular'
     | '/whatsapp'
-    | '/exemplo-pagina'
     | '/perfil-publico'
     | '/cadastro'
     | '/contato'
     | '/login'
     | '/precos'
     | '/recursos'
+    | '/redefinir-senha'
     | '/reset-password'
+    | '/trocar-senha'
+    | '/api/health'
     | '/'
     | '/super/login'
     | '/servico/$id'
@@ -566,11 +619,14 @@ export interface FileRouteTypes {
     | '/super/financeiro'
     | '/super/indicacoes'
     | '/super/infra'
+    | '/super/meu-perfil'
     | '/super/mfa-setup'
     | '/super/planos'
+    | '/super/sistema'
     | '/super/templates'
     | '/super/tickets'
     | '/super/usuarios'
+    | '/api/public/google-calendar/callback'
     | '/api/public/mercado-pago/callback'
     | '/super'
   id:
@@ -595,14 +651,16 @@ export interface FileRouteTypes {
     | '/(app)/transacoes'
     | '/(app)/use-no-celular'
     | '/(app)/whatsapp'
-    | '/(public)/exemplo-pagina'
     | '/(public)/perfil-publico'
     | '/(site)/cadastro'
     | '/(site)/contato'
     | '/(site)/login'
     | '/(site)/precos'
     | '/(site)/recursos'
+    | '/(site)/redefinir-senha'
     | '/(site)/reset-password'
+    | '/(site)/trocar-senha'
+    | '/api/health'
     | '/(site)/'
     | '/(admin)/super/_app'
     | '/(admin)/super/login'
@@ -618,11 +676,14 @@ export interface FileRouteTypes {
     | '/(admin)/super/_app/financeiro'
     | '/(admin)/super/_app/indicacoes'
     | '/(admin)/super/_app/infra'
+    | '/(admin)/super/_app/meu-perfil'
     | '/(admin)/super/_app/mfa-setup'
     | '/(admin)/super/_app/planos'
+    | '/(admin)/super/_app/sistema'
     | '/(admin)/super/_app/templates'
     | '/(admin)/super/_app/tickets'
     | '/(admin)/super/_app/usuarios'
+    | '/api/public/google-calendar/callback'
     | '/api/public/mercado-pago/callback'
     | '/(admin)/super/_app/'
   fileRoutesById: FileRoutesById
@@ -648,14 +709,16 @@ export interface RootRouteChildren {
   appTransacoesRoute: typeof appTransacoesRoute
   appUseNoCelularRoute: typeof appUseNoCelularRoute
   appWhatsappRoute: typeof appWhatsappRoute
-  publicExemploPaginaRoute: typeof publicExemploPaginaRoute
   publicPerfilPublicoRoute: typeof publicPerfilPublicoRoute
   siteCadastroRoute: typeof siteCadastroRoute
   siteContatoRoute: typeof siteContatoRoute
   siteLoginRoute: typeof siteLoginRoute
   sitePrecosRoute: typeof sitePrecosRoute
   siteRecursosRoute: typeof siteRecursosRoute
+  siteRedefinirSenhaRoute: typeof siteRedefinirSenhaRoute
   siteResetPasswordRoute: typeof siteResetPasswordRoute
+  siteTrocarSenhaRoute: typeof siteTrocarSenhaRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   siteIndexRoute: typeof siteIndexRoute
   adminSuperAppRouteRoute: typeof adminSuperAppRouteRouteWithChildren
   adminSuperLoginRoute: typeof adminSuperLoginRoute
@@ -665,6 +728,7 @@ export interface RootRouteChildren {
   publicAvaliarTokenRoute: typeof publicAvaliarTokenRoute
   ApiFaqSearchRoute: typeof ApiFaqSearchRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
+  ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
   ApiPublicMercadoPagoCallbackRoute: typeof ApiPublicMercadoPagoCallbackRoute
 }
 
@@ -677,11 +741,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof siteIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(site)/trocar-senha': {
+      id: '/(site)/trocar-senha'
+      path: '/trocar-senha'
+      fullPath: '/trocar-senha'
+      preLoaderRoute: typeof siteTrocarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(site)/reset-password': {
       id: '/(site)/reset-password'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof siteResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(site)/redefinir-senha': {
+      id: '/(site)/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof siteRedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(site)/recursos': {
@@ -724,13 +809,6 @@ declare module '@tanstack/react-router' {
       path: '/perfil-publico'
       fullPath: '/perfil-publico'
       preLoaderRoute: typeof publicPerfilPublicoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/(public)/exemplo-pagina': {
-      id: '/(public)/exemplo-pagina'
-      path: '/exemplo-pagina'
-      fullPath: '/exemplo-pagina'
-      preLoaderRoute: typeof publicExemploPaginaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(app)/whatsapp': {
@@ -943,6 +1021,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMercadoPagoCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/google-calendar/callback': {
+      id: '/api/public/google-calendar/callback'
+      path: '/api/public/google-calendar/callback'
+      fullPath: '/api/public/google-calendar/callback'
+      preLoaderRoute: typeof ApiPublicGoogleCalendarCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(admin)/super/_app/usuarios': {
       id: '/(admin)/super/_app/usuarios'
       path: '/usuarios'
@@ -964,6 +1049,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminSuperAppTemplatesRouteImport
       parentRoute: typeof adminSuperAppRouteRoute
     }
+    '/(admin)/super/_app/sistema': {
+      id: '/(admin)/super/_app/sistema'
+      path: '/sistema'
+      fullPath: '/super/sistema'
+      preLoaderRoute: typeof adminSuperAppSistemaRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
     '/(admin)/super/_app/planos': {
       id: '/(admin)/super/_app/planos'
       path: '/planos'
@@ -976,6 +1068,13 @@ declare module '@tanstack/react-router' {
       path: '/mfa-setup'
       fullPath: '/super/mfa-setup'
       preLoaderRoute: typeof adminSuperAppMfaSetupRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
+    '/(admin)/super/_app/meu-perfil': {
+      id: '/(admin)/super/_app/meu-perfil'
+      path: '/meu-perfil'
+      fullPath: '/super/meu-perfil'
+      preLoaderRoute: typeof adminSuperAppMeuPerfilRouteImport
       parentRoute: typeof adminSuperAppRouteRoute
     }
     '/(admin)/super/_app/infra': {
@@ -1030,8 +1129,10 @@ interface adminSuperAppRouteRouteChildren {
   adminSuperAppFinanceiroRoute: typeof adminSuperAppFinanceiroRoute
   adminSuperAppIndicacoesRoute: typeof adminSuperAppIndicacoesRoute
   adminSuperAppInfraRoute: typeof adminSuperAppInfraRoute
+  adminSuperAppMeuPerfilRoute: typeof adminSuperAppMeuPerfilRoute
   adminSuperAppMfaSetupRoute: typeof adminSuperAppMfaSetupRoute
   adminSuperAppPlanosRoute: typeof adminSuperAppPlanosRoute
+  adminSuperAppSistemaRoute: typeof adminSuperAppSistemaRoute
   adminSuperAppTemplatesRoute: typeof adminSuperAppTemplatesRoute
   adminSuperAppTicketsRoute: typeof adminSuperAppTicketsRoute
   adminSuperAppUsuariosRoute: typeof adminSuperAppUsuariosRoute
@@ -1045,8 +1146,10 @@ const adminSuperAppRouteRouteChildren: adminSuperAppRouteRouteChildren = {
   adminSuperAppFinanceiroRoute: adminSuperAppFinanceiroRoute,
   adminSuperAppIndicacoesRoute: adminSuperAppIndicacoesRoute,
   adminSuperAppInfraRoute: adminSuperAppInfraRoute,
+  adminSuperAppMeuPerfilRoute: adminSuperAppMeuPerfilRoute,
   adminSuperAppMfaSetupRoute: adminSuperAppMfaSetupRoute,
   adminSuperAppPlanosRoute: adminSuperAppPlanosRoute,
+  adminSuperAppSistemaRoute: adminSuperAppSistemaRoute,
   adminSuperAppTemplatesRoute: adminSuperAppTemplatesRoute,
   adminSuperAppTicketsRoute: adminSuperAppTicketsRoute,
   adminSuperAppUsuariosRoute: adminSuperAppUsuariosRoute,
@@ -1077,14 +1180,16 @@ const rootRouteChildren: RootRouteChildren = {
   appTransacoesRoute: appTransacoesRoute,
   appUseNoCelularRoute: appUseNoCelularRoute,
   appWhatsappRoute: appWhatsappRoute,
-  publicExemploPaginaRoute: publicExemploPaginaRoute,
   publicPerfilPublicoRoute: publicPerfilPublicoRoute,
   siteCadastroRoute: siteCadastroRoute,
   siteContatoRoute: siteContatoRoute,
   siteLoginRoute: siteLoginRoute,
   sitePrecosRoute: sitePrecosRoute,
   siteRecursosRoute: siteRecursosRoute,
+  siteRedefinirSenhaRoute: siteRedefinirSenhaRoute,
   siteResetPasswordRoute: siteResetPasswordRoute,
+  siteTrocarSenhaRoute: siteTrocarSenhaRoute,
+  ApiHealthRoute: ApiHealthRoute,
   siteIndexRoute: siteIndexRoute,
   adminSuperAppRouteRoute: adminSuperAppRouteRouteWithChildren,
   adminSuperLoginRoute: adminSuperLoginRoute,
@@ -1094,6 +1199,7 @@ const rootRouteChildren: RootRouteChildren = {
   publicAvaliarTokenRoute: publicAvaliarTokenRoute,
   ApiFaqSearchRoute: ApiFaqSearchRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
+  ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,
   ApiPublicMercadoPagoCallbackRoute: ApiPublicMercadoPagoCallbackRoute,
 }
 export const routeTree = rootRouteImport

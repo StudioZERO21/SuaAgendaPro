@@ -298,7 +298,7 @@ function PerfilProfissionalPage() {
         {/* ── Foto ── */}
         <section className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-6 shadow-card">
           <div className="relative">
-            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full text-3xl font-bold text-white shadow-glow" style={{ background: "linear-gradient(135deg,#fb7185,#f472b6)" }}>
+            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full text-3xl font-bold text-white shadow-glow" style={{ background: "var(--gradient-primary)" }}>
               {photo ? (
                 <img src={photo} alt="Foto do perfil" className="h-full w-full object-cover" />
               ) : (

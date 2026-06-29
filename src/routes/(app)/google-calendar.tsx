@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -31,105 +31,96 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
+import {
+  startGoogleOAuth,
+  getGoogleCalendarStatus,
+  saveGoogleCalendarSettings,
+  disconnectGoogleCalendar,
+  syncNowToGoogle,
+  type GCalSettings,
+  type GCalStatus,
+} from "@/lib/google-calendar.functions";
 export const Route = createFileRoute("/(app)/google-calendar")({
   head: () => ({
     meta: [
       { title: "Google Calendar — SuaAgenda.Pro" },
       {
         name: "description",
-        content:
-          "Conecte sua conta Google e sincronize seus agendamentos automaticamente.",
+        content: "Conecte sua conta Google e sincronize seus agendamentos automaticamente.",
       },
     ],
   }),
   component: GoogleCalendarPage,
 });
 
-const STORAGE_KEY = "sa.googleCalendar";
-
-type Settings = {
-  connected: boolean;
-  email: string | null;
-  calendarId: string;
-  syncCreate: boolean;
-  syncUpdate: boolean;
-  syncCancel: boolean;
-  includeClientName: boolean;
-  reminderMinutes: number;
-  lastSyncAt: string | null;
-  syncedCount: number;
-  pendingCount: number;
-  autoSyncEnabled: boolean;
-  autoSyncInterval: number; // minutes
-};
-
-const DEFAULTS: Settings = {
-  connected: false,
-  email: null,
+const DEFAULT_SETTINGS: GCalSettings = {
   calendarId: "primary",
   syncCreate: true,
   syncUpdate: true,
   syncCancel: true,
   includeClientName: true,
   reminderMinutes: 30,
-  lastSyncAt: null,
-  syncedCount: 0,
-  pendingCount: 0,
   autoSyncEnabled: true,
   autoSyncInterval: 15,
 };
 
 type SyncState = "idle" | "connecting" | "syncing" | "success" | "error";
 
-const CONNECT_STEPS = [
-  "Abrindo o Google",
-  "Autorizando acesso",
-  "Carregando calendários",
-  "Pronto!",
-];
-
-const SYNC_STEPS = [
-  "Lendo agendamentos",
-  "Comparando com o Google",
-  "Enviando alterações",
-  "Sincronizado!",
-];
-
-function load(): Settings {
-  if (typeof window === "undefined") return DEFAULTS;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULTS;
-    return { ...DEFAULTS, ...JSON.parse(raw) };
-  } catch {
-    return DEFAULTS;
-  }
-}
-
-function persist(s: Settings) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-}
+const CONNECT_STEPS = ["Abrindo o Google", "Autorizando acesso", "Carregando calendários", "Pronto!"];
+const SYNC_STEPS = ["Lendo agendamentos", "Comparando com o Google", "Enviando alterações", "Sincronizado!"];
 
 function GoogleCalendarPage() {
   const navigate = useNavigate();
-  const [data, setData] = useState<Settings>(DEFAULTS);
+
+  const [status, setStatus] = useState<GCalStatus>({
+    connected: false,
+    email: null,
+    settings: DEFAULT_SETTINGS,
+    calendars: [],
+  });
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const [step, setStep] = useState(0);
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
+  const [syncedCount, setSyncedCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
 
-  useEffect(() => {
-    setData(load());
+  const loadStatus = useCallback(async () => {
+    try {
+      const s = await getGoogleCalendarStatus();
+      setStatus(s);
+    } catch {
+      // not connected
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  function update(patch: Partial<Settings>) {
-    setData((s) => {
-      const next = { ...s, ...patch };
-      persist(next);
-      return next;
-    });
-  }
+  useEffect(() => {
+    loadStatus();
+  }, [loadStatus]);
 
-  async function runSteps(steps: string[]) {
+  // Handle OAuth redirect-back
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const gcalParam = params.get("gcal");
+    if (gcalParam === "success") {
+      toast.success("Google Calendar conectado ✨");
+      loadStatus();
+    } else if (gcalParam === "error") {
+      const reason = params.get("reason") ?? "desconhecido";
+      toast.error(`Erro ao conectar: ${reason}`);
+    }
+    if (gcalParam) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("gcal");
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [loadStatus]);
+
+  async function animateSteps(steps: string[]) {
     for (let i = 0; i < steps.length; i++) {
       setStep(i);
       await new Promise((r) => setTimeout(r, 550));
@@ -138,60 +129,108 @@ function GoogleCalendarPage() {
 
   async function handleConnect() {
     setSyncState("connecting");
-    await runSteps(CONNECT_STEPS);
-    update({
-      connected: true,
-      email: "studio.beleza@gmail.com",
-      lastSyncAt: new Date().toISOString(),
-      syncedCount: 12,
-      pendingCount: 0,
-    });
-    setSyncState("success");
-    toast.success("Google Calendar conectado ✨");
-    setTimeout(() => setSyncState("idle"), 1800);
+    setStep(0);
+    try {
+      const result = await startGoogleOAuth({ data: { origin: window.location.origin } });
+      if (!result.ok) {
+        toast.error(
+          result.reason === "not_configured"
+            ? "Google OAuth não configurado. Adicione GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no .env."
+            : "Erro ao iniciar conexão.",
+        );
+        setSyncState("idle");
+        return;
+      }
+      // Redirect to Google — shows animation briefly
+      await animateSteps(CONNECT_STEPS.slice(0, 2));
+      window.location.href = result.url;
+    } catch {
+      toast.error("Erro ao conectar com o Google.");
+      setSyncState("idle");
+    }
   }
 
-  function handleDisconnect() {
-    update({
-      connected: false,
-      email: null,
-      lastSyncAt: null,
-      syncedCount: 0,
-      pendingCount: 0,
-    });
-    setSyncState("idle");
-    toast.success("Conta Google desconectada");
+  async function handleDisconnect() {
+    try {
+      await disconnectGoogleCalendar({ data: undefined });
+      setStatus({ connected: false, email: null, settings: DEFAULT_SETTINGS, calendars: [] });
+      setSyncState("idle");
+      toast.success("Conta Google desconectada");
+    } catch {
+      toast.error("Erro ao desconectar.");
+    }
   }
 
   async function handleSyncNow() {
     setSyncState("syncing");
-    await runSteps(SYNC_STEPS);
-    update({
-      lastSyncAt: new Date().toISOString(),
-      syncedCount: data.syncedCount + Math.floor(Math.random() * 3),
-      pendingCount: 0,
-    });
-    setSyncState("success");
-    toast.success("Agenda sincronizada");
-    setTimeout(() => setSyncState("idle"), 1800);
+    setStep(0);
+    const interval = setInterval(() => {
+      setStep((s) => Math.min(s + 1, SYNC_STEPS.length - 2));
+    }, 700);
+    try {
+      const result = await syncNowToGoogle({ data: undefined });
+      clearInterval(interval);
+      setStep(SYNC_STEPS.length - 1);
+      setLastSyncAt(new Date().toISOString());
+      setSyncedCount((c) => c + result.synced);
+      setPendingCount(result.skipped);
+      setSyncState("success");
+      if (result.error) {
+        toast.error(`Erro Google API: ${result.error}`, { duration: 15000 });
+      } else {
+        toast.success(
+          result.synced > 0
+            ? `${result.synced} agendamento(s) sincronizado(s)!`
+            : "Tudo já estava sincronizado.",
+        );
+      }
+      setTimeout(() => setSyncState("idle"), 1800);
+    } catch (e: unknown) {
+      clearInterval(interval);
+      const msg = e instanceof Error ? e.message : "";
+      toast.error(msg === "not_connected" ? "Conta Google não conectada." : "Erro na sincronização.");
+      setSyncState("error");
+      setTimeout(() => setSyncState("idle"), 2500);
+    }
   }
 
-  // Auto-sync agendado
+  async function handleSettingChange(patch: Partial<GCalSettings>) {
+    const next = { ...status.settings, ...patch };
+    setStatus((s) => ({ ...s, settings: next }));
+    setSavingSettings(true);
+    try {
+      await saveGoogleCalendarSettings({ data: next });
+    } catch {
+      toast.error("Erro ao salvar configurações.");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  // Auto-sync
   useEffect(() => {
-    if (!data.connected || !data.autoSyncEnabled) return;
+    if (!status.connected || !status.settings.autoSyncEnabled) return;
     const id = setInterval(
       () => {
-        if (syncState === "idle") {
-          handleSyncNow();
-        }
+        if (syncState === "idle") handleSyncNow();
       },
-      data.autoSyncInterval * 60 * 1000,
+      status.settings.autoSyncInterval * 60 * 1000,
     );
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.connected, data.autoSyncEnabled, data.autoSyncInterval, syncState]);
+  }, [status.connected, status.settings.autoSyncEnabled, status.settings.autoSyncInterval, syncState]);
 
   const busy = syncState === "connecting" || syncState === "syncing";
+
+  if (loading) {
+    return (
+      <MobileShell>
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+        </div>
+      </MobileShell>
+    );
+  }
 
   return (
     <MobileShell>
@@ -207,22 +246,17 @@ function GoogleCalendarPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
             Integração
           </p>
-          <h1 className="truncate font-display text-lg font-bold">
-            Google Calendar
-          </h1>
+          <h1 className="truncate font-display text-lg font-bold">Google Calendar</h1>
         </div>
+        {savingSettings && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </header>
 
       <main className="flex-1 space-y-4 px-4 pb-28 pt-4 sm:space-y-5 sm:px-5 sm:pt-5">
-        {/* Hero rosa premium */}
+        {/* Hero */}
         <section
           className="relative overflow-hidden rounded-[28px] p-6 text-white shadow-glow"
-          style={{
-            background:
-              "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #9d174d 100%)",
-          }}
+          style={{ background: "var(--gradient-primary)" }}
         >
-          {/* Aurora orbs */}
           <motion.div
             className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-white/25 blur-3xl"
             animate={{ x: [0, 12, 0], y: [0, 8, 0] }}
@@ -233,7 +267,6 @@ function GoogleCalendarPage() {
             animate={{ x: [0, -10, 0], y: [0, -8, 0] }}
             transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
           />
-
           <div className="relative flex items-start gap-3">
             <div className="relative">
               <motion.div
@@ -249,15 +282,12 @@ function GoogleCalendarPage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">
                 Sincronização inteligente
               </p>
-              <p className="font-display text-xl font-bold leading-tight">
-                Sua agenda no Google
-              </p>
+              <p className="font-display text-xl font-bold leading-tight">Sua agenda no Google</p>
               <p className="mt-0.5 text-xs text-white/80">
                 Tudo que acontece aqui aparece lá. Automático.
               </p>
             </div>
           </div>
-
           <div className="relative mt-5 flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2 text-[11px] backdrop-blur-md ring-1 ring-white/20">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
             <span>OAuth seguro · você desconecta quando quiser</span>
@@ -267,25 +297,24 @@ function GoogleCalendarPage() {
         {/* Connection card */}
         <section className="relative overflow-hidden rounded-3xl border border-border bg-card p-5 shadow-card">
           <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/5 blur-2xl" />
-
           <div className="relative flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
                 className={cn(
                   "relative flex h-12 w-12 items-center justify-center rounded-2xl transition",
-                  data.connected
+                  status.connected
                     ? "bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/30"
                     : "bg-secondary text-muted-foreground",
                 )}
               >
-                {data.connected && (
+                {status.connected && (
                   <motion.div
                     className="absolute inset-0 rounded-2xl bg-primary/20"
                     animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
                     transition={{ duration: 2.4, repeat: Infinity }}
                   />
                 )}
-                {data.connected ? (
+                {status.connected ? (
                   <CheckCircle2 className="relative h-5 w-5" />
                 ) : (
                   <CircleDot className="h-5 w-5" />
@@ -293,20 +322,18 @@ function GoogleCalendarPage() {
               </div>
               <div className="min-w-0">
                 <p className="font-display text-sm font-bold">
-                  {data.connected ? "Conectado" : "Não conectado"}
+                  {status.connected ? "Conectado" : "Não conectado"}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {data.connected
-                    ? data.email
-                    : "Conecte sua conta para começar"}
+                  {status.connected ? status.email : "Conecte sua conta para começar"}
                 </p>
               </div>
             </div>
-            {data.connected && <LivePill />}
+            {status.connected && <LivePill />}
           </div>
 
           <div className="relative mt-4">
-            {!data.connected ? (
+            {!status.connected ? (
               <Button
                 onClick={handleConnect}
                 disabled={busy}
@@ -320,9 +347,7 @@ function GoogleCalendarPage() {
                 ) : (
                   <>
                     <GoogleGlyph />
-                    <span className="ml-2 text-sm font-semibold">
-                      Continuar com Google
-                    </span>
+                    <span className="ml-2 text-sm font-semibold">Continuar com Google</span>
                   </>
                 )}
               </Button>
@@ -353,51 +378,49 @@ function GoogleCalendarPage() {
         </section>
 
         {/* Sync status */}
-        {data.connected && (
+        {status.connected && (
           <SyncStatusCard
             state={syncState}
             step={step}
             steps={syncState === "connecting" ? CONNECT_STEPS : SYNC_STEPS}
-            lastSyncAt={data.lastSyncAt}
-            synced={data.syncedCount}
-            pending={data.pendingCount}
+            lastSyncAt={lastSyncAt}
+            synced={syncedCount}
+            pending={pendingCount}
           />
         )}
 
-        {/* Premium loading overlay during connecting */}
+        {/* Overlay during connecting */}
         <AnimatePresence>
-          {syncState === "connecting" && !data.connected && (
+          {syncState === "connecting" && !status.connected && (
             <ConnectingOverlay step={step} />
           )}
         </AnimatePresence>
 
-        {/* Sync automática + Preferências - só após conectar */}
-        {data.connected && (
+        {/* Settings — only after connecting */}
+        {status.connected && (
           <>
-            {/* Sincronização automática */}
+            {/* Auto sync */}
             <section className="rounded-3xl border border-border bg-card p-5 shadow-card">
               <div className="mb-4 flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
                   <Zap className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-display text-base font-bold">
-                    Sincronização automática
-                  </h2>
+                  <h2 className="font-display text-base font-bold">Sincronização automática</h2>
                   <p className="text-xs text-muted-foreground">
                     Mantém o Google sempre atualizado em segundo plano.
                   </p>
                 </div>
                 <Switch
-                  checked={data.autoSyncEnabled}
-                  onCheckedChange={(v) => update({ autoSyncEnabled: v })}
+                  checked={status.settings.autoSyncEnabled}
+                  onCheckedChange={(v) => handleSettingChange({ autoSyncEnabled: v })}
                 />
               </div>
 
               <div
                 className={cn(
                   "space-y-2 transition",
-                  !data.autoSyncEnabled && "pointer-events-none opacity-50",
+                  !status.settings.autoSyncEnabled && "pointer-events-none opacity-50",
                 )}
               >
                 <Label className="flex items-center gap-1.5 text-xs font-semibold">
@@ -405,10 +428,8 @@ function GoogleCalendarPage() {
                   Frequência
                 </Label>
                 <Select
-                  value={String(data.autoSyncInterval)}
-                  onValueChange={(v) =>
-                    update({ autoSyncInterval: Number(v) })
-                  }
+                  value={String(status.settings.autoSyncInterval)}
+                  onValueChange={(v) => handleSettingChange({ autoSyncInterval: Number(v) })}
                 >
                   <SelectTrigger className="h-11 rounded-2xl">
                     <SelectValue />
@@ -424,84 +445,76 @@ function GoogleCalendarPage() {
               </div>
             </section>
 
-            {/* O que sincronizar */}
+            {/* What to sync */}
             <section className="space-y-1 rounded-3xl border border-border bg-card p-5 shadow-card">
               <div className="mb-3">
-                <h2 className="font-display text-base font-bold">
-                  O que sincronizar
-                </h2>
+                <h2 className="font-display text-base font-bold">O que sincronizar</h2>
                 <p className="text-xs text-muted-foreground">
                   Tudo é sincronizado do app para o Google automaticamente.
                 </p>
               </div>
-
               <Row
                 title="Novos agendamentos"
                 desc="Cria evento no Google ao marcar um horário"
-                checked={data.syncCreate}
-                onChange={(v) => update({ syncCreate: v })}
+                checked={status.settings.syncCreate}
+                onChange={(v) => handleSettingChange({ syncCreate: v })}
               />
               <Row
                 title="Remarcações"
                 desc="Atualiza o evento quando o horário muda"
-                checked={data.syncUpdate}
-                onChange={(v) => update({ syncUpdate: v })}
+                checked={status.settings.syncUpdate}
+                onChange={(v) => handleSettingChange({ syncUpdate: v })}
               />
               <Row
                 title="Cancelamentos"
                 desc="Remove o evento do Google quando cancelar"
-                checked={data.syncCancel}
-                onChange={(v) => update({ syncCancel: v })}
+                checked={status.settings.syncCancel}
+                onChange={(v) => handleSettingChange({ syncCancel: v })}
               />
               <Row
                 title="Incluir nome da cliente"
                 desc="Mostra o nome no título do evento"
-                checked={data.includeClientName}
-                onChange={(v) => update({ includeClientName: v })}
+                checked={status.settings.includeClientName}
+                onChange={(v) => handleSettingChange({ includeClientName: v })}
               />
             </section>
 
-            {/* Preferências */}
+            {/* Preferences */}
             <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
               <div>
-                <h2 className="font-display text-base font-bold">
-                  Preferências
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Onde os eventos serão criados.
-                </p>
+                <h2 className="font-display text-base font-bold">Preferências</h2>
+                <p className="text-xs text-muted-foreground">Onde os eventos serão criados.</p>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-semibold">
-                  Calendário destino
-                </Label>
+                <Label className="text-xs font-semibold">Calendário destino</Label>
                 <Select
-                  value={data.calendarId}
-                  onValueChange={(v) => update({ calendarId: v })}
+                  value={status.settings.calendarId}
+                  onValueChange={(v) => handleSettingChange({ calendarId: v })}
                 >
                   <SelectTrigger className="h-11 rounded-2xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="primary">
-                      Meu calendário (principal)
-                    </SelectItem>
-                    <SelectItem value="work">Trabalho</SelectItem>
-                    <SelectItem value="clients">Clientes</SelectItem>
+                    {status.calendars.length > 0 ? (
+                      status.calendars.map((cal) => (
+                        <SelectItem key={cal.id} value={cal.id}>
+                          {cal.summary}
+                          {cal.primary ? " (principal)" : ""}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="primary">Meu calendário (principal)</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-semibold">
-                  Lembrete no Google
-                </Label>
+                <Label className="text-xs font-semibold">Lembrete no Google</Label>
                 <Select
-                  value={String(data.reminderMinutes)}
-                  onValueChange={(v) =>
-                    update({ reminderMinutes: Number(v) })
-                  }
+                  value={String(status.settings.reminderMinutes)}
+                  onValueChange={(v) => handleSettingChange({ reminderMinutes: Number(v) })}
                 >
                   <SelectTrigger className="h-11 rounded-2xl">
                     <SelectValue />
@@ -523,9 +536,7 @@ function GoogleCalendarPage() {
         <section className="rounded-3xl border border-dashed border-primary/30 bg-primary/5 p-5">
           <div className="mb-3 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-sm font-bold">
-              O que pediremos para o Google
-            </h2>
+            <h2 className="font-display text-sm font-bold">O que pediremos para o Google</h2>
           </div>
           <ul className="space-y-2 text-xs text-muted-foreground">
             <Perm>Ver e gerenciar eventos do seu calendário</Perm>
@@ -537,6 +548,8 @@ function GoogleCalendarPage() {
     </MobileShell>
   );
 }
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function LivePill() {
   return (
@@ -573,7 +586,6 @@ function SyncStatusCard({
   return (
     <section className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-card">
       <div className="absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
-
       <div className="relative flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -585,18 +597,16 @@ function SyncStatusCard({
               {state === "syncing"
                 ? "Sincronizando agora"
                 : state === "success"
-                ? "Tudo certo"
-                : state === "error"
-                ? "Falha na última sincronização"
-                : "Pronto para sincronizar"}
+                  ? "Tudo certo"
+                  : state === "error"
+                    ? "Falha na última sincronização"
+                    : "Pronto para sincronizar"}
             </p>
           </div>
         </div>
-
         <StatusBadge state={state} />
       </div>
 
-      {/* Progress bar */}
       <div className="relative mt-4 h-1.5 overflow-hidden rounded-full bg-primary/10">
         <motion.div
           className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-primary/70"
@@ -613,7 +623,6 @@ function SyncStatusCard({
         )}
       </div>
 
-      {/* Step text */}
       <div className="relative mt-2 flex h-4 items-center text-[11px] text-muted-foreground">
         <AnimatePresence mode="wait">
           <motion.span
@@ -628,18 +637,17 @@ function SyncStatusCard({
             {busy
               ? steps[step]
               : lastSyncAt
-              ? `Última sync: ${new Date(lastSyncAt).toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}`
-              : "Nenhuma sincronização ainda"}
+                ? `Última sync: ${new Date(lastSyncAt).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+                : "Nenhuma sincronização ainda"}
           </motion.span>
         </AnimatePresence>
       </div>
 
-      {/* Counters */}
       <div className="relative mt-4 grid grid-cols-2 gap-2">
         <Stat icon={<Check className="h-3.5 w-3.5" />} label="Sincronizados" value={synced} tone="emerald" />
         <Stat
@@ -663,12 +671,7 @@ function StatusBadge({ state }: { state: SyncState }) {
   } as const;
   const s = map[state];
   return (
-    <span
-      className={cn(
-        "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ring-1",
-        s.cls,
-      )}
-    >
+    <span className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ring-1", s.cls)}>
       {s.label}
     </span>
   );
@@ -693,19 +696,12 @@ function Stat({
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-3">
       <div className="flex items-center justify-between">
-        <span
-          className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-lg",
-            tones[tone],
-          )}
-        >
+        <span className={cn("flex h-6 w-6 items-center justify-center rounded-lg", tones[tone])}>
           {icon}
         </span>
         <span className="font-display text-lg font-bold">{value}</span>
       </div>
-      <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
+      <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -724,7 +720,6 @@ function ConnectingOverlay({ step }: { step: number }) {
         exit={{ scale: 0.95, opacity: 0 }}
         className="mx-6 w-full max-w-xs overflow-hidden rounded-3xl border border-border bg-card p-6 text-center shadow-glow"
       >
-        {/* Animated rings */}
         <div className="relative mx-auto mb-5 h-20 w-20">
           <motion.span
             className="absolute inset-0 rounded-full border-2 border-primary/30"
@@ -738,10 +733,7 @@ function ConnectingOverlay({ step }: { step: number }) {
           />
           <div
             className="relative flex h-20 w-20 items-center justify-center rounded-full text-white shadow-glow"
-            style={{
-              background:
-                "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #9d174d 100%)",
-            }}
+            style={{ background: "var(--gradient-primary)" }}
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -766,15 +758,11 @@ function ConnectingOverlay({ step }: { step: number }) {
           </motion.p>
         </AnimatePresence>
 
-        {/* Dots */}
         <div className="mt-5 flex justify-center gap-1.5">
           {CONNECT_STEPS.map((_, i) => (
             <motion.span
               key={i}
-              className={cn(
-                "h-1.5 rounded-full bg-primary",
-                i <= step ? "w-6" : "w-1.5 opacity-30",
-              )}
+              className={cn("h-1.5 rounded-full bg-primary", i <= step ? "w-6" : "w-1.5 opacity-30")}
               animate={i === step ? { opacity: [1, 0.4, 1] } : {}}
               transition={{ duration: 1.2, repeat: Infinity }}
             />

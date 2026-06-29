@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +15,7 @@ import {
   Share2,
   ShieldCheck,
   HelpCircle,
+  UserCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,7 +29,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { clearSuperAuth, getSuperAuth } from "@/lib/super-auth";
+import { clearSuperAuth, getSuperAuth, getSuperToken } from "@/lib/super-auth";
 import { cn } from "@/lib/utils";
 
 const NAV_PRINCIPAL = [
@@ -45,6 +47,11 @@ const NAV_SISTEMA = [
   { title: "Auditoria",    to: "/super/auditoria",    icon: ClipboardList,  exact: false },
   { title: "Infra",        to: "/super/infra",        icon: Server,         exact: false },
   { title: "Configurações",to: "/super/configuracoes",icon: Settings,       exact: false },
+  { title: "Sistema",      to: "/super/sistema",      icon: Settings,       exact: false },
+];
+
+const NAV_CONTA = [
+  { title: "Meu Perfil",   to: "/super/meu-perfil",  icon: UserCircle,     exact: false },
   { title: "Meu 2FA",      to: "/super/mfa-setup",   icon: ShieldCheck,    exact: false },
 ];
 
@@ -52,6 +59,21 @@ export function SuperSidebar() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const auth = getSuperAuth();
+  const [adminName, setAdminName] = useState<string | null>(null);
+  const [adminInitial, setAdminInitial] = useState("S");
+
+  useEffect(() => {
+    const token = getSuperToken();
+    if (!token) return;
+    // Decode name from DB via server function lazily
+    import("@/lib/super-profile.functions").then(({ getMyProfile }) =>
+      import("@/lib/super-client").then(({ withSuperToken }) =>
+        getMyProfile({ data: withSuperToken() })
+          .then((p) => { setAdminName(p.name); setAdminInitial(p.name.charAt(0).toUpperCase()); })
+          .catch(() => {}),
+      ),
+    );
+  }, []);
 
   const isActive = (to: string, exact: boolean) =>
     exact ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
@@ -127,15 +149,39 @@ export function SuperSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Minha conta</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {NAV_CONTA.map((item) => {
+                const active = isActive(item.to, item.exact);
+                return (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+                      <Link
+                        to={item.to}
+                        className={cn("flex items-center gap-2", active && "font-semibold")}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
         <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:p-0">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-bold text-secondary-foreground">
-            S
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full gradient-primary text-xs font-bold text-white">
+            {adminInitial}
           </div>
           <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-            <p className="truncate text-xs font-semibold">Super Admin</p>
+            <p className="truncate text-xs font-semibold">{adminName ?? "Super Admin"}</p>
             <p className="truncate text-[10px] text-muted-foreground">
               {auth ? "autenticado" : "—"}
             </p>

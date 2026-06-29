@@ -30,16 +30,26 @@ const channels = [
 function ContatoPage() {
   const [sending, setSending] = useState(false);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
-      (e.target as HTMLFormElement).reset();
-      toast.success("Mensagem enviada!", {
-        description: "A gente responde em até 1 dia útil 💕",
+    const form = e.target as HTMLFormElement;
+    const fd   = new FormData(form);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.from("contact_messages").insert({
+        name:    fd.get("name") as string,
+        email:   fd.get("email") as string,
+        message: fd.get("message") as string,
       });
-    }, 800);
+      if (error) throw error;
+      form.reset();
+      toast.success("Mensagem enviada!", { description: "Respondemos em até 1 dia útil." });
+    } catch {
+      toast.error("Erro ao enviar. Tente pelo WhatsApp ou e-mail diretamente.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (

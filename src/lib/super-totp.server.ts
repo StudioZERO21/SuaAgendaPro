@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac, randomBytes, pbkdf2Sync, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 // ─── Base32 (RFC 4648) ────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ function base32Encode(buf: Buffer): string {
   return result;
 }
 
-// ─── TOTP (RFC 6238) — sem dependência externa ───────────────────────────────
+// ─── TOTP (RFC 6238) ─────────────────────────────────────────────────────────
 
 function hotp(secret: string, counter: number): string {
   const key = base32Decode(secret);
@@ -45,7 +45,7 @@ function hotp(secret: string, counter: number): string {
 }
 
 export function generateTotpSecret(): string {
-  return base32Encode(randomBytes(20)); // 160 bits
+  return base32Encode(randomBytes(20));
 }
 
 export function generateTotpUri(email: string, secret: string): string {
@@ -55,16 +55,112 @@ export function generateTotpUri(email: string, secret: string): string {
 }
 
 export function verifyTotpCode(code: string, secret: string): boolean {
-  const c    = code.replace(/\s/g, "");
+  const c = code.replace(/\s/g, "");
   if (c.length !== 6 || !/^\d{6}$/.test(c)) return false;
   const step = Math.floor(Date.now() / 1000 / 30);
-  // Tolera ±1 step (30s de drift de relógio)
   return [-1, 0, 1].some((d) => hotp(secret, step + d) === c);
 }
 
-// ─── Credenciais base (senha ainda no env) ───────────────────────────────────
+// ─── PBKDF2 password hashing ─────────────────────────────────────────────────
 
-export type SuperAdmin = { email: string; password: string; name?: string };
+const PBKDF2_ITERS = 200_000;
+const PBKDF2_LEN   = 64;
+const PBKDF2_ALGO  = "sha512";
+
+export function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = pbkdf2Sync(password, salt, PBKDF2_ITERS, PBKDF2_LEN, PBKDF2_ALGO).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+export function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  try {
+    const computed = pbkdf2Sync(password, salt, PBKDF2_ITERS, PBKDF2_LEN, PBKDF2_ALGO).toString("hex");
+    const hBuf = Buffer.from(hash, "hex");
+    const cBuf = Buffer.from(computed, "hex");
+    if (hBuf.length !== cBuf.length) return false;
+    return timingSafeEqual(hBuf, cBuf);
+  } catch { return false; }
+}
+
+// ─── Supabase client (service role) ──────────────────────────────────────────
+
+function svc() {
+  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+// ─── super_admin_credentials (DB-based credentials) ──────────────────────────
+
+export type DbSuperAdmin = {
+  email: string;
+  name: string;
+  password_hash: string;
+  must_change_password: boolean;
+};
+
+export async function getDbSuperAdmin(email: string): Promise<DbSuperAdmin | null> {
+  const { data } = await svc()
+    .from("super_admin_credentials")
+    .select("*")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+  return data ?? null;
+}
+
+export async function getAllDbSuperAdmins(): Promise<DbSuperAdmin[]> {
+  const { data } = await svc()
+    .from("super_admin_credentials")
+    .select("*")
+    .order("created_at");
+  return data ?? [];
+}
+
+export async function upsertDbSuperAdmin(
+  admin: DbSuperAdmin & { created_by?: string },
+): Promise<void> {
+  const { error } = await svc()
+    .from("super_admin_credentials")
+    .upsert(
+      { ...admin, email: admin.email.toLowerCase(), updated_at: new Date().toISOString() },
+      { onConflict: "email" },
+    );
+  if (error) throw new Error("Falha ao salvar admin: " + error.message);
+}
+
+export async function updateDbSuperAdminPassword(
+  email: string,
+  newPasswordHash: string,
+): Promise<void> {
+  const { error } = await svc()
+    .from("super_admin_credentials")
+    .update({ password_hash: newPasswordHash, must_change_password: false, updated_at: new Date().toISOString() })
+    .eq("email", email.toLowerCase());
+  if (error) throw new Error("Falha ao atualizar senha: " + error.message);
+}
+
+export async function updateDbSuperAdminName(email: string, name: string): Promise<void> {
+  const { error } = await svc()
+    .from("super_admin_credentials")
+    .update({ name, updated_at: new Date().toISOString() })
+    .eq("email", email.toLowerCase());
+  if (error) throw new Error("Falha ao atualizar nome: " + error.message);
+}
+
+export async function deleteDbSuperAdmin(email: string): Promise<void> {
+  const { error } = await svc()
+    .from("super_admin_credentials")
+    .delete()
+    .eq("email", email.toLowerCase());
+  if (error) throw new Error("Falha ao remover admin: " + error.message);
+}
+
+// ─── Env-var credentials (legacy + bootstrap) ────────────────────────────────
+
+export type SuperAdmin = { email: string; password: string; name?: string; must_change_password?: boolean };
 
 export function getSuperAdmins(): SuperAdmin[] {
   const raw = process.env.SUPER_ADMINS;
@@ -74,17 +170,12 @@ export function getSuperAdmins(): SuperAdmin[] {
   }
   const email    = process.env.SUPER_ADMIN_EMAIL ?? "";
   const password = process.env.SUPER_ADMIN_PASSWORD ?? "";
-  if (email && password) return [{ email, password }];
+  const name     = process.env.SUPER_ADMIN_NAME ?? "";
+  if (email && password) return [{ email, password, name: name || undefined }];
   return [];
 }
 
 // ─── MFA no Supabase ──────────────────────────────────────────────────────────
-
-function svc() {
-  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-  return createClient(url, key, { auth: { persistSession: false } });
-}
 
 export async function getMfaSecret(email: string): Promise<string | null> {
   const { data } = await svc()

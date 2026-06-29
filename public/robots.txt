@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /super
+Disallow: /super/
+Disallow: /api/
+
+Allow: /
+
+Sitemap: https://suaagenda.pro/sitemap.xml

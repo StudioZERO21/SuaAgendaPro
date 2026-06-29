@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ShieldAlert, Loader2, ShieldCheck } from "lucide-react";
+import { ShieldAlert, Loader2, ShieldCheck, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { getSuperAuth, setSuperToken } from "@/lib/super-auth";
 import {
   superAdminLogin,
   superAdminVerifyMfa,
+  superAdminForcedChangePassword,
 } from "@/lib/super-auth.server";
 import logoUrl from "@/assets/logo-suaagenda.png";
 
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/(admin)/super/login")({
   component: SuperLoginPage,
 });
 
-type Step = "credentials" | "mfa";
+type Step = "credentials" | "mfa" | "change-password";
 
 function SuperLoginPage() {
   const navigate  = useNavigate();
@@ -33,6 +34,8 @@ function SuperLoginPage() {
   const [password, setPassword]   = useState("");
   const [pendingToken, setPendingToken] = useState("");
   const [totp, setTotp]           = useState("");
+  const [newPassword, setNewPassword]   = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading]     = useState(false);
   const totpRef = useRef<HTMLInputElement>(null);
 
@@ -57,7 +60,10 @@ function SuperLoginPage() {
         data: { email: email.trim(), password },
       });
 
-      if (result.mfaRequired) {
+      if (result.mustChangePassword) {
+        setPendingToken(result.pendingToken);
+        setStep("change-password");
+      } else if (result.mfaRequired) {
         setPendingToken(result.pendingToken);
         setStep("mfa");
       } else if (result.token) {
@@ -67,6 +73,25 @@ function SuperLoginPage() {
       }
     } catch (err: any) {
       toast.error(err?.message ?? "Credenciais inválidas");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onSubmitChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 8) { toast.error("A senha deve ter pelo menos 8 caracteres"); return; }
+    if (newPassword !== confirmPassword) { toast.error("As senhas não coincidem"); return; }
+    setLoading(true);
+    try {
+      const { token } = await superAdminForcedChangePassword({
+        data: { pendingToken, newPassword },
+      });
+      setSuperToken(token);
+      toast.success("Senha alterada com sucesso! Bem-vindo ao painel.");
+      navigate({ to: "/super", replace: true });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao alterar senha. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -134,7 +159,52 @@ function SuperLoginPage() {
             <img src={logoUrl} alt="SuaAgenda.Pro" className="h-32 w-auto object-contain" />
           </div>
 
-          {step === "credentials" ? (
+          {step === "change-password" ? (
+            <>
+              <div className="mb-8 space-y-3 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100">
+                  <KeyRound className="h-7 w-7 text-amber-600" />
+                </div>
+                <h2 className="font-display text-2xl font-bold">Defina sua senha</h2>
+                <p className="text-sm text-muted-foreground">
+                  Por segurança, você precisa criar uma nova senha antes de continuar.
+                </p>
+              </div>
+              <form onSubmit={onSubmitChangePassword} className="space-y-5">
+                <div className="space-y-2.5">
+                  <Label htmlFor="new-password">Nova senha</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-2.5">
+                  <Label htmlFor="confirm-password">Confirmar senha</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repita a nova senha"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={loading || newPassword.length < 8 || newPassword !== confirmPassword}
+                  className="h-12 w-full rounded-xl gradient-primary font-semibold text-primary-foreground shadow-glow"
+                >
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando…</> : "Salvar nova senha e entrar"}
+                </Button>
+              </form>
+            </>
+          ) : step === "credentials" ? (
             <>
               <div className="mb-8 space-y-3 text-center">
                 <h2 className="font-display text-2xl font-bold">Entrar no painel</h2>

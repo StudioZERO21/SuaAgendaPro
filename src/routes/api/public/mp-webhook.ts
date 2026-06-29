@@ -133,6 +133,12 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
                 .update({ deposit_paid: true, status: "confirmed" })
                 .eq("id", tx.appointment_id)
                 .eq("professional_id", secret.user_id);
+
+              // Sync to Google Calendar (best-effort)
+              try {
+                const { pushAppointmentToGoogle } = await import("@/lib/google-calendar.functions");
+                await pushAppointmentToGoogle(secret.user_id, tx.appointment_id, "create");
+              } catch {}
             }
 
             break; // found the owner

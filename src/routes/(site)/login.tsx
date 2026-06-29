@@ -43,6 +43,26 @@ function LoginPage() {
       return;
     }
 
+    // Register this as the only active session — other devices will be kicked out within 30s
+    const nonce = crypto.randomUUID();
+    localStorage.setItem("session_nonce", nonce);
+
+    const [profile] = await Promise.all([
+      supabase.from("profiles").select("force_password_change, active_session_nonce").eq("id", data.user.id).single()
+        .then(({ data: p }) => p),
+      supabase.auth.signOut({ scope: "others" }),
+    ]);
+
+    // Write nonce AFTER signOut(others) so it isn't revoked
+    await supabase.from("profiles").update({ active_session_nonce: nonce }).eq("id", data.user.id);
+
+    // If admin forced a password change, redirect there before the dashboard
+    if (profile?.force_password_change) {
+      setLoading(false);
+      navigate({ to: "/trocar-senha" });
+      return;
+    }
+
     const onboarded = await getOnboardingStatus(data.user.id);
     setLoading(false);
     toast.success("Bem-vinda de volta ✨");

@@ -28,7 +28,7 @@ import { NotificationsModal } from "@/components/notifications-modal";
 import { useNotifications } from "@/lib/notifications-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { getAvailableSlots } from "@/lib/availability";
+import { getAvailableSlots, localTzSuffix } from "@/lib/availability";
 import {
   useAgendamentos, useAgendamentosRealtime, useCreateAgendamento,
   useUpdateStatus, useCancelAgendamento,
@@ -546,7 +546,7 @@ function AppointmentCard({
           <div className="h-9 w-px bg-border/70" />
           <div
             className={cn("relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white shadow-soft", isDone && "grayscale")}
-            style={isDone ? { background: "#a1a1aa" } : { background: `linear-gradient(135deg, ${client?.color ?? "#ec4899"}, var(--primary))` }}
+            style={isDone ? { background: "#a1a1aa" } : { background: `linear-gradient(135deg, ${client?.color ?? "var(--primary)"}, var(--accent))` }}
           >
             {client?.initials ?? "?"}
           </div>
@@ -962,7 +962,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
       }
 
       const ds = `${draft.date!.getFullYear()}-${String(draft.date!.getMonth()+1).padStart(2,"0")}-${String(draft.date!.getDate()).padStart(2,"0")}`;
-      const scheduledAt = `${ds}T${draft.time}:00`;
+      const scheduledAt = `${ds}T${draft.time}:00${localTzSuffix()}`;
 
       await createAgendamento.mutateAsync({
         clientId,

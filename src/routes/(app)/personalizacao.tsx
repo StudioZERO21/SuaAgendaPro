@@ -33,6 +33,11 @@ export const Route = createFileRoute("/(app)/personalizacao")({
         content: "Personalize tema, cores e logo do seu negócio.",
       },
     ],
+    links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
+      { rel: "stylesheet", href: GOOGLE_FONTS_URL },
+    ],
   }),
   component: PersonalizacaoPage,
 });
@@ -46,7 +51,9 @@ import {
   applyPersonalization,
   type Personalization,
 } from "@/lib/personalization";
-import { THEMES } from "@/lib/themes";
+import { THEMES, GOOGLE_FONTS_URL } from "@/lib/themes";
+import { THEME_CATEGORY_ORDER } from "@/lib/theme-meta";
+import { TemplatePreviewCard } from "@/components/public-page/template-preview-card";
 
 
 function PersonalizacaoPage() {
@@ -855,48 +862,38 @@ function PersonalizacaoPage() {
           </div>
 
           {/* Template da página pública */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold">Template da página pública</Label>
-            <p className="text-[11px] text-muted-foreground">
-              Escolha o visual do seu link de agendamento. Cada template tem paleta de cores, fontes e layout próprios.
-            </p>
-            <div className="grid grid-cols-2 gap-2.5">
-              {Object.values(THEMES).map((t) => {
-                const active = pub.templateId === t.id;
-                // Derive hero bg for preview swatch
-                const heroColor = t.colors.hero.startsWith("linear") ? t.colors.ctaBg : t.colors.hero;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setPub((s) => ({ ...s, templateId: t.id }))}
-                    className={cn(
-                      "relative flex flex-col gap-2 rounded-2xl border p-3 text-left transition",
-                      active ? "border-primary bg-primary/8 ring-1 ring-primary/40" : "border-border bg-secondary/30 hover:border-border/80",
-                    )}
-                  >
-                    {/* Color palette preview */}
-                    <div className="flex h-10 w-full overflow-hidden rounded-lg">
-                      <div className="flex-[2]" style={{ background: heroColor }} />
-                      <div className="flex-1" style={{ background: t.colors.primary }} />
-                      <div className="flex-1" style={{ background: t.colors.ctaBg }} />
-                      <div className="flex-1" style={{ background: t.colors.bg }} />
-                    </div>
-                    {/* Info */}
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-bold leading-tight">{t.name}</span>
-                        {active && <Check className="h-3 w-3 text-primary" />}
-                      </div>
-                      <span className="inline-block rounded-full px-1.5 py-px text-[9px] font-semibold uppercase tracking-wider"
-                        style={{ background: heroColor + "33", color: heroColor === "#ffffff" ? "#666" : heroColor }}>
-                        {t.category}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-semibold">Template da página pública</Label>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                Escolha o layout do seu link de agendamento. O preview mostra hero, serviços e portfólio de cada tema.
+              </p>
             </div>
+
+            {THEME_CATEGORY_ORDER.map((category) => {
+              const themesInCat = Object.values(THEMES).filter((t) => t.category === category);
+              if (themesInCat.length === 0) return null;
+              return (
+                <div key={category} className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                      {category}
+                    </span>
+                    <div className="h-px flex-1 bg-border/60" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {themesInCat.map((t) => (
+                      <TemplatePreviewCard
+                        key={t.id}
+                        theme={t}
+                        selected={pub.templateId === t.id}
+                        onSelect={() => setPub((s) => ({ ...s, templateId: t.id }))}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
         </section>

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Appointment, AppointmentStatus } from "@/integrations/supabase/types";
 import { isoToDateStr, isoToTimeStr } from "@/lib/availability";
+import { syncAppointmentWithGoogle } from "@/lib/google-calendar.functions";
 
 // ── UI types ──────────────────────────────────────────────────
 
@@ -130,7 +131,10 @@ export function useCreateAgendamento() {
       if (error) throw error;
       return adaptAppointment(data as Appointment);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: (appt) => {
+      qc.invalidateQueries({ queryKey: KEY });
+      syncAppointmentWithGoogle({ data: { appointmentId: appt.id, action: "create" } }).catch(() => {});
+    },
   });
 }
 
@@ -144,7 +148,11 @@ export function useUpdateStatus() {
         : await supabase.from("appointments").update({ status: dbStatus }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: KEY });
+      const action = variables.status === "cancelado" ? "cancel" : "update";
+      syncAppointmentWithGoogle({ data: { appointmentId: variables.id, action } }).catch(() => {});
+    },
   });
 }
 
@@ -158,7 +166,10 @@ export function useCancelAgendamento() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: KEY });
+      syncAppointmentWithGoogle({ data: { appointmentId: variables.id, action: "cancel" } }).catch(() => {});
+    },
   });
 }
 

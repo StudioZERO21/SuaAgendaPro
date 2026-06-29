@@ -70,7 +70,7 @@ function DashboardPage() {
       value: String(d.newClients),
       delta: "este mês", up: true,
       icon: Users,
-      bg: "bg-gradient-to-br from-pink-500 to-pink-700",
+      bg: "gradient-primary text-white",
       premium: true,
     },
     {
@@ -114,7 +114,7 @@ function DashboardPage() {
                     className={cn(
                       "relative overflow-visible rounded-lg p-4 pb-3 text-white shadow-card",
                       k.bg,
-                      k.premium && "ring-2 ring-pink-300/60 shadow-[0_8px_28px_-6px_rgba(236,72,153,0.55)]",
+                      k.premium && "ring-2 ring-primary/30 shadow-glow",
                     )}
                   >
                     {k.premium && (
@@ -122,9 +122,9 @@ function DashboardPage() {
                         initial={{ opacity: 0, scale: 0.6 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.35 + i * 0.08, type: "spring", stiffness: 260 }}
-                        className="pointer-events-none absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-pink-600 shadow-md"
+                        className="pointer-events-none absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary shadow-md"
                       >
-                        <Star className="h-2.5 w-2.5 fill-pink-500 text-pink-500" /> Premium
+                        <Star className="h-2.5 w-2.5 fill-primary text-primary" /> Premium
                       </motion.span>
                     )}
                     <div className="flex items-start justify-between">
@@ -270,7 +270,7 @@ function DashboardPage() {
                       <motion.div key={`${p.day}-${p.slot}`}
                         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08, type: "spring", stiffness: 220, damping: 22 }}
-                        className={cn("rounded-md p-3", i === 0 ? "bg-gradient-to-br from-pink-500 to-rose-600 text-white" : "bg-muted text-foreground")}
+                        className={cn("rounded-md p-3", i === 0 ? "gradient-primary text-white" : "bg-muted text-foreground")}
                       >
                         <p className={cn("text-[9px] font-semibold uppercase tracking-wider", i === 0 ? "text-white/70" : "text-muted-foreground")}>{p.day}</p>
                         <p className="mt-1 font-display text-lg font-bold leading-none">{p.slot}</p>

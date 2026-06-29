@@ -35,6 +35,10 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  LogOut,
+  KeyRound,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -67,9 +71,13 @@ import {
   adminUnblockUser,
   adminSuspendUser,
   adminGrantSpecial,
+  adminRevokeSpecial,
   adminCancelSubscription,
   adminChangePlan,
   adminResetToTrial,
+  adminForceSessionEnd,
+  adminSendPasswordReset,
+  getSuperAdminInfo,
   type SuperUser,
 } from "@/lib/super-admin.functions";
 import { getAppRatings, type AppRatingRow } from "@/lib/app-rating.functions";
@@ -101,6 +109,7 @@ type Pro = {
   planId: string;
   notes: string | null;
   avatarUrl: string | null;
+  grantedBy: string | null;
 };
 
 type AuditEntry = {
@@ -129,6 +138,7 @@ function superUserToPro(u: SuperUser): Pro {
     planId:    u.planId,
     notes:     u.notes,
     avatarUrl: u.avatarUrl,
+    grantedBy: u.grantedBy,
   };
 }
 
@@ -154,12 +164,15 @@ const PAGE_SIZE = 8;
 const AUDIT_PAGE_SIZE = 5;
 
 const DB_ACTION_LABEL: Record<string, { label: string; kind: AuditEntry["action"] }> = {
-  suspend_user:        { label: "Suspendeu",        kind: "desativacao"  },
-  unblock_user:        { label: "Reativou",         kind: "reativacao"   },
-  grant_especial:      { label: "Concedeu Especial",kind: "especial"     },
-  cancel_subscription: { label: "Cancelou",         kind: "cancelamento" },
-  change_plan:         { label: "Alterou plano",    kind: "reativacao"   },
-  reset_to_trial:      { label: "Resetou Trial",    kind: "reativacao"   },
+  suspend_user:        { label: "Suspendeu",           kind: "desativacao"  },
+  unblock_user:        { label: "Reativou",            kind: "reativacao"   },
+  grant_especial:      { label: "Concedeu Especial",   kind: "especial"     },
+  cancel_subscription: { label: "Cancelou",            kind: "cancelamento" },
+  change_plan:         { label: "Alterou plano",       kind: "reativacao"   },
+  reset_to_trial:      { label: "Resetou Trial",       kind: "reativacao"   },
+  force_session_end:   { label: "Encerrou sessão",     kind: "desativacao"  },
+  force_password_reset:{ label: "Forçou nova senha",   kind: "desativacao"  },
+  revoke_especial:     { label: "Revogou Especial",    kind: "cancelamento" },
 };
 
 function dbToAudit(entry: AuditLogEntry, proName: string): AuditEntry {
@@ -211,6 +224,8 @@ function UsuariosPage() {
   const [confirming, setConfirming] = useState<{ user: Pro; action: string } | null>(null);
   const [reason, setReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [sessionActionLoading, setSessionActionLoading] = useState<"session" | "reset" | null>(null);
+  const [adminInfo, setAdminInfo] = useState<{ email: string; grantCount: number } | null>(null);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [page, setPage] = useState(1); // kept for audit pagination only
   const [auditOpen, setAuditOpen] = useState(false);
@@ -226,12 +241,14 @@ function UsuariosPage() {
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      const [data, ratings] = await Promise.all([
+      const [data, ratings, info] = await Promise.all([
         getSuperAdminUsers({ data: withSuperToken() }),
         getAppRatings({ data: withSuperToken() }),
+        getSuperAdminInfo({ data: withSuperToken() }),
       ]);
       setUsers(data.map(superUserToPro));
       setAppRatings(ratings);
+      setAdminInfo(info);
     } catch (err: any) {
       toast.error("Erro ao carregar usuários: " + (err?.message ?? ""));
     } finally {
@@ -251,6 +268,10 @@ function UsuariosPage() {
       if (action === "premium")      await adminChangePlan({ data: withSuperToken({ userId: user.id, planId: "premium", notes, userEmail: user.email }) });
       if (action === "trial")        await adminResetToTrial({ data: withSuperToken({ userId: user.id, notes, userEmail: user.email }) });
       toast.success("Ação executada com sucesso");
+      // Refresh admin info after grant/revoke to update counter
+      if (action === "especial") {
+        getSuperAdminInfo({ data: withSuperToken() }).then(setAdminInfo).catch(() => {});
+      }
       const auditAction = action === "desativar" ? "desativacao" :
                           action === "reativar"  ? "reativacao"  :
                           action === "especial"  ? "especial"    :
@@ -351,6 +372,46 @@ function UsuariosPage() {
       .catch(() => {})
       .finally(() => setViewingAuditLoading(false));
   }, [viewing?.id]);
+
+  async function handleRevokeSpecial(user: Pro) {
+    setActionLoading(true);
+    try {
+      await adminRevokeSpecial({ data: withSuperToken({ userId: user.id, userEmail: user.email }) });
+      toast.success(`Acesso especial de ${user.name} revogado.`);
+      await loadUsers();
+    } catch (err: any) {
+      toast.error("Erro: " + (err?.message ?? "Tente novamente"));
+    } finally {
+      setActionLoading(false);
+      setViewing(null);
+    }
+  }
+
+  async function handleForceSessionEnd(user: Pro) {
+    setSessionActionLoading("session");
+    try {
+      await adminForceSessionEnd({ data: withSuperToken({ userId: user.id, userEmail: user.email }) });
+      toast.success(`Sessão de ${user.name} encerrada. Será desconectado em até 30s.`);
+    } catch (err: any) {
+      toast.error("Erro: " + (err?.message ?? "Tente novamente"));
+    } finally {
+      setSessionActionLoading(null);
+    }
+  }
+
+  async function handleSendPasswordReset(user: Pro) {
+    setSessionActionLoading("reset");
+    try {
+      await adminSendPasswordReset({
+        data: withSuperToken({ userId: user.id, userEmail: user.email, appOrigin: window.location.origin }),
+      });
+      toast.success(`Email de redefinição enviado para ${user.email}. Válido por 4h.`);
+    } catch (err: any) {
+      toast.error("Erro: " + (err?.message ?? "Tente novamente"));
+    } finally {
+      setSessionActionLoading(null);
+    }
+  }
 
   function handleConfirmAction() {
     if (!confirming) return;
@@ -678,6 +739,9 @@ function UsuariosPage() {
                     <Row icon={Briefcase} label="Nicho" value={viewing.niche} />
                     <Row icon={Calendar} label="Cadastrado em" value={viewing.joined} />
                     <Row icon={CreditCard} label="Plano" value={viewing.plan} />
+                    {viewing.status === "especial" && viewing.grantedBy && (
+                      <Row icon={ShieldCheck} label="Especial concedido por" value={viewing.grantedBy} />
+                    )}
                     {viewing.notes && <Row icon={Clock} label="Notas admin" value={viewing.notes} />}
                   </div>
                 </TabsContent>
@@ -865,18 +929,57 @@ function UsuariosPage() {
                   Fechar
                 </Button>
                 <Button
+                  variant="outline"
+                  className="border-orange-200 text-orange-700 hover:bg-orange-50"
+                  disabled={!!sessionActionLoading}
+                  onClick={() => handleForceSessionEnd(viewing)}
+                >
+                  <LogOut className="mr-1.5 h-4 w-4" />
+                  {sessionActionLoading === "session" ? "Encerrando…" : "Encerrar sessão"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-violet-200 text-violet-700 hover:bg-violet-50"
+                  disabled={!!sessionActionLoading}
+                  onClick={() => handleSendPasswordReset(viewing)}
+                >
+                  <KeyRound className="mr-1.5 h-4 w-4" />
+                  {sessionActionLoading === "reset" ? "Enviando…" : "Forçar nova senha"}
+                </Button>
+                <Button
                   variant="secondary"
                   onClick={() => { setConfirming({ user: viewing, action: "trial" }); setViewing(null); }}
                 >
                   <Clock className="mr-1.5 h-4 w-4" />
                   Resetar Trial
                 </Button>
-                {viewing.status !== "especial" && (
+                {viewing.status === "especial" ? (
+                  <Button
+                    variant="outline"
+                    className="border-rose-200 text-rose-700 hover:bg-rose-50"
+                    disabled={actionLoading}
+                    onClick={() => handleRevokeSpecial(viewing)}
+                  >
+                    <ShieldOff className="mr-1.5 h-4 w-4" />
+                    {actionLoading ? "Revogando…" : "Revogar Especial"}
+                  </Button>
+                ) : (
                   <Button
                     variant="secondary"
+                    disabled={(adminInfo?.grantCount ?? 0) >= 5}
+                    title={(adminInfo?.grantCount ?? 0) >= 5 ? "Limite de 5 atingido. Revogue um para conceder." : undefined}
                     onClick={() => { setConfirming({ user: viewing, action: "especial" }); setViewing(null); }}
                   >
+                    <ShieldCheck className="mr-1.5 h-4 w-4" />
                     Conceder Especial
+                    <span className={cn(
+                      "ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                      (adminInfo?.grantCount ?? 0) >= 5
+                        ? "bg-rose-100 text-rose-700"
+                        : "bg-violet-100 text-violet-700"
+                    )}>
+                      {adminInfo?.grantCount ?? 0}/5
+                    </span>
                   </Button>
                 )}
                 {(viewing.status === "suspended" || viewing.status === "cancelled" || viewing.status === "overdue") && (

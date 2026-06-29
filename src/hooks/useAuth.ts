@@ -37,6 +37,7 @@ export function createAuthActions(
       return { error: error?.message ?? null };
     },
     async signOut() {
+      localStorage.removeItem("session_nonce");
       await supabase.auth.signOut();
       setSession(null);
       setUser(null);
@@ -48,6 +49,7 @@ export function useAuthState() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [wasKickedOut, setWasKickedOut] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -65,5 +67,31 @@ export function useAuthState() {
     return () => subscription.unsubscribe();
   }, []);
 
-  return { session, setSession, user, setUser, isLoading };
+  // Single-session enforcement: compare local nonce with DB every 30s
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const checkNonce = async () => {
+      const localNonce = localStorage.getItem("session_nonce");
+      if (!localNonce) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("active_session_nonce")
+        .eq("id", session.user.id)
+        .single();
+
+      if (data?.active_session_nonce && data.active_session_nonce !== localNonce) {
+        localStorage.removeItem("session_nonce");
+        setWasKickedOut(true);
+        await supabase.auth.signOut({ scope: "local" });
+      }
+    };
+
+    checkNonce();
+    const interval = setInterval(checkNonce, 30_000);
+    return () => clearInterval(interval);
+  }, [session?.user?.id]);
+
+  return { session, setSession, user, setUser, isLoading, wasKickedOut };
 }

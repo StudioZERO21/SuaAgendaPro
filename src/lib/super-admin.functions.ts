@@ -85,6 +85,7 @@ export type SuperUser = {
   cancelledAt:      string | null;
   createdAt:        string;
   notes:            string | null;
+  grantedBy:        string | null;
 };
 
 export const getSuperAdminUsers = createServerFn({ method: "GET" })
@@ -106,32 +107,39 @@ export const getSuperAdminUsers = createServerFn({ method: "GET" })
 
     const userIds = (rows ?? []).map((r) => (r.profiles as any)?.id).filter(Boolean);
 
-    const emailMap: Record<string, string> = {};
-    await Promise.all(
-      userIds.map(async (uid: string) => {
-        const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(uid);
-        if (user) emailMap[uid] = user.email ?? "";
-      }),
-    );
+    const [emailMap, activeGrants] = await Promise.all([
+      Promise.all(
+        userIds.map(async (uid: string) => {
+          const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(uid);
+          return [uid, user?.email ?? ""] as [string, string];
+        }),
+      ).then((pairs) => Object.fromEntries(pairs)),
+      supabaseAdmin
+        .from("special_access_grants")
+        .select("user_id, granted_by")
+        .is("revoked_at", null)
+        .then(({ data }) => new Map((data ?? []).map((g: any) => [g.user_id, g.granted_by as string]))),
+    ]);
 
     return (rows ?? []).map((r) => {
       const p = r.profiles as any;
       return {
-        id:               p?.id                     ?? "",
-        email:            emailMap[p?.id]            ?? "",
-        name:             p?.display_name            ?? "",
-        phone:            p?.phone                   ?? "",
-        slug:             p?.slug                    ?? "",
-        specialty:        p?.specialty               ?? "",
-        avatarUrl:        p?.avatar_url              ?? null,
+        id:               p?.id                              ?? "",
+        email:            emailMap[p?.id]                    ?? "",
+        name:             p?.display_name                    ?? "",
+        phone:            p?.phone                           ?? "",
+        slug:             p?.slug                            ?? "",
+        specialty:        p?.specialty                       ?? "",
+        avatarUrl:        p?.avatar_url                      ?? null,
         planId:           r.plan_id,
-        planName:         (r.plans as any)?.display_name ?? r.plan_id,
+        planName:         (r.plans as any)?.display_name     ?? r.plan_id,
         status:           r.status,
         trialEndsAt:      r.trial_ends_at,
         currentPeriodEnd: r.current_period_end,
         cancelledAt:      r.cancelled_at,
         createdAt:        r.created_at,
         notes:            r.notes,
+        grantedBy:        activeGrants.get(p?.id)            ?? null,
       };
     });
   });
@@ -199,7 +207,22 @@ export const adminGrantSpecial = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await requireSuperAuth(data._st ?? null);
+    const { getSuperAuthEmail } = await import("@/lib/super-auth.server");
+    const grantedBy = await getSuperAuthEmail(data._st ?? null);
+    if (!grantedBy) throw new Error("Unauthorized");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Check per-admin limit of 5 active special grants
+    const { count } = await supabaseAdmin
+      .from("special_access_grants")
+      .select("id", { count: "exact", head: true })
+      .eq("granted_by", grantedBy)
+      .is("revoked_at", null);
+
+    if ((count ?? 0) >= 5) {
+      throw new Error(`Limite de 5 acessos especiais atingido. Revogue um para conceder novo.`);
+    }
 
     const { error } = await supabaseAdmin
       .from("subscriptions")
@@ -208,12 +231,69 @@ export const adminGrantSpecial = createServerFn({ method: "POST" })
         status:             "especial",
         trial_ends_at:      null,
         current_period_end: null,
-        notes:              data.notes ?? "Plano Especial concedido pelo admin",
+        notes:              data.notes ?? `Plano Especial concedido por ${grantedBy}`,
       })
       .eq("user_id", data.userId);
 
     if (error) throw new Error(error.message);
-    await auditLog(supabaseAdmin, "grant_especial", data.userId, data.userEmail ?? "", { notes: data.notes });
+
+    // Record the grant (revoke any stale active grant for this user first)
+    await supabaseAdmin
+      .from("special_access_grants")
+      .update({ revoked_at: new Date().toISOString(), revoked_by: grantedBy })
+      .eq("user_id", data.userId)
+      .is("revoked_at", null);
+
+    await supabaseAdmin
+      .from("special_access_grants")
+      .insert({ user_id: data.userId, granted_by: grantedBy });
+
+    await auditLog(supabaseAdmin, "grant_especial", data.userId, data.userEmail ?? "", { notes: data.notes, grantedBy });
+  });
+
+export const adminRevokeSpecial = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z.object({ _st, userId: z.string().uuid(), notes: z.string().optional(), userEmail: z.string().optional() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireSuperAuth(data._st ?? null);
+    const { getSuperAuthEmail } = await import("@/lib/super-auth.server");
+    const revokedBy = await getSuperAuthEmail(data._st ?? null);
+    if (!revokedBy) throw new Error("Unauthorized");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    await supabaseAdmin
+      .from("special_access_grants")
+      .update({ revoked_at: new Date().toISOString(), revoked_by: revokedBy })
+      .eq("user_id", data.userId)
+      .is("revoked_at", null);
+
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update({ status: "cancelled", plan_id: "trial", notes: data.notes ?? `Especial revogado por ${revokedBy}` })
+      .eq("user_id", data.userId);
+
+    if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "revoke_especial", data.userId, data.userEmail ?? "", { notes: data.notes, revokedBy });
+  });
+
+export const getSuperAdminInfo = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st }).parse(input ?? {}))
+  .handler(async ({ data }): Promise<{ email: string; grantCount: number }> => {
+    await requireSuperAuth(data._st ?? null);
+    const { getSuperAuthEmail } = await import("@/lib/super-auth.server");
+    const email = await getSuperAuthEmail(data._st ?? null);
+    if (!email) throw new Error("Unauthorized");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { count } = await supabaseAdmin
+      .from("special_access_grants")
+      .select("id", { count: "exact", head: true })
+      .eq("granted_by", email)
+      .is("revoked_at", null);
+
+    return { email, grantCount: count ?? 0 };
   });
 
 export const adminSuspendUser = createServerFn({ method: "POST" })
@@ -332,4 +412,73 @@ export const getBillingEvents = createServerFn({ method: "GET" })
       asaasPaymentId: r.asaas_payment_id ?? null,
       createdAt:      r.created_at,
     }));
+  });
+
+// ─── Session & Password Management ───────────────────────────────────────────
+
+export const adminForceSessionEnd = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z.object({ _st, userId: z.string().uuid(), userEmail: z.string().optional() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireSuperAuth(data._st ?? null);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ active_session_nonce: crypto.randomUUID() })
+      .eq("id", data.userId);
+
+    if (error) throw new Error(error.message);
+    await auditLog(supabaseAdmin, "force_session_end", data.userId, data.userEmail ?? "", {});
+    return { ok: true };
+  });
+
+export const adminSendPasswordReset = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z.object({
+      _st,
+      userId:    z.string().uuid(),
+      userEmail: z.string().email(),
+      appOrigin: z.string().url(),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireSuperAuth(data._st ?? null);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const token     = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        force_password_change:           true,
+        password_reset_token:            token,
+        password_reset_token_expires_at: expiresAt,
+        active_session_nonce:            crypto.randomUUID(),
+      })
+      .eq("id", data.userId);
+
+    if (error) throw new Error(error.message);
+
+    const { getServerEnv } = await import("@/lib/server-env");
+    const apiKey = getServerEnv("RESEND_API_KEY");
+    if (apiKey) {
+      const { Resend } = await import("resend");
+      const resend    = new Resend(apiKey);
+      const from      = getServerEnv("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+      const resetLink = `${data.appOrigin}/redefinir-senha?token=${token}`;
+      const expiryFmt = new Date(expiresAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+      await resend.emails.send({
+        from,
+        to:      data.userEmail,
+        subject: "Defina uma nova senha — SuaAgenda.Pro",
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#fff;border-radius:16px"><h2 style="color:#ec4899;margin:0 0 16px;font-size:20px">Troca de senha necessária</h2><p style="color:#374151;margin:0 0 16px;line-height:1.6">O administrador solicitou que você cadastre uma <strong>nova senha</strong> para continuar acessando o <strong>SuaAgenda.Pro</strong>.</p><p style="color:#374151;margin:0 0 24px;line-height:1.6">Clique no botão abaixo para definir sua nova senha. O link é válido por <strong>4 horas</strong>.</p><a href="${resetLink}" style="display:inline-block;background:#ec4899;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Definir nova senha</a><p style="color:#9ca3af;font-size:13px;margin:24px 0 0;line-height:1.5">Você também pode fazer login normalmente e será solicitado a criar uma nova senha diretamente no app.</p><p style="color:#d1d5db;font-size:12px;margin:8px 0 0">Link válido até: ${expiryFmt}</p></div>`,
+      });
+    }
+
+    await auditLog(supabaseAdmin, "force_password_reset", data.userId, data.userEmail, { expiresAt });
+    return { ok: true };
   });

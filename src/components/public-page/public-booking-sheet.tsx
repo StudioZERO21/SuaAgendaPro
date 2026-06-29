@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { localTzSuffix } from "@/lib/availability";
 import { PhoneInputBR } from "@/components/ui/phone-input";
 import {
   getPublicSlots,
@@ -298,7 +299,7 @@ export function BookingSheet({
         data: {
           professionalId,
           serviceId: service.id,
-          scheduledAt: `${date}T${time}:00`,
+          scheduledAt: `${date}T${time}:00${localTzSuffix()}`,
           durationMinutes: service.duration,
           priceCents: service.price_cents,
           clientName: name,
@@ -353,7 +354,7 @@ export function BookingSheet({
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 200,
+          zIndex: 49,
           display: "flex",
           justifyContent: "center",
           background: resolvedTheme.bg,
@@ -1326,7 +1327,7 @@ function PaymentDialog({
         data: {
           professionalId,
           serviceId: service.id,
-          scheduledAt: `${date}T${time}:00`,
+          scheduledAt: `${date}T${time}:00${localTzSuffix()}`,
           durationMinutes: service.duration,
           priceCents: service.price_cents,
           depositCents,

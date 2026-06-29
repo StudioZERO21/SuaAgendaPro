@@ -126,7 +126,7 @@ function SaudacaoPage() {
             style={{
               fontSize: "clamp(1rem, 3.5vw, 1.5rem)",
               fontWeight: 500,
-              color: "#be185d",
+              color: "var(--primary)",
               fontFamily: "'Playfair Display', serif",
               margin: 0,
               paddingLeft: 4,
@@ -197,7 +197,7 @@ function SaudacaoPage() {
             style={{
               height: "100%",
               width: `${pct}%`,
-              background: "linear-gradient(90deg, #ec4899, #f472b6)",
+              background: "var(--gradient-primary)",
               transition: "width 1s linear",
             }}
           />
@@ -226,8 +226,8 @@ function SaudacaoPage() {
             fontSize: 15,
             fontWeight: 600,
             color: "#fff",
-            background: "linear-gradient(135deg, #ec4899, #f472b6)",
-            boxShadow: "0 10px 25px -5px rgba(236, 72, 153, 0.4)",
+            background: "var(--gradient-primary)",
+            boxShadow: "var(--shadow-glow)",
           }}
         >
           Ir para o app

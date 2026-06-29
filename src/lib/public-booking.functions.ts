@@ -81,14 +81,29 @@ export const invalidatePublicProfileCache = createServerFn({ method: "POST" })
     await cacheDel(`public:profile:${data.slug}`);
   });
 
-export async function getPublicSlots(professionalId: string, dateStr: string, durationMin: number): Promise<string[]> {
-  const { data } = await supabase.rpc("get_available_slots", {
-    p_professional_id: professionalId,
-    p_date: dateStr,
-    p_duration_min: durationMin,
+export const getPublicSlots = createServerFn({ method: "GET" })
+  .validator((input: unknown) =>
+    z
+      .object({
+        professionalId: z.string().uuid(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        durationMin: z.coerce.number().int().positive(),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data }): Promise<string[]> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin.rpc("get_available_slots", {
+      p_professional_id: data.professionalId,
+      p_date: data.date,
+      p_duration_min: data.durationMin,
+    });
+    if (error) {
+      console.error("[getPublicSlots]", error.message);
+      return [];
+    }
+    return (rows ?? []).map((row: { slot_time: string }) => row.slot_time.slice(0, 5));
   });
-  return (data ?? []).map((row: { slot_time: string }) => row.slot_time.slice(0, 5));
-}
 
 // ── Public types ──────────────────────────────────────────────
 
@@ -270,6 +285,12 @@ export const createPublicBooking = createServerFn({ method: "POST" })
         body:           `${data.clientName} agendou para ${datePt} às ${timePt}.`,
         appointment_id: appt.id,
       });
+    } catch {}
+
+    // Sync to Google Calendar (best-effort — never fail booking)
+    try {
+      const { pushAppointmentToGoogle } = await import("@/lib/google-calendar.functions");
+      await pushAppointmentToGoogle(data.professionalId, appt.id, "create");
     } catch {}
 
     // Log WhatsApp confirmation message (best-effort — never fail booking)
