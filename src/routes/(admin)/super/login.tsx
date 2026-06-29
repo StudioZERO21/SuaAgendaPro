@@ -40,8 +40,8 @@ function SuperLoginPage() {
   const totpRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (getSuperAuth()) navigate({ to: "/super", replace: true });
-  }, [navigate]);
+    if (getSuperAuth()) { window.location.href = "/super"; }
+  }, []);
 
   // Foca no input de TOTP quando entrar no step 2
   useEffect(() => {
@@ -69,7 +69,7 @@ function SuperLoginPage() {
       } else if (result.token) {
         setSuperToken(result.token);
         toast.success("Bem-vindo ao painel Super Admin");
-        navigate({ to: "/super", replace: true });
+        window.location.href = "/super";
       }
     } catch (err: any) {
       toast.error(err?.message ?? "Credenciais inválidas");
@@ -89,7 +89,7 @@ function SuperLoginPage() {
       });
       setSuperToken(token);
       toast.success("Senha alterada com sucesso! Bem-vindo ao painel.");
-      navigate({ to: "/super", replace: true });
+      window.location.href = "/super";
     } catch (err: any) {
       toast.error(err?.message ?? "Erro ao alterar senha. Tente novamente.");
     } finally {
@@ -111,7 +111,7 @@ function SuperLoginPage() {
       });
       setSuperToken(token);
       toast.success("Bem-vindo ao painel Super Admin");
-      navigate({ to: "/super", replace: true });
+      window.location.href = "/super";
     } catch (err: any) {
       toast.error(err?.message ?? "Código inválido");
       setTotp("");
