@@ -10,6 +10,9 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  // No sandbox da Lovable, isSandbox=true e o Cloudflare preset é sempre usado.
+  // Fora do sandbox (VPS), usa node-server para gerar .output/server/index.mjs.
+  nitro: { preset: "node-server" },
   vite: {
     server: {
       allowedHosts: ["suaagendapro.local"],
