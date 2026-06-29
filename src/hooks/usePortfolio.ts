@@ -1,9 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadBlob, dataUrlToBlob, deleteUpload } from "@/lib/storage";
 
 export const MAX_PORTFOLIO_ITEMS = 10;
-const BUCKET = "avatars";
-const FOLDER = "portfolio";
 
 export type UIPortfolioItem = {
   id: string;
@@ -65,23 +64,14 @@ export function useAddPortfolioItem() {
 
       const uid = await getUid();
 
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const filename = `${Date.now()}.jpg`;
-      const path = `${uid}/${FOLDER}/${filename}`;
-
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
-      if (upErr) throw upErr;
-
-      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      const blob = await dataUrlToBlob(dataUrl);
+      const imageUrl = await uploadBlob(blob, "portfolio");
 
       const { data, error } = await supabase
         .from("portfolio_items")
         .insert({
           professional_id: uid,
-          image_url: urlData.publicUrl,
+          image_url: imageUrl,
           title: "",
           description: "",
           order_index: currentCount,
@@ -142,12 +132,7 @@ export function useDeletePortfolioItem() {
         .eq("id", itemId);
       if (error) throw error;
 
-      if (item?.image_url) {
-        const match = item.image_url.match(/\/object\/public\/avatars\/(.+?)(?:\?|$)/);
-        if (match?.[1]) {
-          await supabase.storage.from(BUCKET).remove([match[1]]);
-        }
-      }
+      await deleteUpload(item?.image_url);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });

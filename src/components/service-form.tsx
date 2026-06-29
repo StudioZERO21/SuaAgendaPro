@@ -29,6 +29,7 @@ import {
 } from "@/hooks/useServicos";
 import { serviceCategories } from "@/lib/services-store";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadBlob } from "@/lib/storage";
 
 export type ServiceFormProps = {
   serviceId?: string;
@@ -204,15 +205,8 @@ export function ServiceForm({ serviceId }: ServiceFormProps) {
 
   async function uploadImage(id: string): Promise<string | null> {
     if (!imageBlob) return imageUrl;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return imageUrl;
-    const path = `${user.id}/services/${id}.jpg`;
-    const { error } = await supabase.storage
-      .from("avatars")
-      .upload(path, imageBlob, { contentType: "image/jpeg", upsert: true });
-    if (error) throw error;
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    return `${data.publicUrl}?t=${Date.now()}`;
+    const url = await uploadBlob(imageBlob, "services", `${id}.jpg`);
+    return `${url}?t=${Date.now()}`;
   }
 
   async function handleSave() {

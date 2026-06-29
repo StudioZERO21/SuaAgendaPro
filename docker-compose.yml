@@ -20,9 +20,14 @@ services:
       - .env.production
     environment:
       - NODE_ENV=production
+      - UPLOADS_DIR=/app/uploads
+    volumes:
+      # Arquivos enviados (portfólio, perfil, serviços, anexos) — persistem entre rebuilds.
+      # Para trocar de storage no futuro: copiar o conteúdo de ./uploads.
+      - ./uploads:/app/uploads
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.suaagendapro.rule=Host(`suaagenda.pro`) || Host(`www.suaagenda.pro`) || Host(`app.suaagenda.pro`) || Host(`super.suaagenda.pro`)"
+      - "traefik.http.routers.suaagendapro.rule=Host(`suaagenda.pro`) || Host(`www.suaagenda.pro`) || Host(`app.suaagenda.pro`) || Host(`super.suaagenda.pro`) || Host(`admin.suaagenda.pro`)"
       - "traefik.http.routers.suaagendapro.entrypoints=websecure"
       - "traefik.http.routers.suaagendapro.tls.certresolver=letsencrypt"
       - "traefik.http.services.suaagendapro.loadbalancer.server.port=8080"

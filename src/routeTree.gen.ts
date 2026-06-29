@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as siteIndexRouteImport } from './routes/(site)/index'
+import { Route as UploadsSplatRouteImport } from './routes/uploads.$'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as siteTrocarSenhaRouteImport } from './routes/(site)/trocar-senha'
 import { Route as siteResetPasswordRouteImport } from './routes/(site)/reset-password'
@@ -68,6 +70,16 @@ import { Route as adminSuperAppAuditoriaRouteImport } from './routes/(admin)/sup
 const siteIndexRoute = siteIndexRouteImport.update({
   id: '/(site)/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UploadsSplatRoute = UploadsSplatRouteImport.update({
+  id: '/uploads/$',
+  path: '/uploads/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -375,6 +387,8 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof siteResetPasswordRoute
   '/trocar-senha': typeof siteTrocarSenhaRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/upload': typeof ApiUploadRoute
+  '/uploads/$': typeof UploadsSplatRoute
   '/': typeof siteIndexRoute
   '/super': typeof adminSuperAppRouteRouteWithChildren
   '/super/login': typeof adminSuperLoginRoute
@@ -432,6 +446,8 @@ export interface FileRoutesByTo {
   '/reset-password': typeof siteResetPasswordRoute
   '/trocar-senha': typeof siteTrocarSenhaRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/upload': typeof ApiUploadRoute
+  '/uploads/$': typeof UploadsSplatRoute
   '/': typeof siteIndexRoute
   '/super/login': typeof adminSuperLoginRoute
   '/servico/$id': typeof appServicoIdRoute
@@ -489,6 +505,8 @@ export interface FileRoutesById {
   '/(site)/reset-password': typeof siteResetPasswordRoute
   '/(site)/trocar-senha': typeof siteTrocarSenhaRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/upload': typeof ApiUploadRoute
+  '/uploads/$': typeof UploadsSplatRoute
   '/(site)/': typeof siteIndexRoute
   '/(admin)/super/_app': typeof adminSuperAppRouteRouteWithChildren
   '/(admin)/super/login': typeof adminSuperLoginRoute
@@ -548,6 +566,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/trocar-senha'
     | '/api/health'
+    | '/api/upload'
+    | '/uploads/$'
     | '/'
     | '/super'
     | '/super/login'
@@ -605,6 +625,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/trocar-senha'
     | '/api/health'
+    | '/api/upload'
+    | '/uploads/$'
     | '/'
     | '/super/login'
     | '/servico/$id'
@@ -661,6 +683,8 @@ export interface FileRouteTypes {
     | '/(site)/reset-password'
     | '/(site)/trocar-senha'
     | '/api/health'
+    | '/api/upload'
+    | '/uploads/$'
     | '/(site)/'
     | '/(admin)/super/_app'
     | '/(admin)/super/login'
@@ -719,6 +743,8 @@ export interface RootRouteChildren {
   siteResetPasswordRoute: typeof siteResetPasswordRoute
   siteTrocarSenhaRoute: typeof siteTrocarSenhaRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiUploadRoute: typeof ApiUploadRoute
+  UploadsSplatRoute: typeof UploadsSplatRoute
   siteIndexRoute: typeof siteIndexRoute
   adminSuperAppRouteRoute: typeof adminSuperAppRouteRouteWithChildren
   adminSuperLoginRoute: typeof adminSuperLoginRoute
@@ -739,6 +765,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof siteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uploads/$': {
+      id: '/uploads/$'
+      path: '/uploads/$'
+      fullPath: '/uploads/$'
+      preLoaderRoute: typeof UploadsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -1190,6 +1230,8 @@ const rootRouteChildren: RootRouteChildren = {
   siteResetPasswordRoute: siteResetPasswordRoute,
   siteTrocarSenhaRoute: siteTrocarSenhaRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiUploadRoute: ApiUploadRoute,
+  UploadsSplatRoute: UploadsSplatRoute,
   siteIndexRoute: siteIndexRoute,
   adminSuperAppRouteRoute: adminSuperAppRouteRouteWithChildren,
   adminSuperLoginRoute: adminSuperLoginRoute,

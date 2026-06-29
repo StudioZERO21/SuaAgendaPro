@@ -556,16 +556,15 @@ function SupportTicketModal({
     setSending(true);
     try {
       const { supabase } = await import("@/integrations/supabase/client");
+      const { uploadBlob } = await import("@/lib/storage");
 
-      // Upload attachments
+      // Upload attachments (disco local do app)
       const urls: string[] = [];
       for (const file of files) {
         const ext  = file.name.split(".").pop() ?? "jpg";
-        const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("support-attachments").upload(path, file, { upsert: false });
-        if (upErr) throw new Error("Erro ao enviar imagem: " + upErr.message);
-        const { data: pub } = supabase.storage.from("support-attachments").getPublicUrl(path);
-        urls.push(pub.publicUrl);
+        const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const url = await uploadBlob(file, "support", filename);
+        urls.push(url);
       }
 
       // Create ticket (support_tickets not yet in generated types — cast to any)
