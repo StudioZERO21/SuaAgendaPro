@@ -34,9 +34,20 @@ const SITE_ONLY_PREFIXES = [
   "/precos",
   "/recursos",
   "/contato",
-  "/cadastro",
+];
+
+// Rotas de autenticação/conta — devem viver no subdomínio do app
+// (app.suaagenda.pro), igual o super admin em admin.suaagenda.pro.
+// Motivo: a sessão do Supabase fica em cookie (.suaagenda.pro, compartilhado),
+// mas o session_nonce do single-session fica em localStorage (por origem).
+// Mantendo login + app no MESMO origin, o nonce fica consistente e o
+// single-session não derruba o usuário por engano.
+const AUTH_PREFIXES = [
   "/login",
+  "/cadastro",
   "/reset-password",
+  "/redefinir-senha",
+  "/trocar-senha",
 ];
 
 const ADMIN_PREFIX = "/super";
@@ -102,6 +113,10 @@ const subdomainMiddleware = createMiddleware().server(async ({ next }) => {
 
     if (subdomain === "site") {
       if (matchesPrefix(path, APP_ROUTE_PREFIXES)) {
+        return Response.redirect(`https://app.suaagenda.pro${path}`, 302);
+      }
+      // Auth/conta sempre no subdomínio do app
+      if (matchesPrefix(path, AUTH_PREFIXES)) {
         return Response.redirect(`https://app.suaagenda.pro${path}`, 302);
       }
       if (path === ADMIN_PREFIX || path.startsWith(ADMIN_PREFIX + "/")) {
