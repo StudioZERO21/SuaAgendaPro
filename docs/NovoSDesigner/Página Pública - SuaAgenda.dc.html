@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;500&family=Great+Vibes&family=Poppins:wght@400;600;700&family=Quicksand:wght@400;500;600&family=Satisfy&family=Roboto:wght@400;500;700&family=Inter:wght@400;500;600&family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:#c8c8c8;overflow:hidden}
+    ::-webkit-scrollbar{display:none}
+    @keyframes dropIn{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes dropOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-18px)}}
+    @keyframes pillIn{0%{opacity:0;transform:translateX(56px) scale(0.72)}40%{opacity:1;transform:translateX(-7px) scale(1.06)}65%{transform:translateX(4px) scale(0.97)}82%{transform:translateX(-2px) scale(1.01)}100%{opacity:1;transform:translateX(0) scale(1)}}
+    @keyframes bkSlide{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+  </style>
+</helmet>
+
+<div style="background:#c8c8c8;height:100vh;display:flex;justify-content:center;overflow:hidden">
+  <div style="width:100%;max-width:430px;height:100vh;background:{{ c.bg }};position:relative;display:flex;flex-direction:column;overflow:hidden">
+
+    <!-- TOP NAV -->
+    <div style="position:sticky;top:0;z-index:50;background:{{ c.surface }};border-bottom:1px solid {{ c.border }};display:flex;align-items:center;justify-content:space-between;padding:13px 18px;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:28px;height:28px;border-radius:6px;background:{{ c.ctaBg }};display:flex;align-items:center;justify-content:center">
+          <span style="color:{{ c.ctaText }};font-size:11px;font-weight:700;font-family:{{ f.heading }}">SA</span>
+        </div>
+        <span style="font-family:{{ f.heading }};font-size:15px;font-weight:700;color:{{ c.text }}">SuaAgenda</span>
+      </div>
+      <button style="background:transparent;border:1.5px solid {{ c.primary }};border-radius:999px;padding:6px 16px;font-family:{{ f.body }};font-size:12px;font-weight:600;color:{{ c.primary }};cursor:pointer">Agendar</button>
+    </div>
+
+    <!-- SCROLLABLE CONTENT -->
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:62px">
+
+      <!-- HERO: DARK / PREMIUM (LUXE) -->
+      <sc-if value="{{ isPremium }}" hint-placeholder-val="{{ true }}">
+        <div style="background:{{ c.hero }};min-height:360px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,{{ c.primary }} 50%,transparent 100%);z-index:2"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;padding:36px 24px 44px;position:relative;z-index:2">
+            <span style="font-family:{{ f.accent }};color:{{ c.primary }};font-size:11px;letter-spacing:5px;text-transform:uppercase;font-style:italic;margin-bottom:6px">Studio</span>
+            <div style="width:112px;height:112px;border-radius:50%;border:2px solid {{ c.primary }};padding:3px;margin-bottom:14px">
+              <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,{{ c.surface }} 0%,{{ c.card }} 100%);display:flex;align-items:center;justify-content:center">
+                <span style="font-family:{{ f.heading }};font-size:34px;font-weight:700;color:{{ c.primary }}">AL</span>
+              </div>
+            </div>
+            <h1 style="font-family:{{ f.heading }};color:{{ c.text }};font-size:27px;font-weight:700;text-align:center;margin:0 0 3px;letter-spacing:-0.3px">Ana Lima</h1>
+            <p style="font-family:{{ f.accent }};color:{{ c.textSec }};font-size:15px;font-style:italic;margin:0 0 14px">Nail Designer</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+              <span style="color:{{ c.starColor }};letter-spacing:2px;font-size:13px">★★★★★</span>
+              <span style="font-family:{{ f.body }};color:{{ c.text }};font-weight:600;font-size:13px">4.9</span>
+              <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:12px">(127 avaliações)</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center">
+              <div style="background:{{ c.tagBg }};border:1px solid {{ c.border }};padding:8px 14px;border-radius:{{ sh.btn }};display:flex;align-items:center;gap:6px;cursor:pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="{{ c.primary }}" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="none" stroke="{{ c.primary }}" stroke-width="2.5"/><circle cx="17.5" cy="6.5" r="1.3" fill="{{ c.primary }}"/></svg>
+                <span style="font-family:{{ f.body }};color:{{ c.text }};font-size:11px;font-weight:500">@analima.nail</span>
+              </div>
+              <div style="background:{{ c.tagBg }};border:1px solid {{ c.border }};padding:8px 14px;border-radius:{{ sh.btn }};display:flex;align-items:center;gap:6px;cursor:pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z" fill="{{ c.primary }}"/><path d="M12 1C5.93 1 1 5.93 1 12c0 2.07.53 4.01 1.47 5.7L1 23l5.47-1.43A11 11 0 0012 23c6.07 0 11-4.93 11-11S18.07 1 12 1z" fill="none" stroke="{{ c.primary }}" stroke-width="2"/></svg>
+                <span style="font-family:{{ f.body }};color:{{ c.text }};font-size:11px;font-weight:500">WhatsApp</span>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,{{ c.primary }} 50%,transparent 100%)"></div>
+        </div>
+      </sc-if>
+
+      <!-- HERO: COLORFUL (BLOOM / GLOW HOT / BOLD) -->
+      <sc-if value="{{ isColorful }}" hint-placeholder-val="{{ false }}">
+        <div style="background:{{ c.hero }};min-height:320px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.08);pointer-events:none;z-index:1"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;padding:28px 24px 40px">
+            <div style="width:108px;height:108px;border-radius:50%;border:3px solid rgba(255,255,255,0.85);padding:2px;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,0.2)">
+              <div style="width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center">
+                <span style="font-family:{{ f.heading }};font-size:34px;font-weight:700;color:#fff">AL</span>
+              </div>
+            </div>
+            <h1 style="font-family:{{ f.heading }};color:#fff;font-size:26px;font-weight:700;text-align:center;margin:0 0 3px;text-shadow:0 2px 8px rgba(0,0,0,0.2)">Ana Lima</h1>
+            <sc-if value="{{ isScriptAccent }}" hint-placeholder-val="{{ false }}">
+              <span style="font-family:{{ f.accent }};color:rgba(255,255,255,0.92);font-size:21px;margin-bottom:12px">Nail Designer</span>
+            </sc-if>
+            <sc-if value="{{ isNotScriptAccent }}" hint-placeholder-val="{{ true }}">
+              <span style="font-family:{{ f.body }};color:rgba(255,255,255,0.85);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Nail Designer</span>
+            </sc-if>
+            <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.2);padding:6px 14px;border-radius:999px;margin-bottom:16px">
+              <span style="color:#fff;font-size:12px;letter-spacing:1px">★★★★★</span>
+              <span style="font-family:{{ f.body }};color:#fff;font-weight:700;font-size:13px">4.9</span>
+              <span style="font-family:{{ f.body }};color:rgba(255,255,255,0.8);font-size:12px">(127)</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center">
+              <div style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);padding:7px 14px;border-radius:999px;display:flex;align-items:center;gap:6px;cursor:pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="white" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="none" stroke="white" stroke-width="2.5"/><circle cx="17.5" cy="6.5" r="1.3" fill="white"/></svg>
+                <span style="font-family:{{ f.body }};color:#fff;font-size:11px;font-weight:600">@analima.nail</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);padding:7px 14px;border-radius:999px;display:flex;align-items:center;gap:6px;cursor:pointer">
+                <svg width="12" height="12" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z" fill="white"/><path d="M12 1C5.93 1 1 5.93 1 12c0 2.07.53 4.01 1.47 5.7L1 23l5.47-1.43A11 11 0 0012 23c6.07 0 11-4.93 11-11S18.07 1 12 1z" fill="none" stroke="white" stroke-width="2"/></svg>
+                <span style="font-family:{{ f.body }};color:#fff;font-size:11px;font-weight:600">WhatsApp</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- HERO: LIGHT / SIMPLE (PURE) -->
+      <sc-if value="{{ isLight }}" hint-placeholder-val="{{ false }}">
+        <div style="background:{{ c.hero }};padding:28px 20px 32px;animation:fadeUp 0.4s ease">
+          <div style="display:flex;align-items:center;gap:18px">
+            <div style="width:78px;height:78px;border-radius:{{ sh.card }};border:2px solid {{ c.border }};background:{{ c.card }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="font-family:{{ f.heading }};font-size:28px;font-weight:700;color:{{ c.primary }}">AL</span>
+            </div>
+            <div>
+              <h1 style="font-family:{{ f.heading }};color:{{ c.text }};font-size:21px;font-weight:700;margin:0 0 2px">Ana Lima</h1>
+              <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px;margin:0 0 8px;letter-spacing:1.2px;text-transform:uppercase">Nail Designer</p>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="color:{{ c.starColor }};font-size:12px">★★★★★</span>
+                <span style="font-family:{{ f.body }};color:{{ c.text }};font-weight:600;font-size:13px">4.9</span>
+                <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px">(127)</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <div style="flex:1;background:{{ c.card }};border:1px solid {{ c.border }};padding:9px 12px;border-radius:{{ sh.card }};display:flex;align-items:center;gap:8px;cursor:pointer">
+              <svg width="14" height="14" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="{{ c.primary }}" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="{{ c.primary }}" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="{{ c.primary }}"/></svg>
+              <span style="font-family:{{ f.body }};color:{{ c.text }};font-size:12px">@analima.nail</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- HERO: CINEMATIC (URBAN) -->
+      <sc-if value="{{ isCinematic }}" hint-placeholder-val="{{ false }}">
+        <div style="height:390px;position:relative;background:{{ c.hero }};overflow:hidden">
+          <div style="position:absolute;inset:0;background:{{ c.hero }};z-index:0"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,0.96) 0%,rgba(0,0,0,0.1) 55%,rgba(0,0,0,0.4) 100%);pointer-events:none;z-index:1"></div>
+          <div style="position:absolute;top:28px;left:50%;transform:translateX(-50%);width:130px;height:185px;border-radius:{{ sh.photo }};overflow:hidden;border:1px solid {{ c.border }};z-index:2;background:{{ c.surface }};display:flex;align-items:center;justify-content:center">
+            <span style="font-family:{{ f.heading }};font-size:44px;font-weight:700;color:{{ c.primary }};letter-spacing:3px">AL</span>
+          </div>
+          <div style="position:absolute;top:16px;right:16px;display:flex;gap:8px;z-index:10">
+            <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer">
+              <svg width="13" height="13" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="{{ c.primary }}" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="{{ c.primary }}" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="{{ c.primary }}"/></svg>
+            </div>
+            <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer">
+              <svg width="13" height="13" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z" fill="{{ c.primary }}"/><path d="M12 1C5.93 1 1 5.93 1 12c0 2.07.53 4.01 1.47 5.7L1 23l5.47-1.43A11 11 0 0012 23c6.07 0 11-4.93 11-11S18.07 1 12 1z" fill="none" stroke="{{ c.primary }}" stroke-width="2"/></svg>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:20px 24px 22px">
+            <p style="font-family:{{ f.body }};color:{{ c.primary }};font-size:9px;letter-spacing:4px;text-transform:uppercase;margin:0 0 4px">STUDIO</p>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between">
+              <div>
+                <h1 style="font-family:{{ f.heading }};color:#ffffff;font-size:50px;font-weight:700;line-height:0.85;margin:0;text-transform:uppercase;letter-spacing:1px">ANA<br>LIMA</h1>
+                <p style="font-family:{{ f.body }};color:rgba(255,255,255,0.5);font-size:10px;letter-spacing:3px;text-transform:uppercase;margin:8px 0 0">Nail Designer</p>
+              </div>
+              <div style="text-align:right;padding-bottom:4px">
+                <span style="color:{{ c.starColor }};font-size:14px;display:block;letter-spacing:1px">★★★★★</span>
+                <span style="font-family:{{ f.heading }};color:#ffffff;font-size:22px;font-weight:700;display:block">4.9</span>
+                <span style="font-family:{{ f.body }};color:rgba(255,255,255,0.4);font-size:10px">(127 avaliações)</span>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,{{ c.primary }},transparent)"></div>
+        </div>
+      </sc-if>
+
+      <!-- SOBRE -->
+      <div style="background:{{ c.bg }};padding:26px 20px">
+        <h2 style="font-family:{{ f.heading }};color:{{ c.sectionTitle }};font-size:18px;font-weight:700;margin-bottom:11px;letter-spacing:-0.2px">Sobre Mim</h2>
+        <p style="font-family:{{ f.body }};color:{{ c.text }};font-size:14px;line-height:1.75;margin-bottom:20px">Olá! Sou Ana Lima, Nail Designer especializada em unhas em gel, nail art e alongamentos. Com mais de 7 anos de experiência, meu objetivo é realçar a sua beleza natural com cuidado e dedicação. Cada detalhe é pensado para que você se sinta incrível.</p>
+        <div style="display:flex;border-top:1px solid {{ c.border }};padding-top:16px">
+          <div style="flex:1;text-align:center;border-right:1px solid {{ c.border }}">
+            <span style="font-family:{{ f.heading }};font-size:22px;font-weight:700;color:{{ c.primary }};display:block">7+</span>
+            <span style="font-family:{{ f.body }};font-size:10px;color:{{ c.textSec }};text-transform:uppercase;letter-spacing:0.8px">Anos exp.</span>
+          </div>
+          <div style="flex:1;text-align:center;border-right:1px solid {{ c.border }}">
+            <span style="font-family:{{ f.heading }};font-size:22px;font-weight:700;color:{{ c.primary }};display:block">500+</span>
+            <span style="font-family:{{ f.body }};font-size:10px;color:{{ c.textSec }};text-transform:uppercase;letter-spacing:0.8px">Clientes</span>
+          </div>
+          <div style="flex:1;text-align:center">
+            <span style="font-family:{{ f.heading }};font-size:22px;font-weight:700;color:{{ c.primary }};display:block">127</span>
+            <span style="font-family:{{ f.body }};font-size:10px;color:{{ c.textSec }};text-transform:uppercase;letter-spacing:0.8px">Avaliações</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PORTFÓLIO -->
+      <div style="background:{{ c.surface }};padding:26px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h2 style="font-family:{{ f.heading }};color:{{ c.sectionTitle }};font-size:18px;font-weight:700">Portfólio</h2>
+          <span style="font-family:{{ f.body }};color:{{ c.primary }};font-size:13px;font-weight:600;cursor:pointer">Ver tudo →</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <sc-for list="{{ portfolio }}" as="p" hint-placeholder-count="6">
+            <div style="aspect-ratio:1;border-radius:{{ sh.photo }};background:{{ p.bg }};overflow:hidden;position:relative">
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ p.labelColor }}" stroke-width="1.5" opacity="0.4"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:5px 4px;background:{{ p.overlay }};text-align:center">
+                <span style="font-family:{{ f.body }};font-size:9px;color:{{ p.labelColor }};font-weight:700;text-transform:uppercase;letter-spacing:0.5px">{{ p.label }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- SERVIÇOS -->
+      <div style="background:{{ c.bg }};padding:26px 20px">
+        <h2 style="font-family:{{ f.heading }};color:{{ c.sectionTitle }};font-size:18px;font-weight:700;margin-bottom:16px">Serviços</h2>
+        <sc-if value="{{ svcCollapsed }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ toggleServices }}" style="width:100%;background:{{ c.card }};color:{{ c.primary }};border:1.5px solid {{ c.primary }};border-radius:{{ sh.card }};padding:16px 20px;font-family:{{ f.heading }};font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+            <span>Conheça Nossos Serviços</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ c.primary }}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </sc-if>
+        <sc-if value="{{ svcExpanded }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
+            <sc-for list="{{ svcs }}" as="sv" hint-placeholder-count="5">
+              <div style="background:{{ c.card }};border-radius:{{ sh.card }};border:1px solid {{ c.border }};padding:14px;box-shadow:{{ sv.shadow }};animation:{{ sv.anim }} 0.32s ease {{ sv.delay }} both">
+                <div style="display:flex;align-items:flex-start;gap:12px">
+                  <div style="width:42px;height:42px;border-radius:50%;background:{{ c.tagBg }};border:1px solid {{ c.border }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span style="color:{{ c.serviceIcon }};font-size:15px;font-weight:700;font-family:{{ f.heading }}">{{ sv.sym }}</span>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+                      <h3 style="font-family:{{ f.heading }};color:{{ c.text }};font-size:14px;font-weight:700;margin:0">{{ sv.name }}</h3>
+                      <span style="font-family:{{ f.heading }};color:{{ c.primary }};font-size:14px;font-weight:700;white-space:nowrap;margin-left:8px">R$ {{ sv.price }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{ c.textSec }}" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px">{{ sv.dur }}</span>
+                    </div>
+                    <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:12px;line-height:1.5;margin:0 0 10px">{{ sv.desc }}</p>
+                    <button onClick="{{ sv.pickForBooking }}" style="background:{{ c.ctaBg }};color:{{ c.ctaText }};border:none;border-radius:{{ sh.btn }};padding:7px 16px;font-family:{{ f.body }};font-size:12px;font-weight:600;cursor:pointer">Agendar</button>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ toggleServices }}" style="width:100%;background:transparent;color:{{ c.textSec }};border:1px solid {{ c.border }};border-radius:{{ sh.card }};padding:12px;font-family:{{ f.body }};font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            Ver menos
+          </button>
+        </sc-if>
+      </div>
+
+      <!-- AVALIAÇÕES -->
+      <div style="background:{{ c.surface }};padding:26px 20px">
+        <h2 style="font-family:{{ f.heading }};color:{{ c.sectionTitle }};font-size:18px;font-weight:700;margin-bottom:14px">Avaliações</h2>
+
+        <!-- Rating summary card (always visible) -->
+        <div style="background:{{ c.card }};border-radius:{{ sh.card }};border:1px solid {{ c.border }};padding:20px 18px;margin-bottom:14px;display:flex;align-items:center;gap:20px">
+          <div style="flex-shrink:0">
+            <span style="font-family:{{ f.heading }};font-size:52px;font-weight:700;color:{{ c.primary }};line-height:1;display:block;letter-spacing:-1px">4.9</span>
+            <span style="color:{{ c.starColor }};font-size:16px;display:block;margin:4px 0;letter-spacing:2px">★★★★★</span>
+            <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px">127 avaliações</span>
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+              <span style="font-family:{{ f.body }};font-size:11px;color:{{ c.textSec }};width:10px;text-align:right">5</span>
+              <div style="flex:1;height:6px;background:{{ c.border }};border-radius:999px;overflow:hidden">
+                <div style="width:85%;height:100%;background:{{ c.primary }};border-radius:999px"></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+              <span style="font-family:{{ f.body }};font-size:11px;color:{{ c.textSec }};width:10px;text-align:right">4</span>
+              <div style="flex:1;height:6px;background:{{ c.border }};border-radius:999px;overflow:hidden">
+                <div style="width:12%;height:100%;background:{{ c.primary }};border-radius:999px"></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:{{ f.body }};font-size:11px;color:{{ c.textSec }};width:10px;text-align:right">3</span>
+              <div style="flex:1;height:6px;background:{{ c.border }};border-radius:999px;overflow:hidden">
+                <div style="width:3%;height:100%;background:{{ c.primary }};border-radius:999px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsed: button to expand reviews -->
+        <sc-if value="{{ reviewsCollapsed }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ toggleReviews }}" style="width:100%;background:{{ c.card }};color:{{ c.primary }};border:1.5px solid {{ c.primary }};border-radius:{{ sh.card }};padding:14px 20px;font-family:{{ f.heading }};font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+            <span>Ver Avaliações</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ c.primary }}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </sc-if>
+
+        <!-- Expanded: review cards + collapse -->
+        <sc-if value="{{ reviewsExpanded }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
+            <sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3">
+              <div style="background:{{ c.card }};border-radius:{{ sh.card }};border:1px solid {{ c.border }};padding:14px;animation:{{ rv.anim }} 0.32s ease {{ rv.delay }} both">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                  <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0">
+                    <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ rv.slotId }}" placeholder="" shape="circle" hint-size="40px,40px" style="width:40px;height:40px"></x-import>
+                  </div>
+                  <div style="flex:1">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span style="font-family:{{ f.body }};color:{{ c.text }};font-weight:600;font-size:13px">{{ rv.name }}</span>
+                      <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px">{{ rv.date }}</span>
+                    </div>
+                    <span style="color:{{ c.starColor }};font-size:11px">{{ rv.stars }}</span>
+                  </div>
+                </div>
+                <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:13px;line-height:1.6;margin:0">"{{ rv.text }}"</p>
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ toggleReviews }}" style="width:100%;background:transparent;color:{{ c.textSec }};border:1px solid {{ c.border }};border-radius:{{ sh.card }};padding:12px;font-family:{{ f.body }};font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            Ver menos
+          </button>
+        </sc-if>
+      </div>
+
+      <!-- FOOTER -->
+      <div style="background:{{ c.footerBg }};padding:26px 20px;border-top:1px solid {{ c.border }}">
+
+        <!-- SIGA -->
+        <div style="margin-bottom:22px">
+          <h3 style="font-family:{{ f.heading }};color:{{ c.sectionTitle }};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:12px">Siga</h3>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;background:{{ c.card }};border:1px solid {{ c.border }};border-radius:{{ sh.card }};padding:11px 14px;display:flex;align-items:center;gap:8px;cursor:pointer">
+              <svg width="15" height="15" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="{{ c.primary }}" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="{{ c.primary }}" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="{{ c.primary }}"/></svg>
+              <span style="font-family:{{ f.body }};color:{{ c.text }};font-size:13px;font-weight:500">Instagram</span>
+            </div>
+            <div style="flex:1;background:{{ c.card }};border:1px solid {{ c.border }};border-radius:{{ sh.card }};padding:11px 14px;display:flex;align-items:center;gap:8px;cursor:pointer">
+              <svg width="15" height="15" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35z" fill="{{ c.primary }}"/><path d="M12 1C5.93 1 1 5.93 1 12c0 2.07.53 4.01 1.47 5.7L1 23l5.47-1.43A11 11 0 0012 23c6.07 0 11-4.93 11-11S18.07 1 12 1z" fill="none" stroke="{{ c.primary }}" stroke-width="2"/></svg>
+              <span style="font-family:{{ f.body }};color:{{ c.text }};font-size:13px;font-weight:500">WhatsApp</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HORÁRIOS -->
+        <div style="margin-bottom:22px">
+          <h3 style="font-family:{{ f.heading }};color:{{ c.sectionTitle }};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:12px">Horários</h3>
+          <div style="background:{{ c.card }};border-radius:{{ sh.card }};border:1px solid {{ c.border }};padding:14px;display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;justify-content:space-between">
+              <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:13px">Segunda — Sexta</span>
+              <span style="font-family:{{ f.body }};color:{{ c.text }};font-size:13px;font-weight:600">9h — 18h</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:13px">Sábado</span>
+              <span style="font-family:{{ f.body }};color:{{ c.text }};font-size:13px;font-weight:600">9h — 14h</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:13px">Domingo</span>
+              <span style="font-family:{{ f.body }};color:{{ c.primary }};font-size:13px;font-weight:600">Fechado</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENDEREÇO -->
+        <div style="margin-bottom:20px">
+          <h3 style="font-family:{{ f.heading }};color:{{ c.sectionTitle }};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:12px">Endereço</h3>
+          <div style="background:{{ c.card }};border-radius:{{ sh.card }};border:1px solid {{ c.border }};padding:14px;display:flex;gap:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:{{ c.tagBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="{{ c.primary }}"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>
+            <div>
+              <p style="font-family:{{ f.body }};color:{{ c.text }};font-size:13px;font-weight:600;margin:0 0 3px">Studio Ana Lima</p>
+              <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:12px;line-height:1.6;margin:0 0 8px">Rua das Flores, 123 — Jardins<br>São Paulo — SP, 01420-001</p>
+              <span style="font-family:{{ f.body }};color:{{ c.primary }};font-size:12px;font-weight:700;cursor:pointer">Ver no mapa →</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center;padding-top:14px;border-top:1px solid {{ c.border }}">
+          <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px">© 2026 Studio Ana Lima · </span>
+          <span style="font-family:{{ f.body }};color:{{ c.primary }};font-size:11px;font-weight:600">SuaAgenda.Pro</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOATING CTA -->
+    <sc-if value="{{ ctaIsIcon }}" hint-placeholder-val="{{ true }}">
+      <div style="position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:80;pointer-events:none;display:flex;justify-content:flex-end;padding:0 20px">
+        <button onClick="{{ onCtaIconClick }}" style="width:52px;height:52px;border-radius:50%;background:{{ c.ctaBg }};color:{{ c.ctaText }};border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(0,0,0,0.35);pointer-events:all">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ ctaIsExpanded }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:80;pointer-events:none;display:flex;justify-content:center">
+        <button onClick="{{ onCtaPillClick }}" style="background:{{ c.ctaBg }};color:{{ c.ctaText }};border:none;border-radius:{{ sh.btn }};padding:15px 0;font-family:{{ f.heading }};font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,0.32);width:220px;letter-spacing:0.5px;animation:pillIn 0.38s cubic-bezier(0.34,1.56,0.64,1) both;pointer-events:all">
+          Agendar Agora
+        </button>
+      </div>
+    </sc-if>
+
+    <!-- BOOKING MODAL -->
+    <sc-if value="{{ isBookingOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:160;background:{{ c.bg }};display:flex;flex-direction:column;overflow:hidden">
+
+        <!-- Modal header -->
+        <div style="background:{{ c.surface }};border-bottom:1px solid {{ c.border }};padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <sc-if value="{{ bkStep1 }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:26px;height:26px;border-radius:50%;background:{{ c.ctaBg }};display:flex;align-items:center;justify-content:center"><span style="color:{{ c.ctaText }};font-size:11px;font-weight:700;font-family:{{ f.heading }}">1</span></div>
+              <span style="font-family:{{ f.heading }};color:{{ c.text }};font-size:14px;font-weight:700">Escolha o Serviço</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ bkStep2 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <button onClick="{{ goBack }}" style="background:transparent;border:none;cursor:pointer;color:{{ c.primary }};font-size:18px;padding:0;line-height:1">←</button>
+              <div style="width:26px;height:26px;border-radius:50%;background:{{ c.ctaBg }};display:flex;align-items:center;justify-content:center"><span style="color:{{ c.ctaText }};font-size:11px;font-weight:700;font-family:{{ f.heading }}">2</span></div>
+              <span style="font-family:{{ f.heading }};color:{{ c.text }};font-size:14px;font-weight:700">Data e Horário</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ bkStep3 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <button onClick="{{ goBack }}" style="background:transparent;border:none;cursor:pointer;color:{{ c.primary }};font-size:18px;padding:0;line-height:1">←</button>
+              <div style="width:26px;height:26px;border-radius:50%;background:{{ c.ctaBg }};display:flex;align-items:center;justify-content:center"><span style="color:{{ c.ctaText }};font-size:11px;font-weight:700;font-family:{{ f.heading }}">3</span></div>
+              <span style="font-family:{{ f.heading }};color:{{ c.text }};font-size:14px;font-weight:700">Confirmação</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ bkStep4 }}" hint-placeholder-val="{{ false }}">
+            <span style="font-family:{{ f.heading }};color:{{ c.primary }};font-size:14px;font-weight:700">Agendado! ✓</span>
+          </sc-if>
+          <button onClick="{{ closeBooking }}" style="background:transparent;border:none;cursor:pointer;color:{{ c.textSec }};font-size:20px;line-height:1;padding:4px">✕</button>
+        </div>
+
+        <!-- Step progress bar -->
+        <div style="height:3px;background:{{ c.border }};flex-shrink:0">
+          <div style="height:100%;background:{{ c.primary }};transition:width 0.3s ease;width:{{ progressWidth }}"></div>
+        </div>
+
+        <!-- Scrollable body -->
+        <div style="flex:1;overflow-y:auto;padding:20px 18px 32px">
+
+          <!-- STEP 1: Select Service -->
+          <sc-if value="{{ bkStep1 }}" hint-placeholder-val="{{ true }}">
+            <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:13px;margin:0 0 16px">Selecione o serviço desejado:</p>
+            <div style="display:flex;flex-direction:column;gap:10px;animation:bkSlide 0.3s ease both">
+              <sc-for list="{{ svcs }}" as="sv" hint-placeholder-count="5">
+                <div onClick="{{ sv.pickForBooking }}" style="background:{{ sv.bkBg }};border:2px solid {{ sv.bkBdr }};border-radius:{{ sh.card }};padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+                  <div style="display:flex;align-items:center;gap:12px">
+                    <div style="width:38px;height:38px;border-radius:50%;background:{{ c.tagBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                      <span style="color:{{ c.serviceIcon }};font-size:14px;font-weight:700;font-family:{{ f.heading }}">{{ sv.sym }}</span>
+                    </div>
+                    <div>
+                      <p style="font-family:{{ f.heading }};color:{{ c.text }};font-size:13px;font-weight:700;margin:0 0 2px">{{ sv.name }}</p>
+                      <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px;margin:0">{{ sv.dur }}</p>
+                    </div>
+                  </div>
+                  <span style="font-family:{{ f.heading }};color:{{ c.primary }};font-size:14px;font-weight:700">R$ {{ sv.price }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- STEP 2: Date & Time -->
+          <sc-if value="{{ bkStep2 }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:bkSlide 0.3s ease both">
+              <div style="background:{{ c.card }};border:1px solid {{ c.border }};border-radius:{{ sh.card }};padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
+                <span style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:12px">Serviço:</span>
+                <span style="font-family:{{ f.heading }};color:{{ c.primary }};font-size:13px;font-weight:700">{{ selSvcName }}</span>
+              </div>
+              <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px">Escolha a data</p>
+              <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px">
+                <sc-for list="{{ bookingDates }}" as="bd" hint-placeholder-count="7">
+                  <div onClick="{{ bd.pick }}" style="flex-shrink:0;width:56px;background:{{ bd.bg }};border:1.5px solid {{ bd.bdr }};border-radius:{{ sh.card }};padding:10px 6px;text-align:center;cursor:pointer">
+                    <p style="font-family:{{ f.body }};font-size:10px;color:{{ bd.dayCol }};margin:0 0 3px;text-transform:uppercase">{{ bd.day }}</p>
+                    <p style="font-family:{{ f.heading }};font-size:18px;font-weight:700;color:{{ bd.dateCol }};margin:0;line-height:1">{{ bd.date }}</p>
+                    <p style="font-family:{{ f.body }};font-size:9px;color:{{ bd.dayCol }};margin:2px 0 0">{{ bd.month }}</p>
+                  </div>
+                </sc-for>
+              </div>
+              <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px">Escolha o horário</p>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px">
+                <sc-for list="{{ timeSlots }}" as="ts" hint-placeholder-count="7">
+                  <div onClick="{{ ts.pick }}" style="background:{{ ts.bg }};border:1.5px solid {{ ts.bdr }};border-radius:{{ sh.card }};padding:11px 6px;text-align:center;cursor:pointer">
+                    <span style="font-family:{{ f.heading }};font-size:13px;font-weight:700;color:{{ ts.textCol }}">{{ ts.t }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <button onClick="{{ goStep3 }}" style="width:100%;background:{{ c.ctaBg }};color:{{ c.ctaText }};border:none;border-radius:{{ sh.btn }};padding:15px;font-family:{{ f.heading }};font-size:14px;font-weight:700;cursor:pointer;opacity:{{ step3BtnOpacity }}">
+                Continuar →
+              </button>
+            </div>
+          </sc-if>
+
+          <!-- STEP 3: Confirm -->
+          <sc-if value="{{ bkStep3 }}" hint-placeholder-val="{{ false }}">
+            <div style="animation:bkSlide 0.3s ease both">
+              <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:13px;margin:0 0 16px">Confirme os detalhes do agendamento:</p>
+              <div style="background:{{ c.card }};border:1px solid {{ c.border }};border-radius:{{ sh.card }};padding:20px;margin-bottom:20px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+                  <div>
+                    <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px;margin:0 0 3px;text-transform:uppercase;letter-spacing:0.8px">Serviço</p>
+                    <p style="font-family:{{ f.heading }};color:{{ c.text }};font-size:15px;font-weight:700;margin:0">{{ selSvcName }}</p>
+                  </div>
+                  <span style="font-family:{{ f.heading }};color:{{ c.primary }};font-size:18px;font-weight:700">R$ {{ selSvcPrice }}</span>
+                </div>
+                <div style="display:flex;gap:16px;padding-top:14px;border-top:1px solid {{ c.border }}">
+                  <div>
+                    <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px;margin:0 0 3px;text-transform:uppercase;letter-spacing:0.8px">Data</p>
+                    <p style="font-family:{{ f.body }};color:{{ c.text }};font-size:14px;font-weight:600;margin:0">{{ selectedDate }}</p>
+                  </div>
+                  <div>
+                    <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px;margin:0 0 3px;text-transform:uppercase;letter-spacing:0.8px">Horário</p>
+                    <p style="font-family:{{ f.body }};color:{{ c.text }};font-size:14px;font-weight:600;margin:0">{{ selectedTime }}</p>
+                  </div>
+                  <div>
+                    <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px;margin:0 0 3px;text-transform:uppercase;letter-spacing:0.8px">Duração</p>
+                    <p style="font-family:{{ f.body }};color:{{ c.text }};font-size:14px;font-weight:600;margin:0">{{ selSvcDur }}</p>
+                  </div>
+                </div>
+              </div>
+              <div style="background:{{ c.surface }};border-radius:{{ sh.card }};padding:14px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="{{ c.primary }}" style="flex-shrink:0;margin-top:2px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <div>
+                  <p style="font-family:{{ f.body }};color:{{ c.text }};font-size:12px;font-weight:600;margin:0 0 2px">Studio Ana Lima</p>
+                  <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:11px;margin:0">Rua das Flores, 123 — Jardins, SP</p>
+                </div>
+              </div>
+              <button onClick="{{ confirmBooking }}" style="width:100%;background:{{ c.ctaBg }};color:{{ c.ctaText }};border:none;border-radius:{{ sh.btn }};padding:16px;font-family:{{ f.heading }};font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.5px">
+                Confirmar Agendamento
+              </button>
+            </div>
+          </sc-if>
+
+          <!-- STEP 4: Success -->
+          <sc-if value="{{ bkStep4 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;padding:32px 0;animation:bkSlide 0.3s ease both">
+              <div style="width:80px;height:80px;border-radius:50%;background:{{ c.tagBg }};border:2px solid {{ c.primary }};display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="{{ c.primary }}" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h2 style="font-family:{{ f.heading }};color:{{ c.text }};font-size:22px;font-weight:700;margin:0 0 8px;text-align:center">Agendamento Confirmado!</h2>
+              <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:14px;margin:0 0 28px;text-align:center;line-height:1.6">Você receberá uma confirmação pelo WhatsApp em breve.</p>
+              <div style="background:{{ c.card }};border:1px solid {{ c.border }};border-radius:{{ sh.card }};padding:16px 20px;width:100%;margin-bottom:24px">
+                <p style="font-family:{{ f.heading }};color:{{ c.primary }};font-size:16px;font-weight:700;margin:0 0 8px">{{ selSvcName }}</p>
+                <p style="font-family:{{ f.body }};color:{{ c.textSec }};font-size:13px;margin:0">{{ selectedDate }} às {{ selectedTime }}</p>
+              </div>
+              <button onClick="{{ closeBooking }}" style="width:100%;background:{{ c.ctaBg }};color:{{ c.ctaText }};border:none;border-radius:{{ sh.btn }};padding:15px;font-family:{{ f.heading }};font-size:14px;font-weight:700;cursor:pointer">
+                Fechar
+              </button>
+            </div>
+          </sc-if>
+
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- THEME DRAWER -->
+    <sc-if value="{{ showPicker }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;bottom:56px;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:79;background:{{ c.pickerBg }};border:1px solid {{ c.border }};border-radius:20px 20px 0 0;padding:16px 18px;box-shadow:0 -8px 32px rgba(0,0,0,0.18);animation:slideUp 0.2s ease">
+        <div style="width:38px;height:4px;background:{{ c.border }};border-radius:2px;margin:0 auto 14px"></div>
+        <p style="font-family:{{ f.heading }};color:{{ c.text }};font-size:11px;font-weight:700;text-align:center;margin:0 0 13px;text-transform:uppercase;letter-spacing:2.5px">Escolher Tema</p>
+        <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:13px;padding-bottom:2px">
+          <sc-for list="{{ categories }}" as="ct" hint-placeholder-count="5">
+            <button onClick="{{ ct.onClick }}" style="white-space:nowrap;padding:5px 12px;border-radius:999px;border:1.5px solid {{ ct.borderColor }};background:{{ ct.bgColor }};color:{{ ct.textColor }};font-family:{{ f.body }};font-size:11px;font-weight:700;cursor:pointer">{{ ct.name }}</button>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <sc-for list="{{ themesInCat }}" as="th" hint-placeholder-count="3">
+            <div onClick="{{ th.select }}" style="border-radius:10px;border:2px solid {{ th.borderColor }};overflow:hidden;cursor:pointer">
+              <div style="height:38px;background:{{ th.swatchGradient }}"></div>
+              <div style="padding:5px 6px;background:{{ th.namesBg }}">
+                <span style="font-family:{{ f.body }};font-size:9px;font-weight:700;color:{{ th.nameColor }};display:block;text-align:center;text-transform:uppercase;letter-spacing:0.5px">{{ th.name }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- THEME BAR -->
+    <div style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:80">
+      <div onClick="{{ togglePicker }}" style="background:{{ c.pickerBg }};border-top:1px solid {{ c.border }};padding:10px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:30px;height:30px;border-radius:50%;background:{{ c.ctaBg }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="{{ c.ctaText }}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <div>
+            <span style="font-family:{{ f.body }};font-size:10px;color:{{ c.textSec }};display:block;line-height:1.2">Tema atual</span>
+            <span style="font-family:{{ f.heading }};font-size:13px;font-weight:700;color:{{ c.text }}">{{ themeLabel }}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-family:{{ f.body }};color:{{ c.primary }};font-size:12px;font-weight:600">Mudar tema</span>
+          <span style="color:{{ c.primary }};font-size:13px">{{ pickerArrow }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  componentDidMount() {
+    this._sc = document.querySelector('[style*="overflow-y"]');
+    this._onScroll = () => { if (this.state.ctaState === 1) this.setState({ ctaState: 0 }); };
+    if (this._sc) this._sc.addEventListener('scroll', this._onScroll, { passive: true });
+  }
+  componentWillUnmount() {
+    if (this._sc) this._sc.removeEventListener('scroll', this._onScroll);
+  }
+
+  state = {
+    activeTheme: 'luxe_gold', showPicker: false, activeCategory: 'LUXE',
+    ctaState: 0,
+    showServices: false, servicesHiding: false,
+    showReviews: false, reviewsHiding: false,
+    bookingStep: 1,        // 1=service 2=datetime 3=confirm 4=success
+    selectedService: null, selectedDate: null, selectedTime: null,
+  };
+
+  T = {
+    luxe_gold: {
+      id: 'luxe_gold', name: 'Luxe Gold', category: 'LUXE', heroStyle: 'premium',
+      colors: { bg:'#0d0d0d', surface:'#151515', card:'#1e1e1e', primary:'#d4af37', text:'#ffffff', textSec:'#9a9a9a', border:'#2a2a2a', hero:'linear-gradient(180deg,#0a0a0a 0%,#1a1500 100%)', ctaBg:'#d4af37', ctaText:'#0d0d0d', pickerBg:'#151515', sectionTitle:'#d4af37', starColor:'#d4af37', serviceIcon:'#d4af37', footerBg:'#0a0a0a', tagBg:'rgba(212,175,55,0.12)', profileRing:'#d4af37' },
+      fonts: { heading:"'Playfair Display', serif", body:"'Lato', sans-serif", accent:"'Cormorant Garamond', serif" },
+      shape: { card:'8px', btn:'4px', photo:'4px' },
+      shadowStyle: '0 4px 20px rgba(0,0,0,0.5)',
+      portfolioGradients: ['linear-gradient(135deg,#1a1500 0%,#2d2400 100%)','linear-gradient(135deg,#0d1200 0%,#1a2000 100%)','linear-gradient(135deg,#12001a 0%,#200028 100%)','linear-gradient(135deg,#1a0005 0%,#280008 100%)','linear-gradient(135deg,#00121a 0%,#001a28 100%)','linear-gradient(135deg,#1a1a12 0%,#282820 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 55%)', portfolioLabelColor: '#d4af37',
+      swatchGradient: 'linear-gradient(135deg,#0d0d0d 0%,#1a1a1a 50%,#d4af37 100%)', swatchNameBg:'#151515', swatchNameColor:'#d4af37',
+    },
+    luxe_copper: {
+      id: 'luxe_copper', name: 'Luxe Copper', category: 'LUXE', heroStyle: 'premium',
+      colors: { bg:'#0d0d0d', surface:'#151515', card:'#1e1e1e', primary:'#c8762a', text:'#ffffff', textSec:'#9a9a9a', border:'#2a2a2a', hero:'linear-gradient(180deg,#0a0a0a 0%,#1a1100 100%)', ctaBg:'#c8762a', ctaText:'#ffffff', pickerBg:'#151515', sectionTitle:'#c8762a', starColor:'#c8762a', serviceIcon:'#c8762a', footerBg:'#0a0a0a', tagBg:'rgba(200,118,42,0.12)', profileRing:'#c8762a' },
+      fonts: { heading:"'Playfair Display', serif", body:"'Lato', sans-serif", accent:"'Cormorant Garamond', serif" },
+      shape: { card:'8px', btn:'4px', photo:'4px' },
+      shadowStyle: '0 4px 20px rgba(0,0,0,0.5)',
+      portfolioGradients: ['linear-gradient(135deg,#1a1000 0%,#2d1c00 100%)','linear-gradient(135deg,#120d00 0%,#201800 100%)','linear-gradient(135deg,#0d0a12 0%,#180d20 100%)','linear-gradient(135deg,#1a0d00 0%,#281800 100%)','linear-gradient(135deg,#001a0d 0%,#002820 100%)','linear-gradient(135deg,#181200 0%,#282000 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 55%)', portfolioLabelColor: '#c8762a',
+      swatchGradient: 'linear-gradient(135deg,#0d0d0d 0%,#1a1a1a 50%,#c8762a 100%)', swatchNameBg:'#151515', swatchNameColor:'#c8762a',
+    },
+    luxe_silver: {
+      id: 'luxe_silver', name: 'Luxe Silver', category: 'LUXE', heroStyle: 'premium',
+      colors: { bg:'#0d0d0d', surface:'#151515', card:'#1e1e1e', primary:'#c0c0c0', text:'#ffffff', textSec:'#9a9a9a', border:'#2a2a2a', hero:'linear-gradient(180deg,#0a0a0a 0%,#1a1a1a 100%)', ctaBg:'#c0c0c0', ctaText:'#0d0d0d', pickerBg:'#151515', sectionTitle:'#c0c0c0', starColor:'#c0c0c0', serviceIcon:'#c0c0c0', footerBg:'#0a0a0a', tagBg:'rgba(192,192,192,0.12)', profileRing:'#c0c0c0' },
+      fonts: { heading:"'Playfair Display', serif", body:"'Lato', sans-serif", accent:"'Cormorant Garamond', serif" },
+      shape: { card:'8px', btn:'4px', photo:'4px' },
+      shadowStyle: '0 4px 20px rgba(0,0,0,0.5)',
+      portfolioGradients: ['linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%)','linear-gradient(135deg,#121212 0%,#202020 100%)','linear-gradient(135deg,#0d0d18 0%,#18182a 100%)','linear-gradient(135deg,#180d0d 0%,#2a1818 100%)','linear-gradient(135deg,#0d180d 0%,#182a18 100%)','linear-gradient(135deg,#181818 0%,#2a2a2a 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 55%)', portfolioLabelColor: '#c0c0c0',
+      swatchGradient: 'linear-gradient(135deg,#0d0d0d 0%,#1a1a1a 50%,#c0c0c0 100%)', swatchNameBg:'#151515', swatchNameColor:'#c0c0c0',
+    },
+    bloom_soft: {
+      id: 'bloom_soft', name: 'Bloom Soft', category: 'BLOOM', heroStyle: 'soft',
+      colors: { bg:'#faf8f7', surface:'#f5ece9', card:'#ffffff', primary:'#c98b8b', text:'#3d3d3d', textSec:'#8b8b8b', border:'#ebd5cc', hero:'linear-gradient(135deg,#f5ece9 0%,#f0d8d4 50%,#faf8f7 100%)', ctaBg:'#c98b8b', ctaText:'#ffffff', pickerBg:'#faf8f7', sectionTitle:'#8b6f47', starColor:'#d4af37', serviceIcon:'#c98b8b', footerBg:'#f5ece9', tagBg:'rgba(201,139,139,0.12)', profileRing:'#c98b8b' },
+      fonts: { heading:"'Montserrat', sans-serif", body:"'Open Sans', sans-serif", accent:"'Great Vibes', cursive" },
+      shape: { card:'16px', btn:'24px', photo:'12px' },
+      shadowStyle: '0 2px 12px rgba(201,139,139,0.2)',
+      portfolioGradients: ['linear-gradient(135deg,#fce4ec 0%,#f8bbd9 100%)','linear-gradient(135deg,#fff3e0 0%,#ffcc80 100%)','linear-gradient(135deg,#fce4ec 0%,#ef9a9a 100%)','linear-gradient(135deg,#f3e5f5 0%,#ce93d8 100%)','linear-gradient(135deg,#e8f5e9 0%,#a5d6a7 100%)','linear-gradient(135deg,#e3f2fd 0%,#90caf9 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(255,255,255,0.88) 0%,transparent 50%)', portfolioLabelColor: '#8b6f47',
+      swatchGradient: 'linear-gradient(135deg,#f5ece9 0%,#fce4ec 50%,#c98b8b 100%)', swatchNameBg:'#faf8f7', swatchNameColor:'#8b6f47',
+    },
+    bloom_pearl: {
+      id: 'bloom_pearl', name: 'Bloom Pearl', category: 'BLOOM', heroStyle: 'soft',
+      colors: { bg:'#faf8f7', surface:'#f5ece9', card:'#ffffff', primary:'#d4a574', text:'#3d3d3d', textSec:'#8b8b8b', border:'#ebd5cc', hero:'linear-gradient(135deg,#f7ede8 0%,#f0e0d6 50%,#faf8f7 100%)', ctaBg:'#d4a574', ctaText:'#ffffff', pickerBg:'#faf8f7', sectionTitle:'#d4a574', starColor:'#d4af37', serviceIcon:'#d4a574', footerBg:'#f5ece9', tagBg:'rgba(212,165,116,0.12)', profileRing:'#d4a574' },
+      fonts: { heading:"'Montserrat', sans-serif", body:"'Open Sans', sans-serif", accent:"'Great Vibes', cursive" },
+      shape: { card:'16px', btn:'24px', photo:'12px' },
+      shadowStyle: '0 2px 12px rgba(212,165,116,0.2)',
+      portfolioGradients: ['linear-gradient(135deg,#ffeaa7 0%,#fdcb6e 100%)','linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%)','linear-gradient(135deg,#a1c4fd 0%,#c2e9fb 100%)','linear-gradient(135deg,#fccb90 0%,#d57eeb 100%)','linear-gradient(135deg,#e0c3fc 0%,#8ec5fc 100%)','linear-gradient(135deg,#f093fb 0%,#f5576c 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(255,255,255,0.88) 0%,transparent 50%)', portfolioLabelColor: '#8b6f47',
+      swatchGradient: 'linear-gradient(135deg,#f7ede8 0%,#e8d4c8 50%,#d4a574 100%)', swatchNameBg:'#faf8f7', swatchNameColor:'#d4a574',
+    },
+    glow_pink: {
+      id: 'glow_pink', name: 'Glow Pink', category: 'GLOW HOT', heroStyle: 'vibrant',
+      colors: { bg:'#fff5f8', surface:'#ffecf3', card:'#ffffff', primary:'#ff1493', text:'#2d2d2d', textSec:'#666666', border:'#ffe0ec', hero:'linear-gradient(135deg,#ff1493 0%,#9370db 100%)', ctaBg:'#ff1493', ctaText:'#ffffff', pickerBg:'#ffffff', sectionTitle:'#ff1493', starColor:'#ff9500', serviceIcon:'#ff1493', footerBg:'#ffecf3', tagBg:'rgba(255,20,147,0.08)', profileRing:'#ff1493' },
+      fonts: { heading:"'Poppins', sans-serif", body:"'Quicksand', sans-serif", accent:"'Satisfy', cursive" },
+      shape: { card:'12px', btn:'20px', photo:'12px' },
+      shadowStyle: '0 4px 16px rgba(255,20,147,0.15)',
+      portfolioGradients: ['linear-gradient(135deg,#ff80ab 0%,#ea80fc 100%)','linear-gradient(135deg,#f48fb1 0%,#f06292 100%)','linear-gradient(135deg,#ce93d8 0%,#ba68c8 100%)','linear-gradient(135deg,#ff80ab 0%,#ff4081 100%)','linear-gradient(135deg,#e040fb 0%,#aa00ff 100%)','linear-gradient(135deg,#ff6e7f 0%,#bfe9ff 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(180,0,100,0.72) 0%,transparent 55%)', portfolioLabelColor: '#ffffff',
+      swatchGradient: 'linear-gradient(135deg,#ff1493 0%,#9370db 100%)', swatchNameBg:'#fff5f8', swatchNameColor:'#ff1493',
+    },
+    glow_coral: {
+      id: 'glow_coral', name: 'Glow Coral', category: 'GLOW HOT', heroStyle: 'vibrant',
+      colors: { bg:'#fff5f0', surface:'#fff0eb', card:'#ffffff', primary:'#ff6b35', text:'#2d2d2d', textSec:'#666666', border:'#ffe0d0', hero:'linear-gradient(135deg,#ff4757 0%,#ff6b35 100%)', ctaBg:'#ff6b35', ctaText:'#ffffff', pickerBg:'#ffffff', sectionTitle:'#ff6b35', starColor:'#ff9500', serviceIcon:'#ff6b35', footerBg:'#fff0eb', tagBg:'rgba(255,107,53,0.1)', profileRing:'#ff6b35' },
+      fonts: { heading:"'Poppins', sans-serif", body:"'Quicksand', sans-serif", accent:"'Satisfy', cursive" },
+      shape: { card:'12px', btn:'20px', photo:'12px' },
+      shadowStyle: '0 4px 16px rgba(255,107,53,0.2)',
+      portfolioGradients: ['linear-gradient(135deg,#ff9a9e 0%,#fecfef 100%)','linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%)','linear-gradient(135deg,#ff6e7f 0%,#bfe9ff 100%)','linear-gradient(135deg,#ffb347 0%,#ffcc33 100%)','linear-gradient(135deg,#f093fb 0%,#f5576c 100%)','linear-gradient(135deg,#fc5c7d 0%,#6a3093 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(200,60,0,0.72) 0%,transparent 55%)', portfolioLabelColor: '#ffffff',
+      swatchGradient: 'linear-gradient(135deg,#ff4757 0%,#ff6b35 100%)', swatchNameBg:'#fff5f0', swatchNameColor:'#ff6b35',
+    },
+    bold_teal: {
+      id: 'bold_teal', name: 'Bold Teal', category: 'BOLD', heroStyle: 'bold',
+      colors: { bg:'#f0f8f8', surface:'#e0f0f0', card:'#ffffff', primary:'#008b8b', text:'#1a1a1a', textSec:'#4a4a4a', border:'#c0e4e4', hero:'linear-gradient(135deg,#006464 0%,#20b2aa 100%)', ctaBg:'#008b8b', ctaText:'#ffffff', pickerBg:'#ffffff', sectionTitle:'#008b8b', starColor:'#ff9500', serviceIcon:'#008b8b', footerBg:'#e0f0f0', tagBg:'rgba(0,139,139,0.08)', profileRing:'#20b2aa' },
+      fonts: { heading:"'Montserrat', sans-serif", body:"'Inter', sans-serif", accent:"'Poppins', sans-serif" },
+      shape: { card:'12px', btn:'8px', photo:'8px' },
+      shadowStyle: '0 4px 16px rgba(0,139,139,0.12)',
+      portfolioGradients: ['linear-gradient(135deg,#e0f7fa 0%,#80deea 100%)','linear-gradient(135deg,#e8f5e9 0%,#a5d6a7 100%)','linear-gradient(135deg,#b2dfdb 0%,#4db6ac 100%)','linear-gradient(135deg,#e0f2f1 0%,#80cbc4 100%)','linear-gradient(135deg,#b2ebf2 0%,#4dd0e1 100%)','linear-gradient(135deg,#dcedc8 0%,#aed581 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,100,100,0.76) 0%,transparent 55%)', portfolioLabelColor: '#ffffff',
+      swatchGradient: 'linear-gradient(135deg,#006464 0%,#20b2aa 100%)', swatchNameBg:'#f0f8f8', swatchNameColor:'#008b8b',
+    },
+    bold_emerald: {
+      id: 'bold_emerald', name: 'Bold Emerald', category: 'BOLD', heroStyle: 'bold',
+      colors: { bg:'#f1f9f6', surface:'#e0f0e8', card:'#ffffff', primary:'#1b4332', text:'#1a1a1a', textSec:'#4a4a4a', border:'#b8d8c8', hero:'linear-gradient(135deg,#1b4332 0%,#2d6a4f 100%)', ctaBg:'#2d6a4f', ctaText:'#d4af37', pickerBg:'#ffffff', sectionTitle:'#1b4332', starColor:'#d4af37', serviceIcon:'#1b4332', footerBg:'#e0f0e8', tagBg:'rgba(27,67,50,0.08)', profileRing:'#d4af37' },
+      fonts: { heading:"'Montserrat', sans-serif", body:"'Inter', sans-serif", accent:"'Poppins', sans-serif" },
+      shape: { card:'12px', btn:'8px', photo:'8px' },
+      shadowStyle: '0 4px 16px rgba(27,67,50,0.12)',
+      portfolioGradients: ['linear-gradient(135deg,#d4efdf 0%,#a9dfbf 100%)','linear-gradient(135deg,#e8f8f5 0%,#a3e4d7 100%)','linear-gradient(135deg,#f0f9f4 0%,#82e0aa 100%)','linear-gradient(135deg,#eafaf1 0%,#6fcf97 100%)','linear-gradient(135deg,#f9f3e3 0%,#f0d16e 100%)','linear-gradient(135deg,#e8f5e9 0%,#66bb6a 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(27,67,50,0.82) 0%,transparent 55%)', portfolioLabelColor: '#d4af37',
+      swatchGradient: 'linear-gradient(135deg,#1b4332 0%,#2d6a4f 50%,#d4af37 100%)', swatchNameBg:'#f1f9f6', swatchNameColor:'#1b4332',
+    },
+    bold_ocean: {
+      id: 'bold_ocean', name: 'Bold Ocean', category: 'BOLD', heroStyle: 'bold',
+      colors: { bg:'#f0f4f8', surface:'#dce8f0', card:'#ffffff', primary:'#0a3d62', text:'#1a1a1a', textSec:'#4a4a4a', border:'#b8c8d8', hero:'linear-gradient(135deg,#0a3d62 0%,#3498db 100%)', ctaBg:'#0a3d62', ctaText:'#1abc9c', pickerBg:'#ffffff', sectionTitle:'#0a3d62', starColor:'#ff9500', serviceIcon:'#0a3d62', footerBg:'#dce8f0', tagBg:'rgba(10,61,98,0.08)', profileRing:'#1abc9c' },
+      fonts: { heading:"'Montserrat', sans-serif", body:"'Inter', sans-serif", accent:"'Poppins', sans-serif" },
+      shape: { card:'12px', btn:'8px', photo:'8px' },
+      shadowStyle: '0 4px 16px rgba(10,61,98,0.12)',
+      portfolioGradients: ['linear-gradient(135deg,#e3f2fd 0%,#90caf9 100%)','linear-gradient(135deg,#e0f7fa 0%,#80deea 100%)','linear-gradient(135deg,#e8eaf6 0%,#9fa8da 100%)','linear-gradient(135deg,#b3e5fc 0%,#4fc3f7 100%)','linear-gradient(135deg,#b2ebf2 0%,#26c6da 100%)','linear-gradient(135deg,#e8f5e9 0%,#66bb6a 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(10,61,98,0.8) 0%,transparent 55%)', portfolioLabelColor: '#1abc9c',
+      swatchGradient: 'linear-gradient(135deg,#0a3d62 0%,#3498db 100%)', swatchNameBg:'#f0f4f8', swatchNameColor:'#0a3d62',
+    },
+    pure_neutral: {
+      id: 'pure_neutral', name: 'Pure Neutral', category: 'PURE', heroStyle: 'simple',
+      colors: { bg:'#ffffff', surface:'#f5f5f5', card:'#ffffff', primary:'#2d2d2d', text:'#2d2d2d', textSec:'#888888', border:'#e0e0e0', hero:'linear-gradient(135deg,#f5f5f5 0%,#ebebeb 100%)', ctaBg:'#2d2d2d', ctaText:'#ffffff', pickerBg:'#ffffff', sectionTitle:'#2d2d2d', starColor:'#ff9500', serviceIcon:'#888888', footerBg:'#f5f5f5', tagBg:'rgba(0,0,0,0.04)', profileRing:'#d4d4d4' },
+      fonts: { heading:"'Roboto', sans-serif", body:"'Open Sans', sans-serif", accent:"'Lato', sans-serif" },
+      shape: { card:'6px', btn:'4px', photo:'4px' },
+      shadowStyle: '0 1px 6px rgba(0,0,0,0.08)',
+      portfolioGradients: ['linear-gradient(135deg,#f5f5f5 0%,#e0e0e0 100%)','linear-gradient(135deg,#eeeeee 0%,#d5d5d5 100%)','linear-gradient(135deg,#f0f0f0 0%,#d8d8d8 100%)','linear-gradient(135deg,#e8e8e8 0%,#cccccc 100%)','linear-gradient(135deg,#f2f2f2 0%,#dcdcdc 100%)','linear-gradient(135deg,#ececec 0%,#d0d0d0 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 55%)', portfolioLabelColor: '#ffffff',
+      swatchGradient: 'linear-gradient(135deg,#f5f5f5 0%,#e0e0e0 50%,#2d2d2d 100%)', swatchNameBg:'#f5f5f5', swatchNameColor:'#2d2d2d',
+    },
+    pure_slate: {
+      id: 'pure_slate', name: 'Pure Slate', category: 'PURE', heroStyle: 'simple',
+      colors: { bg:'#ffffff', surface:'#eef2f6', card:'#ffffff', primary:'#5a7a94', text:'#2d2d2d', textSec:'#6b7e8e', border:'#d0dce8', hero:'linear-gradient(135deg,#e8eef2 0%,#dce6ee 100%)', ctaBg:'#5a7a94', ctaText:'#ffffff', pickerBg:'#ffffff', sectionTitle:'#5a7a94', starColor:'#ff9500', serviceIcon:'#5a7a94', footerBg:'#eef2f6', tagBg:'rgba(90,122,148,0.08)', profileRing:'#b8c8d8' },
+      fonts: { heading:"'Roboto', sans-serif", body:"'Open Sans', sans-serif", accent:"'Lato', sans-serif" },
+      shape: { card:'6px', btn:'4px', photo:'4px' },
+      shadowStyle: '0 1px 6px rgba(90,122,148,0.12)',
+      portfolioGradients: ['linear-gradient(135deg,#e8eef2 0%,#c8d8e8 100%)','linear-gradient(135deg,#eef4f8 0%,#d0e0ec 100%)','linear-gradient(135deg,#e0e8f0 0%,#b8ccd8 100%)','linear-gradient(135deg,#dce8f4 0%,#b0c4d4 100%)','linear-gradient(135deg,#e8f0f8 0%,#c0d4e4 100%)','linear-gradient(135deg,#f0f4f8 0%,#c8d8e8 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(90,122,148,0.72) 0%,transparent 55%)', portfolioLabelColor: '#ffffff',
+      swatchGradient: 'linear-gradient(135deg,#e8eef2 0%,#b8c5d6 50%,#5a7a94 100%)', swatchNameBg:'#eef2f6', swatchNameColor:'#5a7a94',
+    },
+    urban_noir: {
+      id: 'urban_noir', name: 'Urban Noir', category: 'URBAN', heroStyle: 'cinematic',
+      colors: { bg:'#0f0e0c', surface:'#1a1814', card:'#221f1a', primary:'#d4a853', text:'#f0ede8', textSec:'#8a8178', border:'#2e2a25', hero:'linear-gradient(160deg,#1a1505 0%,#0f0e0c 60%,#000 100%)', ctaBg:'#d4a853', ctaText:'#0f0e0c', pickerBg:'#1a1814', sectionTitle:'#d4a853', starColor:'#d4a853', serviceIcon:'#d4a853', footerBg:'#0a0a08', tagBg:'rgba(212,168,83,0.1)', profileRing:'#d4a853' },
+      fonts: { heading:"'Oswald', sans-serif", body:"'Inter', sans-serif", accent:"'Oswald', sans-serif" },
+      shape: { card:'4px', btn:'2px', photo:'4px' },
+      shadowStyle: '0 4px 24px rgba(0,0,0,0.7)',
+      portfolioGradients: ['linear-gradient(160deg,#1a1200 0%,#0f0c00 100%)','linear-gradient(160deg,#140e00 0%,#0a0800 100%)','linear-gradient(160deg,#0e0a08 0%,#1a1208 100%)','linear-gradient(160deg,#100a00 0%,#1a1400 100%)','linear-gradient(160deg,#0a0800 0%,#140e00 100%)','linear-gradient(160deg,#1a1400 0%,#100a00 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.1) 60%)', portfolioLabelColor: '#d4a853',
+      swatchGradient: 'linear-gradient(135deg,#0f0e0c 0%,#1a1814 50%,#d4a853 100%)', swatchNameBg:'#1a1814', swatchNameColor:'#d4a853',
+    },
+    urban_steel: {
+      id: 'urban_steel', name: 'Urban Steel', category: 'URBAN', heroStyle: 'cinematic',
+      colors: { bg:'#0a0e14', surface:'#111820', card:'#161d28', primary:'#4a9eff', text:'#e8eef6', textSec:'#6b7a8e', border:'#1e2a38', hero:'linear-gradient(160deg,#0a1020 0%,#050a14 60%,#000 100%)', ctaBg:'#4a9eff', ctaText:'#050a14', pickerBg:'#111820', sectionTitle:'#4a9eff', starColor:'#4a9eff', serviceIcon:'#4a9eff', footerBg:'#080c12', tagBg:'rgba(74,158,255,0.1)', profileRing:'#4a9eff' },
+      fonts: { heading:"'Oswald', sans-serif", body:"'Inter', sans-serif", accent:"'Oswald', sans-serif" },
+      shape: { card:'4px', btn:'2px', photo:'4px' },
+      shadowStyle: '0 4px 24px rgba(0,0,0,0.7)',
+      portfolioGradients: ['linear-gradient(160deg,#050a20 0%,#0a1432 100%)','linear-gradient(160deg,#080c1a 0%,#0d1428 100%)','linear-gradient(160deg,#0a0e1c 0%,#111830 100%)','linear-gradient(160deg,#060a18 0%,#0c1428 100%)','linear-gradient(160deg,#0a0e20 0%,#0e1830 100%)','linear-gradient(160deg,#080c18 0%,#101a2c 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.1) 60%)', portfolioLabelColor: '#4a9eff',
+      swatchGradient: 'linear-gradient(135deg,#0a0e14 0%,#161d28 50%,#4a9eff 100%)', swatchNameBg:'#111820', swatchNameColor:'#4a9eff',
+    },
+    urban_rust: {
+      id: 'urban_rust', name: 'Urban Rust', category: 'URBAN', heroStyle: 'cinematic',
+      colors: { bg:'#0f0a08', surface:'#1a1210', card:'#221810', primary:'#c4572c', text:'#f0e8e4', textSec:'#8a7870', border:'#2e2018', hero:'linear-gradient(160deg,#1a0800 0%,#0f0a08 60%,#000 100%)', ctaBg:'#c4572c', ctaText:'#ffffff', pickerBg:'#1a1210', sectionTitle:'#c4572c', starColor:'#c4572c', serviceIcon:'#c4572c', footerBg:'#0a0806', tagBg:'rgba(196,87,44,0.12)', profileRing:'#c4572c' },
+      fonts: { heading:"'Oswald', sans-serif", body:"'Inter', sans-serif", accent:"'Oswald', sans-serif" },
+      shape: { card:'4px', btn:'2px', photo:'4px' },
+      shadowStyle: '0 4px 24px rgba(0,0,0,0.7)',
+      portfolioGradients: ['linear-gradient(160deg,#200800 0%,#140600 100%)','linear-gradient(160deg,#1a0a00 0%,#100800 100%)','linear-gradient(160deg,#180a08 0%,#201008 100%)','linear-gradient(160deg,#160800 0%,#200c00 100%)','linear-gradient(160deg,#140600 0%,#1c0a00 100%)','linear-gradient(160deg,#200c00 0%,#140800 100%)'],
+      portfolioOverlay: 'linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.1) 60%)', portfolioLabelColor: '#c4572c',
+      swatchGradient: 'linear-gradient(135deg,#0f0a08 0%,#1a1210 50%,#c4572c 100%)', swatchNameBg:'#1a1210', swatchNameColor:'#c4572c',
+    },
+  };
+
+  renderVals() {
+    const { activeTheme, showPicker, activeCategory } = this.state;
+    const t = this.T[activeTheme];
+    const c = t.colors;
+    const f = t.fonts;
+    const sh = t.shape;
+    const isPremium = t.heroStyle === 'premium';
+    const isLight = t.heroStyle === 'simple';
+    const isCinematic = t.heroStyle === 'cinematic';
+    const isColorful = !isPremium && !isLight && !isCinematic;
+    const isScriptAccent = t.heroStyle === 'soft';
+    const isNotScriptAccent = !isScriptAccent;
+
+    const shadow = t.shadowStyle;
+    const { ctaState, showServices, servicesHiding, bookingStep, selectedService, selectedDate, selectedTime } = this.state;
+
+    const svcBase = [
+      { sym:'◆', name:'Unhas em Gel',    dur:'90 min',  price:'120', desc:'Aplicação completa com base, cor e top coat de alta durabilidade.' },
+      { sym:'✦', name:'Manicure Simples', dur:'45 min',  price:'50',  desc:'Cuidado completo: cutícula, lixamento e esmaltação.' },
+      { sym:'◎', name:'Pedicure Simples', dur:'60 min',  price:'65',  desc:'Tratamento dos pés com hidratação e esmaltação.' },
+      { sym:'✿', name:'Nail Art',         dur:'30 min',  price:'40',  desc:'Decoração personalizada, desde designs simples a artísticos.' },
+      { sym:'●', name:'Unhas Acrílicas',  dur:'120 min', price:'180', desc:'Alongamento em acrílico com modelagem personalizada.' },
+    ];
+    const svcs = svcBase.map((s, i) => {
+      const sel = s.name === selectedService;
+      return { ...s, shadow,
+        delay: `${i * 0.09}s`,
+        revDelay: `${(svcBase.length - 1 - i) * 0.07}s`,
+        anim: servicesHiding ? 'dropOut' : 'dropIn',
+        isBookingSelected: sel,
+        pickForBooking: () => this.setState({ selectedService: s.name, bookingStep: 2 }),
+        bkBg: sel ? c.tagBg : c.card,
+        bkBdr: sel ? c.primary : c.border,
+      };
+    });
+
+    const weekDays = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const mths = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    const today = new Date();
+    const bookingDates = Array.from({length: 7}, (_, i) => {
+      const d = new Date(today); d.setDate(d.getDate() + i + 1);
+      const key = `${d.getDate()}/${d.getMonth()+1}`;
+      const sel = key === selectedDate;
+      return { day: weekDays[d.getDay()], date: d.getDate(), month: mths[d.getMonth()], key,
+        isSel: sel, pick: () => this.setState({ selectedDate: key }),
+        bg: sel ? c.primary : c.card,
+        bdr: sel ? c.primary : c.border,
+        dayCol: sel ? c.ctaText : c.textSec,
+        dateCol: sel ? c.ctaText : c.text,
+      };
+    });
+    const timeSlots = ['09:00','10:00','11:00','14:00','15:00','16:00','17:00'].map(t2 => {
+      const sel = t2 === selectedTime;
+      return { t: t2, isSel: sel, pick: () => this.setState({ selectedTime: t2 }),
+        bg: sel ? c.primary : c.card,
+        bdr: sel ? c.primary : c.border,
+        textCol: sel ? c.ctaText : c.text };
+    });
+    const selSvc = svcBase.find(s => s.name === selectedService);
+
+    const { showReviews, reviewsHiding } = this.state;
+    const reviews = [
+      { init:'C', name:'Camila S.', date:'Há 2 dias', stars:'★★★★★', text:'Atendimento incrível! As unhas ficaram perfeitas, já agendei para o próximo mês.' },
+      { init:'F', name:'Fernanda R.', date:'Há 1 sem.', stars:'★★★★★', text:'Profissional muito atenciosa e caprichosa. Recomendo a todos!' },
+      { init:'J', name:'Juliana M.', date:'Há 2 sem.', stars:'★★★★☆', text:'Ótimo atendimento, ambiente confortável. Voltarei com certeza!' },
+    ].map((r, i) => ({ ...r,
+      delay: `${i * 0.1}s`,
+      revDelay: `${(2 - i) * 0.07}s`,
+      anim: reviewsHiding ? 'dropOut' : 'dropIn',
+      slotId: `review-avatar-${i}`,
+    }));
+
+    const labels = ['Gel Crystal','Nail Art','French','Ombré','Acrílico','Press-on'];
+    const portfolio = t.portfolioGradients.map((bg, i) => ({
+      label: labels[i], bg, overlay: t.portfolioOverlay, labelColor: t.portfolioLabelColor,
+      slotId: `portfolio-${i}`,
+    }));
+
+    const catColors = { 'LUXE':'#c8a84b', 'BLOOM':'#c98b8b', 'GLOW HOT':'#ff1493', 'BOLD':'#008b8b', 'PURE':'#888888', 'URBAN':'#d4a853' };
+    const categories = ['LUXE','BLOOM','GLOW HOT','BOLD','PURE','URBAN'].map(cat => ({
+      name: cat,
+      onClick: () => this.setState({ activeCategory: cat }),
+      bgColor: cat === activeCategory ? catColors[cat] : 'transparent',
+      textColor: cat === activeCategory ? '#ffffff' : c.textSec,
+      borderColor: cat === activeCategory ? catColors[cat] : c.border,
+    }));
+
+    const themesInCat = Object.values(this.T)
+      .filter(th => th.category === activeCategory)
+      .map(th => ({
+        name: th.name,
+        select: () => this.setState({ activeTheme: th.id, showPicker: false }),
+        swatchGradient: th.swatchGradient,
+        namesBg: th.swatchNameBg,
+        nameColor: th.swatchNameColor,
+        borderColor: th.id === activeTheme ? th.colors.primary : c.border,
+      }));
+
+    return {
+      c, f, sh, svcs, reviews, portfolio,
+      isPremium, isLight, isColorful, isScriptAccent, isNotScriptAccent, isCinematic,
+      showPicker,
+      themeLabel: t.name,
+      pickerArrow: showPicker ? '↓' : '↑',
+      categories, themesInCat,
+      togglePicker: () => this.setState(s => ({ showPicker: !s.showPicker })),
+      // CTA
+      ctaIsIcon: ctaState === 0,
+      ctaIsExpanded: ctaState === 1,
+      isBookingOpen: ctaState === 2,
+      onCtaIconClick: () => this.setState({ ctaState: 1 }),
+      onCtaPillClick: () => this.setState({ ctaState: 2, bookingStep: 1 }),
+      closeBooking: () => this.setState({ ctaState: 0, bookingStep: 1, selectedService: null, selectedDate: null, selectedTime: null }),
+      // Reviews toggle
+      reviewsCollapsed: !showReviews,
+      reviewsExpanded: showReviews,
+      toggleReviews: () => {
+        if (showReviews) {
+          this.setState({ reviewsHiding: true });
+          setTimeout(() => this.setState({ showReviews: false, reviewsHiding: false }), 420);
+        } else { this.setState({ showReviews: true, reviewsHiding: false }); }
+      },
+      // Services
+      svcCollapsed: !showServices,
+      svcExpanded: showServices,
+      toggleServices: () => {
+        if (showServices) {
+          this.setState({ servicesHiding: true });
+          setTimeout(() => this.setState({ showServices: false, servicesHiding: false }), 420);
+        } else { this.setState({ showServices: true, servicesHiding: false }); }
+      },
+      // Booking
+      bookingStep, bkStep1: bookingStep === 1, bkStep2: bookingStep === 2,
+      bkStep3: bookingStep === 3, bkStep4: bookingStep === 4,
+      bookingDates, timeSlots,
+      selectedService, selectedDate, selectedTime,
+      selSvcName: selSvc ? selSvc.name : '',
+      selSvcPrice: selSvc ? selSvc.price : '',
+      selSvcDur: selSvc ? selSvc.dur : '',
+      canStep3: !!(selectedDate && selectedTime),
+      progressWidth: `${Math.round((bookingStep / 4) * 100)}%`,
+      step3BtnOpacity: (selectedDate && selectedTime) ? '1' : '0.4',
+      goStep3: () => { if (selectedDate && selectedTime) this.setState({ bookingStep: 3 }); },
+      goBack: () => this.setState(s2 => ({ bookingStep: Math.max(1, s2.bookingStep - 1) })),
+      confirmBooking: () => this.setState({ bookingStep: 4 }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
