@@ -36,6 +36,11 @@ function LoginPage() {
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("senha") ?? "");
 
+    // Limpa qualquer nonce local antigo ANTES de logar. O checkNonce dispara
+    // imediatamente no evento SIGNED_IN; se o localStorage estiver vazio ele
+    // retorna cedo (sem kick) durante a janela em que o nonce é gravado.
+    localStorage.removeItem("session_nonce");
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
@@ -45,7 +50,6 @@ function LoginPage() {
 
     // Register this as the only active session — other devices will be kicked out within 30s
     const nonce = crypto.randomUUID();
-    localStorage.setItem("session_nonce", nonce);
 
     const [profile] = await Promise.all([
       supabase.from("profiles").select("force_password_change, active_session_nonce").eq("id", data.user.id).single()
@@ -53,8 +57,11 @@ function LoginPage() {
       supabase.auth.signOut({ scope: "others" }),
     ]);
 
-    // Write nonce AFTER signOut(others) so it isn't revoked
+    // Grava o nonce no banco PRIMEIRO e só então no localStorage — evita a
+    // janela "local=novo, banco=antigo" que disparava o falso kick (race com
+    // o checkNonce do SIGNED_IN).
     await supabase.from("profiles").update({ active_session_nonce: nonce }).eq("id", data.user.id);
+    localStorage.setItem("session_nonce", nonce);
 
     // If admin forced a password change, redirect there before the dashboard
     if (profile?.force_password_change) {
