@@ -2,7 +2,8 @@
 # Nitro preset: node-server → output em .output/server/index.mjs
 
 # ── Stage 1: build ───────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+# node:22 tem WebSocket nativo (exigido pelo @supabase/realtime-js server-side)
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -10,7 +11,7 @@ COPY . .
 RUN npm run build
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
