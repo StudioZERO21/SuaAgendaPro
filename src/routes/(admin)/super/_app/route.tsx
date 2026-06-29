@@ -12,6 +12,7 @@ import { clearSuperAuth, isSuperTokenValid } from "@/lib/super-auth";
 export const Route = createFileRoute("/(admin)/super/_app")({
   ssr: false,
   beforeLoad: () => {
+    if (typeof window === "undefined") return;
     // Verifica presença E validade do TTL do token — sem chamada ao servidor
     if (!isSuperTokenValid()) {
       clearSuperAuth();
