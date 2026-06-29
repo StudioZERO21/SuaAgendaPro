@@ -7,11 +7,10 @@ import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SuperSidebar } from "@/components/super/super-sidebar";
 import { clearSuperAuth, isSuperTokenValid } from "@/lib/super-auth";
-import { checkSuperSession } from "@/lib/super-auth.server";
 
 export const Route = createFileRoute("/(admin)/super/_app")({
   ssr: false,
-  loader: () => checkSuperSession(),
+  loader: async () => ({}),
   component: SuperLayout,
 });
 

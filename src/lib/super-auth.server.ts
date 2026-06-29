@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
 const TOKEN_TTL_MS    = 8 * 60 * 60 * 1000;
@@ -302,16 +301,6 @@ export const superAdminDeactivateMfa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ─── Session check (usado no loader do layout super) ─────────────────────────
-
-export const checkSuperSession = createServerFn({ method: "GET" }).handler(async () => {
-  const { getCookie } = await import("vinxi/http");
-  const raw = getCookie("sa_super_token");
-  if (!raw) throw redirect({ to: "/super/login" });
-  const valid = await verifySuperToken(decodeURIComponent(raw));
-  if (!valid) throw redirect({ to: "/super/login" });
-  return {};
-});
 
 export const superAdminGetMfaStatus = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ _st: z.string() }).parse(input))
