@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ShieldAlert, Loader2, ShieldCheck, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,6 @@ export const Route = createFileRoute("/(admin)/super/login")({
 type Step = "credentials" | "mfa" | "change-password";
 
 function SuperLoginPage() {
-  const navigate  = useNavigate();
   const [step, setStep]           = useState<Step>("credentials");
   const [email, setEmail]         = useState("");
   const [password, setPassword]   = useState("");

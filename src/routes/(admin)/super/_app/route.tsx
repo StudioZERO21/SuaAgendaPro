@@ -9,7 +9,6 @@ import { SuperSidebar } from "@/components/super/super-sidebar";
 import { clearSuperAuth, isSuperTokenValid } from "@/lib/super-auth";
 
 export const Route = createFileRoute("/(admin)/super/_app")({
-  ssr: false,
   loader: async () => ({}),
   component: SuperLayout,
 });

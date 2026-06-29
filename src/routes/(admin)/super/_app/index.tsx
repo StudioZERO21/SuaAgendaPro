@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/(admin)/super/_app/")({
   ssr: false,
+  loader: async () => ({}),
   head: () => ({
     meta: [
       { title: "Dashboard — Super Admin" },
