@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   CreditCard,
   DollarSign,
+  CalendarClock,
   ClipboardList,
   MessageSquare,
   Settings,
@@ -37,6 +38,7 @@ const NAV_PRINCIPAL = [
   { title: "Usuários",   to: "/super/usuarios",  icon: Users,           exact: false },
   { title: "Planos",     to: "/super/planos",    icon: CreditCard,      exact: false },
   { title: "Financeiro", to: "/super/financeiro",icon: DollarSign,      exact: false },
+  { title: "Cobranças",  to: "/super/cobrancas",  icon: CalendarClock,   exact: false },
   { title: "Tickets",    to: "/super/tickets",    icon: TicketCheck,     exact: false },
   { title: "Indicações", to: "/super/indicacoes", icon: Share2,          exact: false },
 ];

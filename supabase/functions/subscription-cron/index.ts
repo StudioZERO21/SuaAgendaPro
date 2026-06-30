@@ -25,6 +25,9 @@ const supabase = createClient(supabaseUrl, serviceKey, {
   auth: { persistSession: false },
 });
 
+// Domínio correto do app (era app.suaagendapro.com — link quebrado)
+const APP_URL = "https://app.suaagenda.pro";
+
 // ─── Email via Resend ──────────────────────────────────────────────────────────
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
@@ -81,6 +84,42 @@ async function getUserEmail(userId: string): Promise<string> {
   return user?.email ?? "";
 }
 
+// ─── Log de notificações + dedup ──────────────────────────────────────────────
+
+// Evita reenviar o mesmo aviso (kind) para o mesmo usuário no mesmo ciclo.
+// Janela de 2 dias: protege contra execução dupla no dia e não bloqueia o
+// próximo ciclo (trial é único; cobrança recorre a cada ~30 dias).
+async function alreadySent(userId: string, kind: string): Promise<boolean> {
+  const since = new Date(Date.now() - 2 * 86_400_000).toISOString();
+  const { data } = await supabase
+    .from("subscription_notifications")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("kind", kind)
+    .eq("status", "sent")
+    .gte("created_at", since)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
+async function logNotif(
+  userId: string,
+  kind: string,
+  channel: "email" | "whatsapp",
+  ok: boolean,
+  target: string,
+  error?: string,
+): Promise<void> {
+  await supabase.from("subscription_notifications").insert({
+    user_id: userId,
+    kind,
+    channel,
+    status: ok ? "sent" : "failed",
+    target,
+    error: error ?? null,
+  });
+}
+
 // ─── Templates de mensagens ───────────────────────────────────────────────────
 
 const emailHtml = (name: string, subject: string, body: string) => `
@@ -92,7 +131,7 @@ const emailHtml = (name: string, subject: string, body: string) => `
 <p>Olá <strong>${name}</strong>,</p>
 ${body}
 <div style="text-align:center;margin:28px 0">
-  <a href="https://app.suaagendapro.com/plano"
+  <a href="${APP_URL}/plano"
      style="background:#ec4899;color:white;padding:13px 28px;border-radius:12px;text-decoration:none;font-weight:700">
     Acessar minha conta
   </a>
@@ -113,13 +152,13 @@ const MSG = {
       `<p>Sua fatura do plano <strong>Premium</strong> vence em <strong>3 dias</strong>. Certifique-se de que seu cartão está ativo ou pague via PIX.</p>`),
   }),
   trialWarning1dWa: (name: string) =>
-    `⚠️ *suaAgendaPro*\n\nOlá ${name}! Seu Acesso Livre termina *amanhã*.\n\nAssine o Premium por R$ 49,90/mês e não perca nenhum agendamento 💅\n👉 https://app.suaagendapro.com/plano`,
+    `⚠️ *suaAgendaPro*\n\nOlá ${name}! Seu Acesso Livre termina *amanhã*.\n\nAssine o Premium por R$ 49,90/mês e não perca nenhum agendamento 💅\n👉 ${APP_URL}/plano`,
   trialExpiredWa: (name: string) =>
-    `🔒 *suaAgendaPro*\n\nOlá ${name}, seu Acesso Livre *encerrou* e seu acesso foi suspenso.\n\nPara voltar a usar o sistema:\n👉 https://app.suaagendapro.com/plano`,
+    `🔒 *suaAgendaPro*\n\nOlá ${name}, seu Acesso Livre *encerrou* e seu acesso foi suspenso.\n\nPara voltar a usar o sistema:\n👉 ${APP_URL}/plano`,
   billingWarning1dWa: (name: string) =>
-    `⏰ *suaAgendaPro*\n\nOlá ${name}! Sua fatura vence *amanhã*.\n\nEvite a suspensão pagando via PIX:\n👉 https://app.suaagendapro.com/plano`,
+    `⏰ *suaAgendaPro*\n\nOlá ${name}! Sua fatura vence *amanhã*.\n\nEvite a suspensão pagando via PIX:\n👉 ${APP_URL}/plano`,
   suspendedWa: (name: string) =>
-    `🔒 *suaAgendaPro*\n\nOlá ${name}, seu acesso foi *suspenso* por inadimplência.\n\nRegularize o pagamento para reativar:\n👉 https://app.suaagendapro.com/plano`,
+    `🔒 *suaAgendaPro*\n\nOlá ${name}, seu acesso foi *suspenso* por inadimplência.\n\nRegularize o pagamento para reativar:\n👉 ${APP_URL}/plano`,
 };
 
 // ─── Steps do cron ────────────────────────────────────────────────────────────
@@ -140,11 +179,14 @@ async function step1_trialExpiring3d(r: Result) {
   if (error) { console.error("[step1]", error.message); r.errors++; return; }
 
   for (const row of data ?? []) {
+    if (await alreadySent(row.user_id, "trial_3d")) continue;
     const name  = (row.profiles as any)?.display_name ?? "Profissional";
     const email = await getUserEmail(row.user_id);
     if (!email) continue;
     const { subject, html } = MSG.trialWarning3dEmail(name);
-    if (await sendEmail(email, subject, html)) r.notified++;
+    const ok = await sendEmail(email, subject, html);
+    await logNotif(row.user_id, "trial_3d", "email", ok, email);
+    if (ok) r.notified++; else r.errors++;
   }
 }
 
@@ -162,10 +204,14 @@ async function step2_trialExpiring1d(r: Result) {
   if (error) { console.error("[step2]", error.message); r.errors++; return; }
 
   for (const row of data ?? []) {
+    if (await alreadySent(row.user_id, "trial_1d")) continue;
     const p     = row.profiles as any;
     const name  = p?.display_name ?? "Profissional";
     const phone = p?.phone ?? "";
-    if (phone && await sendWhatsApp(phone, MSG.trialWarning1dWa(name))) r.notified++;
+    if (!phone) continue;
+    const ok = await sendWhatsApp(phone, MSG.trialWarning1dWa(name));
+    await logNotif(row.user_id, "trial_1d", "whatsapp", ok, phone);
+    if (ok) r.notified++; else r.errors++;
   }
 }
 
@@ -186,7 +232,10 @@ async function step3_suspendExpiredTrials(r: Result) {
     await supabase.from("subscriptions").update({ status: "suspended" }).eq("user_id", row.user_id);
     r.suspended++;
 
-    if (phone) await sendWhatsApp(phone, MSG.trialExpiredWa(name));
+    if (phone && !(await alreadySent(row.user_id, "trial_expired"))) {
+      const ok = await sendWhatsApp(phone, MSG.trialExpiredWa(name));
+      await logNotif(row.user_id, "trial_expired", "whatsapp", ok, phone);
+    }
   }
 }
 
@@ -204,11 +253,14 @@ async function step4_billingWarning3d(r: Result) {
   if (error) { console.error("[step4]", error.message); r.errors++; return; }
 
   for (const row of data ?? []) {
+    if (await alreadySent(row.user_id, "billing_3d")) continue;
     const name  = (row.profiles as any)?.display_name ?? "Profissional";
     const email = await getUserEmail(row.user_id);
     if (!email) continue;
     const { subject, html } = MSG.billingWarning3dEmail(name);
-    if (await sendEmail(email, subject, html)) r.notified++;
+    const ok = await sendEmail(email, subject, html);
+    await logNotif(row.user_id, "billing_3d", "email", ok, email);
+    if (ok) r.notified++; else r.errors++;
   }
 }
 
@@ -226,10 +278,14 @@ async function step5_billingWarning1d(r: Result) {
   if (error) { console.error("[step5]", error.message); r.errors++; return; }
 
   for (const row of data ?? []) {
+    if (await alreadySent(row.user_id, "billing_1d")) continue;
     const p     = row.profiles as any;
     const name  = p?.display_name ?? "Profissional";
     const phone = p?.phone ?? "";
-    if (phone && await sendWhatsApp(phone, MSG.billingWarning1dWa(name))) r.notified++;
+    if (!phone) continue;
+    const ok = await sendWhatsApp(phone, MSG.billingWarning1dWa(name));
+    await logNotif(row.user_id, "billing_1d", "whatsapp", ok, phone);
+    if (ok) r.notified++; else r.errors++;
   }
 }
 
@@ -252,7 +308,10 @@ async function step6_suspendOverdue(r: Result) {
     await supabase.from("subscriptions").update({ status: "suspended" }).eq("user_id", row.user_id);
     r.suspended++;
 
-    if (phone) await sendWhatsApp(phone, MSG.suspendedWa(name));
+    if (phone && !(await alreadySent(row.user_id, "suspended_overdue"))) {
+      const ok = await sendWhatsApp(phone, MSG.suspendedWa(name));
+      await logNotif(row.user_id, "suspended_overdue", "whatsapp", ok, phone);
+    }
   }
 }
 
@@ -278,6 +337,19 @@ Deno.serve(async (req) => {
 
   const ms = Date.now() - t0;
   console.log(`[subscription-cron] concluído ${ms}ms`, r);
+
+  // Registra a execução para o painel de Cobranças (health do cron)
+  try {
+    await supabase.from("cron_runs").insert({
+      job: "subscription-cron",
+      notified: r.notified,
+      suspended: r.suspended,
+      errors: r.errors,
+      duration_ms: ms,
+    });
+  } catch (e) {
+    console.error("[subscription-cron] falha ao registrar cron_run:", e);
+  }
 
   return new Response(JSON.stringify({ ok: true, ms, ...r }), {
     headers: { "Content-Type": "application/json" },

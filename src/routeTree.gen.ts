@@ -65,6 +65,7 @@ import { Route as adminSuperAppIndicacoesRouteImport } from './routes/(admin)/su
 import { Route as adminSuperAppFinanceiroRouteImport } from './routes/(admin)/super/_app/financeiro'
 import { Route as adminSuperAppFaqRouteImport } from './routes/(admin)/super/_app/faq'
 import { Route as adminSuperAppConfiguracoesRouteImport } from './routes/(admin)/super/_app/configuracoes'
+import { Route as adminSuperAppCobrancasRouteImport } from './routes/(admin)/super/_app/cobrancas'
 import { Route as adminSuperAppAuditoriaRouteImport } from './routes/(admin)/super/_app/auditoria'
 
 const siteIndexRoute = siteIndexRouteImport.update({
@@ -350,6 +351,11 @@ const adminSuperAppConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => adminSuperAppRouteRoute,
   } as any)
+const adminSuperAppCobrancasRoute = adminSuperAppCobrancasRouteImport.update({
+  id: '/cobrancas',
+  path: '/cobrancas',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
 const adminSuperAppAuditoriaRoute = adminSuperAppAuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
@@ -399,6 +405,7 @@ export interface FileRoutesByFullPath {
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
+  '/super/cobrancas': typeof adminSuperAppCobrancasRoute
   '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
   '/super/faq': typeof adminSuperAppFaqRoute
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
@@ -457,6 +464,7 @@ export interface FileRoutesByTo {
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
+  '/super/cobrancas': typeof adminSuperAppCobrancasRoute
   '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
   '/super/faq': typeof adminSuperAppFaqRoute
   '/super/financeiro': typeof adminSuperAppFinanceiroRoute
@@ -517,6 +525,7 @@ export interface FileRoutesById {
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/(admin)/super/_app/auditoria': typeof adminSuperAppAuditoriaRoute
+  '/(admin)/super/_app/cobrancas': typeof adminSuperAppCobrancasRoute
   '/(admin)/super/_app/configuracoes': typeof adminSuperAppConfiguracoesRoute
   '/(admin)/super/_app/faq': typeof adminSuperAppFaqRoute
   '/(admin)/super/_app/financeiro': typeof adminSuperAppFinanceiroRoute
@@ -578,6 +587,7 @@ export interface FileRouteTypes {
     | '/api/faq/search'
     | '/api/public/mp-webhook'
     | '/super/auditoria'
+    | '/super/cobrancas'
     | '/super/configuracoes'
     | '/super/faq'
     | '/super/financeiro'
@@ -636,6 +646,7 @@ export interface FileRouteTypes {
     | '/api/faq/search'
     | '/api/public/mp-webhook'
     | '/super/auditoria'
+    | '/super/cobrancas'
     | '/super/configuracoes'
     | '/super/faq'
     | '/super/financeiro'
@@ -695,6 +706,7 @@ export interface FileRouteTypes {
     | '/api/faq/search'
     | '/api/public/mp-webhook'
     | '/(admin)/super/_app/auditoria'
+    | '/(admin)/super/_app/cobrancas'
     | '/(admin)/super/_app/configuracoes'
     | '/(admin)/super/_app/faq'
     | '/(admin)/super/_app/financeiro'
@@ -1152,6 +1164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminSuperAppConfiguracoesRouteImport
       parentRoute: typeof adminSuperAppRouteRoute
     }
+    '/(admin)/super/_app/cobrancas': {
+      id: '/(admin)/super/_app/cobrancas'
+      path: '/cobrancas'
+      fullPath: '/super/cobrancas'
+      preLoaderRoute: typeof adminSuperAppCobrancasRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
     '/(admin)/super/_app/auditoria': {
       id: '/(admin)/super/_app/auditoria'
       path: '/auditoria'
@@ -1164,6 +1183,7 @@ declare module '@tanstack/react-router' {
 
 interface adminSuperAppRouteRouteChildren {
   adminSuperAppAuditoriaRoute: typeof adminSuperAppAuditoriaRoute
+  adminSuperAppCobrancasRoute: typeof adminSuperAppCobrancasRoute
   adminSuperAppConfiguracoesRoute: typeof adminSuperAppConfiguracoesRoute
   adminSuperAppFaqRoute: typeof adminSuperAppFaqRoute
   adminSuperAppFinanceiroRoute: typeof adminSuperAppFinanceiroRoute
@@ -1181,6 +1201,7 @@ interface adminSuperAppRouteRouteChildren {
 
 const adminSuperAppRouteRouteChildren: adminSuperAppRouteRouteChildren = {
   adminSuperAppAuditoriaRoute: adminSuperAppAuditoriaRoute,
+  adminSuperAppCobrancasRoute: adminSuperAppCobrancasRoute,
   adminSuperAppConfiguracoesRoute: adminSuperAppConfiguracoesRoute,
   adminSuperAppFaqRoute: adminSuperAppFaqRoute,
   adminSuperAppFinanceiroRoute: adminSuperAppFinanceiroRoute,
