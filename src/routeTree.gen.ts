@@ -58,6 +58,7 @@ import { Route as adminSuperAppTicketsRouteImport } from './routes/(admin)/super
 import { Route as adminSuperAppTemplatesRouteImport } from './routes/(admin)/super/_app/templates'
 import { Route as adminSuperAppSistemaRouteImport } from './routes/(admin)/super/_app/sistema'
 import { Route as adminSuperAppPlanosRouteImport } from './routes/(admin)/super/_app/planos'
+import { Route as adminSuperAppNotificacoesRouteImport } from './routes/(admin)/super/_app/notificacoes'
 import { Route as adminSuperAppMfaSetupRouteImport } from './routes/(admin)/super/_app/mfa-setup'
 import { Route as adminSuperAppMeuPerfilRouteImport } from './routes/(admin)/super/_app/meu-perfil'
 import { Route as adminSuperAppInfraRouteImport } from './routes/(admin)/super/_app/infra'
@@ -315,6 +316,12 @@ const adminSuperAppPlanosRoute = adminSuperAppPlanosRouteImport.update({
   path: '/planos',
   getParentRoute: () => adminSuperAppRouteRoute,
 } as any)
+const adminSuperAppNotificacoesRoute =
+  adminSuperAppNotificacoesRouteImport.update({
+    id: '/notificacoes',
+    path: '/notificacoes',
+    getParentRoute: () => adminSuperAppRouteRoute,
+  } as any)
 const adminSuperAppMfaSetupRoute = adminSuperAppMfaSetupRouteImport.update({
   id: '/mfa-setup',
   path: '/mfa-setup',
@@ -413,6 +420,7 @@ export interface FileRoutesByFullPath {
   '/super/infra': typeof adminSuperAppInfraRoute
   '/super/meu-perfil': typeof adminSuperAppMeuPerfilRoute
   '/super/mfa-setup': typeof adminSuperAppMfaSetupRoute
+  '/super/notificacoes': typeof adminSuperAppNotificacoesRoute
   '/super/planos': typeof adminSuperAppPlanosRoute
   '/super/sistema': typeof adminSuperAppSistemaRoute
   '/super/templates': typeof adminSuperAppTemplatesRoute
@@ -472,6 +480,7 @@ export interface FileRoutesByTo {
   '/super/infra': typeof adminSuperAppInfraRoute
   '/super/meu-perfil': typeof adminSuperAppMeuPerfilRoute
   '/super/mfa-setup': typeof adminSuperAppMfaSetupRoute
+  '/super/notificacoes': typeof adminSuperAppNotificacoesRoute
   '/super/planos': typeof adminSuperAppPlanosRoute
   '/super/sistema': typeof adminSuperAppSistemaRoute
   '/super/templates': typeof adminSuperAppTemplatesRoute
@@ -533,6 +542,7 @@ export interface FileRoutesById {
   '/(admin)/super/_app/infra': typeof adminSuperAppInfraRoute
   '/(admin)/super/_app/meu-perfil': typeof adminSuperAppMeuPerfilRoute
   '/(admin)/super/_app/mfa-setup': typeof adminSuperAppMfaSetupRoute
+  '/(admin)/super/_app/notificacoes': typeof adminSuperAppNotificacoesRoute
   '/(admin)/super/_app/planos': typeof adminSuperAppPlanosRoute
   '/(admin)/super/_app/sistema': typeof adminSuperAppSistemaRoute
   '/(admin)/super/_app/templates': typeof adminSuperAppTemplatesRoute
@@ -595,6 +605,7 @@ export interface FileRouteTypes {
     | '/super/infra'
     | '/super/meu-perfil'
     | '/super/mfa-setup'
+    | '/super/notificacoes'
     | '/super/planos'
     | '/super/sistema'
     | '/super/templates'
@@ -654,6 +665,7 @@ export interface FileRouteTypes {
     | '/super/infra'
     | '/super/meu-perfil'
     | '/super/mfa-setup'
+    | '/super/notificacoes'
     | '/super/planos'
     | '/super/sistema'
     | '/super/templates'
@@ -714,6 +726,7 @@ export interface FileRouteTypes {
     | '/(admin)/super/_app/infra'
     | '/(admin)/super/_app/meu-perfil'
     | '/(admin)/super/_app/mfa-setup'
+    | '/(admin)/super/_app/notificacoes'
     | '/(admin)/super/_app/planos'
     | '/(admin)/super/_app/sistema'
     | '/(admin)/super/_app/templates'
@@ -1115,6 +1128,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminSuperAppPlanosRouteImport
       parentRoute: typeof adminSuperAppRouteRoute
     }
+    '/(admin)/super/_app/notificacoes': {
+      id: '/(admin)/super/_app/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/super/notificacoes'
+      preLoaderRoute: typeof adminSuperAppNotificacoesRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
     '/(admin)/super/_app/mfa-setup': {
       id: '/(admin)/super/_app/mfa-setup'
       path: '/mfa-setup'
@@ -1191,6 +1211,7 @@ interface adminSuperAppRouteRouteChildren {
   adminSuperAppInfraRoute: typeof adminSuperAppInfraRoute
   adminSuperAppMeuPerfilRoute: typeof adminSuperAppMeuPerfilRoute
   adminSuperAppMfaSetupRoute: typeof adminSuperAppMfaSetupRoute
+  adminSuperAppNotificacoesRoute: typeof adminSuperAppNotificacoesRoute
   adminSuperAppPlanosRoute: typeof adminSuperAppPlanosRoute
   adminSuperAppSistemaRoute: typeof adminSuperAppSistemaRoute
   adminSuperAppTemplatesRoute: typeof adminSuperAppTemplatesRoute
@@ -1209,6 +1230,7 @@ const adminSuperAppRouteRouteChildren: adminSuperAppRouteRouteChildren = {
   adminSuperAppInfraRoute: adminSuperAppInfraRoute,
   adminSuperAppMeuPerfilRoute: adminSuperAppMeuPerfilRoute,
   adminSuperAppMfaSetupRoute: adminSuperAppMfaSetupRoute,
+  adminSuperAppNotificacoesRoute: adminSuperAppNotificacoesRoute,
   adminSuperAppPlanosRoute: adminSuperAppPlanosRoute,
   adminSuperAppSistemaRoute: adminSuperAppSistemaRoute,
   adminSuperAppTemplatesRoute: adminSuperAppTemplatesRoute,

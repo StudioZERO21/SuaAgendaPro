@@ -8,6 +8,7 @@ import {
   CreditCard,
   DollarSign,
   CalendarClock,
+  Bell,
   ClipboardList,
   MessageSquare,
   Settings,
@@ -39,6 +40,7 @@ const NAV_PRINCIPAL = [
   { title: "Planos",     to: "/super/planos",    icon: CreditCard,      exact: false },
   { title: "Financeiro", to: "/super/financeiro",icon: DollarSign,      exact: false },
   { title: "Cobranças",  to: "/super/cobrancas",  icon: CalendarClock,   exact: false },
+  { title: "Notificações", to: "/super/notificacoes", icon: Bell,        exact: false },
   { title: "Tickets",    to: "/super/tickets",    icon: TicketCheck,     exact: false },
   { title: "Indicações", to: "/super/indicacoes", icon: Share2,          exact: false },
 ];
