@@ -266,9 +266,9 @@ function HorariosPage() {
       ) : (
         <main className="flex-1 space-y-5 px-5 pb-32 pt-5">
           {/* Summary card */}
-          <section className="rounded-3xl p-5 text-white shadow-glow" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-glow))" }}>
+          <section className="rounded-lg p-5 text-white shadow-glow" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-glow))" }}>
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-white/15 ring-1 ring-white/20">
                 <Clock className="h-5 w-5" />
               </div>
               <div className="flex-1">
@@ -281,7 +281,7 @@ function HorariosPage() {
           </section>
 
           {/* Mode selector */}
-          <section className="space-y-3 rounded-3xl border border-border bg-card p-5 shadow-card">
+          <section className="space-y-3 rounded-lg border border-border bg-card p-5 shadow-card">
             <div>
               <h2 className="font-display text-base font-bold">Como configurar?</h2>
               <p className="text-xs text-muted-foreground">Mesmo horário para os dias úteis ou personalizado por dia.</p>
@@ -292,7 +292,7 @@ function HorariosPage() {
                   key={m}
                   onClick={() => setMode(m)}
                   className={cn(
-                    "rounded-2xl border p-3 text-sm font-semibold transition",
+                    "rounded-md border p-3 text-sm font-semibold transition",
                     mode === m ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/40",
                   )}
                 >
@@ -303,7 +303,7 @@ function HorariosPage() {
           </section>
 
           {/* Day toggles */}
-          <section className="space-y-3 rounded-3xl border border-border bg-card p-5 shadow-card">
+          <section className="space-y-3 rounded-lg border border-border bg-card p-5 shadow-card">
             <div>
               <h2 className="font-display text-base font-bold">Dias de atendimento</h2>
               <p className="text-xs text-muted-foreground">Desative os dias em que você não trabalha.</p>
@@ -316,7 +316,7 @@ function HorariosPage() {
                     key={info.dow}
                     onClick={() => setDay(info.dow, { is_open: !open })}
                     className={cn(
-                      "flex flex-col items-center justify-center rounded-2xl border py-2 text-[11px] font-bold transition",
+                      "flex flex-col items-center justify-center rounded-md border py-2 text-[11px] font-bold transition",
                       open
                         ? "border-primary bg-primary text-primary-foreground shadow-glow"
                         : "border-border bg-secondary/40 text-muted-foreground",
@@ -332,7 +332,7 @@ function HorariosPage() {
           {/* Uniform mode */}
           {mode === "uniform" && (
             <>
-              <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+              <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
                 <div>
                   <h2 className="font-display text-base font-bold">Dias úteis (Seg–Sex)</h2>
                   <p className="text-xs text-muted-foreground">Mesmo horário de segunda a sexta.</p>
@@ -352,7 +352,7 @@ function HorariosPage() {
               </section>
 
               {/* Saturday */}
-              <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+              <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="font-display text-base font-bold">Sábado</h2>
@@ -386,7 +386,7 @@ function HorariosPage() {
               {DAY_INFO.filter((i) => days[i.dow].is_open).map((info) => {
                 const d = days[info.dow];
                 return (
-                  <div key={info.dow} className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+                  <div key={info.dow} className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
                     <div className="flex items-start justify-between gap-3">
                       <h3 className="font-display text-base font-bold">{info.label}</h3>
                       <Switch checked={d.is_open} onCheckedChange={(v) => setDay(info.dow, { is_open: v })} />
@@ -407,7 +407,7 @@ function HorariosPage() {
                 );
               })}
               {DAY_INFO.filter((i) => days[i.dow].is_open).length === 0 && (
-                <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                <p className="rounded-md border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
                   Ative ao menos um dia acima.
                 </p>
               )}
@@ -415,7 +415,7 @@ function HorariosPage() {
           )}
 
           {/* Schedule blocks */}
-          <section className="space-y-3 rounded-3xl border border-border bg-card p-5 shadow-card">
+          <section className="space-y-3 rounded-lg border border-border bg-card p-5 shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-display text-base font-bold">Bloqueios de agenda</h2>
@@ -431,7 +431,7 @@ function HorariosPage() {
             </div>
 
             {scheduleBlocks.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-6 text-center">
+              <div className="rounded-md border border-dashed border-border bg-secondary/30 p-6 text-center">
                 <CalendarOff className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
                 <p className="text-sm font-semibold">Nenhum bloqueio</p>
                 <p className="text-xs text-muted-foreground">Adicione períodos em que sua agenda fica indisponível.</p>
@@ -446,7 +446,7 @@ function HorariosPage() {
                   const Icon = b.reason === "ferias" ? Umbrella : CalendarOff;
 
                   return (
-                    <li key={b.id} className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/30 p-3">
+                    <li key={b.id} className="flex items-center gap-3 rounded-md border border-border bg-secondary/30 p-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                         <Icon className="h-4 w-4" />
                       </div>
@@ -494,7 +494,7 @@ function HorariosPage() {
           onClick={handleSave}
           disabled={saveWH.isPending || loading}
           size="lg"
-          className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow"
+          className="h-14 w-full rounded-md gradient-primary text-base font-semibold text-white shadow-glow"
         >
           {saveWH.isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
           {saveWH.isPending ? "Salvando..." : "Salvar horários"}
@@ -503,7 +503,7 @@ function HorariosPage() {
 
       {/* Dialog — new / edit block */}
       <Dialog open={blockOpen} onOpenChange={(o) => { setBlockOpen(o); if (!o) setEditingBlock(null); }}>
-        <DialogContent className="max-w-sm rounded-3xl">
+        <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
             <DialogTitle>{editingBlock ? "Editar bloqueio" : "Bloquear agenda"}</DialogTitle>
           </DialogHeader>
@@ -515,7 +515,7 @@ function HorariosPage() {
                 onValueChange={(v) => setNewBlock((s) => ({ ...s, reason: v as BlockReason }))}
               >
                 <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent className="rounded-2xl">
+                <SelectContent className="rounded-md">
                   {REASONS.map((r) => (
                     <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
                   ))}
@@ -587,7 +587,7 @@ function LunchBlock({
   onChange: (p: Partial<{ start: string; end: string }>) => void;
 }) {
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-secondary/30 p-3">
+    <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Coffee className="h-4 w-4 text-primary" />

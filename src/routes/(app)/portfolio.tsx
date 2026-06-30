@@ -275,7 +275,7 @@ function PortfolioPage() {
             <button
               onClick={() => fileRef.current?.click()}
               disabled={isBusy}
-              className="mt-5 flex aspect-[9/16] w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-card text-muted-foreground transition hover:bg-secondary/60 disabled:opacity-60"
+              className="mt-5 flex aspect-[9/16] w-full flex-col items-center justify-center gap-3 rounded-md border-2 border-dashed border-border bg-card text-muted-foreground transition hover:bg-secondary/60 disabled:opacity-60"
             >
               {addItem.isPending ? (
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -290,7 +290,7 @@ function PortfolioPage() {
               {items.map((it, idx) => (
                 <div
                   key={it.id}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card"
+                  className="group relative overflow-hidden rounded-md border border-border bg-card shadow-card"
                 >
                   <button
                     onClick={() => setPreview(it)}
@@ -365,7 +365,7 @@ function PortfolioPage() {
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={addItem.isPending}
-                  className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-card text-muted-foreground transition hover:bg-secondary/60 disabled:opacity-60"
+                  className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border bg-card text-muted-foreground transition hover:bg-secondary/60 disabled:opacity-60"
                 >
                   {addItem.isPending ? (
                     <Loader2 className="h-7 w-7 animate-spin text-primary" />

@@ -403,7 +403,7 @@ function OnboardingPage() {
                 exit={{ opacity: 0, x: -30 }}
                 className="flex flex-1 flex-col"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-soft text-primary">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md gradient-soft text-primary">
                   <Store className="h-5 w-5" />
                 </div>
                 <h1 className="mt-4 font-display text-3xl font-bold leading-tight">
@@ -414,7 +414,7 @@ function OnboardingPage() {
                 </p>
 
                 {/* Cor do app — primeira escolha, aplicada na hora */}
-                <div className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-card">
+                <div className="mt-6 rounded-md border border-border bg-card p-4 shadow-card">
                   <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Escolha a cor do seu app
                   </Label>
@@ -453,7 +453,7 @@ function OnboardingPage() {
                         value={form.display_name}
                         onChange={(e) => handleNameChange(e.target.value)}
                         placeholder="Ex: Studio Joana Beauty"
-                        className="h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
+                        className="h-14 rounded-md border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
                       />
                     </div>
                   </div>
@@ -471,7 +471,7 @@ function OnboardingPage() {
                         onBlur={() => checkSlug(form.slug)}
                         placeholder="seu-nome"
                         className={cn(
-                          "h-14 rounded-2xl border-border bg-card pl-11 pr-4 text-base shadow-card focus-visible:ring-primary font-mono",
+                          "h-14 rounded-md border-border bg-card pl-11 pr-4 text-base shadow-card focus-visible:ring-primary font-mono",
                           slugError && "border-red-400 focus-visible:ring-red-400",
                         )}
                       />
@@ -495,7 +495,7 @@ function OnboardingPage() {
                     <div className="space-y-2">
                       {socialLinks.map((link, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <div className="flex flex-1 h-14 items-center rounded-2xl border border-border bg-card shadow-card overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-0">
+                          <div className="flex flex-1 h-14 items-center rounded-md border border-border bg-card shadow-card overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-0">
                             <Share2 className="pointer-events-none ml-4 h-4 w-4 shrink-0 text-muted-foreground" />
                             <Select
                               value={link.network}
@@ -532,7 +532,7 @@ function OnboardingPage() {
                         <button
                           type="button"
                           onClick={addSocialLink}
-                          className="flex w-full h-14 items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card text-sm font-medium text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
+                          className="flex w-full h-14 items-center justify-center gap-2 rounded-md border border-dashed border-border bg-card text-sm font-medium text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
                         >
                           <Plus className="h-4 w-4" />
                           Adicionar rede social
@@ -564,7 +564,7 @@ function OnboardingPage() {
                 exit={{ opacity: 0, x: -30 }}
                 className="flex flex-1 flex-col"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-soft text-primary">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md gradient-soft text-primary">
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <h1 className="mt-4 font-display text-3xl font-bold leading-tight">
@@ -586,7 +586,7 @@ function OnboardingPage() {
                           if (n.id !== "Outro") setOtherSpecialty("");
                         }}
                         className={cn(
-                          "relative flex items-center gap-3 rounded-2xl border p-4 text-left transition-all",
+                          "relative flex items-center gap-3 rounded-md border p-4 text-left transition-all",
                           active
                             ? "border-primary bg-secondary shadow-glow"
                             : "border-border bg-card shadow-card hover:border-primary/40",
@@ -624,7 +624,7 @@ function OnboardingPage() {
                           value={otherSpecialty}
                           onChange={(e) => setOtherSpecialty(e.target.value)}
                           placeholder="Ex: Nail Designer, Micropigmentação…"
-                          className="h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
+                          className="h-14 rounded-md border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
                         />
                       </div>
                     </motion.div>
@@ -642,7 +642,7 @@ function OnboardingPage() {
                 exit={{ opacity: 0, x: -30 }}
                 className="flex flex-1 flex-col"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-soft text-primary">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md gradient-soft text-primary">
                   <Scissors className="h-5 w-5" />
                 </div>
                 <h1 className="mt-4 font-display text-3xl font-bold leading-tight">
@@ -662,7 +662,7 @@ function OnboardingPage() {
                       value={form.service_name}
                       onChange={(e) => set("service_name", e.target.value)}
                       placeholder="Ex: Manicure Completa, Escova, Sobrancelha…"
-                      className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                      className="h-14 rounded-md border-border bg-card text-base shadow-card focus-visible:ring-primary"
                     />
                   </div>
 
@@ -679,7 +679,7 @@ function OnboardingPage() {
                         value={form.service_price}
                         onChange={(e) => set("service_price", e.target.value.replace(/[^0-9,\.]/g, ""))}
                         placeholder="120,00"
-                        className="h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
+                        className="h-14 rounded-md border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary"
                       />
                     </div>
                   </div>
@@ -709,7 +709,7 @@ function OnboardingPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-2xl gradient-soft p-4 text-sm text-secondary-foreground">
+                <div className="mt-6 rounded-md gradient-soft p-4 text-sm text-secondary-foreground">
                   <p className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span>
@@ -730,7 +730,7 @@ function OnboardingPage() {
                 exit={{ opacity: 0, x: -30 }}
                 className="flex flex-1 flex-col"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-soft text-primary">
+                <div className="flex h-12 w-12 items-center justify-center rounded-md gradient-soft text-primary">
                   <Home className="h-5 w-5" />
                 </div>
                 <h1 className="mt-4 font-display text-3xl font-bold leading-tight">
@@ -758,7 +758,7 @@ function OnboardingPage() {
                         placeholder="00000-000"
                         maxLength={9}
                         className={cn(
-                          "h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary font-mono tracking-widest",
+                          "h-14 rounded-md border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary font-mono tracking-widest",
                           cepError && "border-red-400 focus-visible:ring-red-400",
                         )}
                       />
@@ -787,7 +787,7 @@ function OnboardingPage() {
                             value={form.street}
                             onChange={(e) => set("street", e.target.value)}
                             placeholder="Rua, Avenida…"
-                            className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                            className="h-14 rounded-md border-border bg-card text-base shadow-card focus-visible:ring-primary"
                           />
                         </div>
 
@@ -801,7 +801,7 @@ function OnboardingPage() {
                               value={form.street_number}
                               onChange={(e) => set("street_number", e.target.value)}
                               placeholder="123"
-                              className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                              className="h-14 rounded-md border-border bg-card text-base shadow-card focus-visible:ring-primary"
                             />
                           </div>
                           <div className="space-y-2">
@@ -812,7 +812,7 @@ function OnboardingPage() {
                               value={form.address_complement}
                               onChange={(e) => set("address_complement", e.target.value)}
                               placeholder="Sala 2, Apto…"
-                              className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                              className="h-14 rounded-md border-border bg-card text-base shadow-card focus-visible:ring-primary"
                             />
                           </div>
                         </div>
@@ -826,7 +826,7 @@ function OnboardingPage() {
                             value={form.neighborhood}
                             onChange={(e) => set("neighborhood", e.target.value)}
                             placeholder="Bairro"
-                            className="h-14 rounded-2xl border-border bg-card text-base shadow-card focus-visible:ring-primary"
+                            className="h-14 rounded-md border-border bg-card text-base shadow-card focus-visible:ring-primary"
                           />
                         </div>
 
@@ -839,7 +839,7 @@ function OnboardingPage() {
                             <Input
                               value={form.city}
                               readOnly
-                              className="h-14 rounded-2xl border-border bg-secondary/50 text-base shadow-card cursor-default opacity-70"
+                              className="h-14 rounded-md border-border bg-secondary/50 text-base shadow-card cursor-default opacity-70"
                             />
                           </div>
                           <div className="space-y-2">
@@ -849,7 +849,7 @@ function OnboardingPage() {
                             <Input
                               value={form.state}
                               readOnly
-                              className="h-14 rounded-2xl border-border bg-secondary/50 text-center text-base shadow-card cursor-default uppercase opacity-70"
+                              className="h-14 rounded-md border-border bg-secondary/50 text-center text-base shadow-card cursor-default uppercase opacity-70"
                             />
                           </div>
                         </div>
@@ -871,7 +871,7 @@ function OnboardingPage() {
             onClick={next}
             disabled={!canProceed() || saving}
             size="lg"
-            className="mb-10 mt-8 h-14 rounded-2xl gradient-primary text-base font-semibold shadow-glow disabled:opacity-50"
+            className="mb-10 mt-8 h-14 rounded-md gradient-primary text-base font-semibold shadow-glow disabled:opacity-50"
           >
             {saving
               ? "Salvando..."

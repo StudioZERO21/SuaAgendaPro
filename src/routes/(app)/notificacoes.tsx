@@ -66,9 +66,9 @@ function PushToggleCard() {
   if (!supported) return null;
 
   return (
-    <section className="flex items-center justify-between gap-3 rounded-3xl border border-border bg-card p-5 shadow-card">
+    <section className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-5 shadow-card">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl gradient-soft text-primary">
+        <span className="flex h-10 w-10 items-center justify-center rounded-md gradient-soft text-primary">
           <Bell className="h-5 w-5" />
         </span>
         <div>
@@ -385,14 +385,14 @@ function NotificacoesPage() {
         <PushToggleCard />
         {/* Resumo */}
         <section
-          className="rounded-3xl p-5 text-white shadow-glow"
+          className="rounded-lg p-5 text-white shadow-glow"
           style={{
             background:
               "linear-gradient(135deg, var(--primary), var(--primary-glow))",
           }}
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-white/15 ring-1 ring-white/20">
               <Bell className="h-5 w-5" />
             </div>
             <div className="flex-1">
@@ -407,7 +407,7 @@ function NotificacoesPage() {
         </section>
 
         {/* Canais globais */}
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
           <div>
             <h2 className="font-display text-base font-bold">Canais</h2>
             <p className="text-xs text-muted-foreground">
@@ -471,7 +471,7 @@ function NotificacoesPage() {
         </section>
 
         {/* Não perturbe */}
-        <section className="space-y-3 rounded-3xl border border-border bg-card p-5 shadow-card">
+        <section className="space-y-3 rounded-lg border border-border bg-card p-5 shadow-card">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-display text-base font-bold">Não perturbe</h2>
@@ -545,10 +545,10 @@ function NotificacoesPage() {
                 return (
                   <div
                     key={def.id}
-                    className="space-y-3 rounded-3xl border border-border bg-card p-4 shadow-card"
+                    className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-card"
                   >
                     <div className="flex items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl gradient-soft text-primary">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md gradient-soft text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -575,7 +575,7 @@ function NotificacoesPage() {
                     </div>
 
                     {cfg.enabled && (
-                      <div className="space-y-2 rounded-2xl border border-border/60 bg-secondary/30 p-3">
+                      <div className="space-y-2 rounded-md border border-border/60 bg-secondary/30 p-3">
                         {def.hasTiming && (
                           <div className="flex items-center justify-between gap-3">
                             <Label className="text-xs">Antecedência</Label>
@@ -635,7 +635,7 @@ function NotificacoesPage() {
         <Button
           onClick={save}
           size="lg"
-          className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow"
+          className="h-14 w-full rounded-md gradient-primary text-base font-semibold text-white shadow-glow"
         >
           <Save className="mr-2 h-5 w-5" /> Salvar notificações
         </Button>
@@ -659,7 +659,7 @@ function ChannelRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl gradient-soft text-primary">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md gradient-soft text-primary">
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">

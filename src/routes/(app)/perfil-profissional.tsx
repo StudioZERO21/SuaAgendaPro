@@ -353,7 +353,7 @@ function PerfilProfissionalPage() {
 
       <main className="flex-1 space-y-6 px-5 pb-32 pt-5">
         {/* ── Foto ── */}
-        <section className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-6 shadow-card">
+        <section className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card p-6 shadow-card">
           <div className="relative">
             <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full text-3xl font-bold text-white shadow-glow" style={{ background: "var(--gradient-primary)" }}>
               {photo ? (
@@ -385,7 +385,7 @@ function PerfilProfissionalPage() {
         </section>
 
         {/* ── Dados pessoais ── */}
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
           <h2 className="font-display text-base font-bold">Dados pessoais</h2>
 
           <div className="space-y-1.5">
@@ -419,7 +419,7 @@ function PerfilProfissionalPage() {
           )}
 
           {/* Endereço */}
-          <div className="space-y-3 rounded-2xl bg-secondary/40 p-4">
+          <div className="space-y-3 rounded-md bg-secondary/40 p-4">
             <h3 className="text-sm font-bold">Endereço do estabelecimento</h3>
             <div className="space-y-1.5">
               <Label htmlFor="cep">CEP</Label>
@@ -466,7 +466,7 @@ function PerfilProfissionalPage() {
         </section>
 
         {/* ── Atuação profissional ── */}
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
           <h2 className="font-display text-base font-bold">Atuação</h2>
 
           <div className="space-y-2">
@@ -555,7 +555,7 @@ function PerfilProfissionalPage() {
         </section>
 
         {/* ── Redes Sociais ── */}
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-base font-bold">Redes Sociais</h2>
             <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
@@ -609,7 +609,7 @@ function PerfilProfissionalPage() {
         </section>
 
         {/* ── Configurações da agenda online ── */}
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
           <h2 className="font-display text-base font-bold">Agenda online</h2>
 
           <div className="flex items-center justify-between gap-3">
@@ -630,7 +630,7 @@ function PerfilProfissionalPage() {
         </section>
 
         {/* ── Segurança — Troca de senha ── */}
-        <section className="space-y-5 rounded-3xl border border-border bg-card p-5 shadow-card">
+        <section className="space-y-5 rounded-lg border border-border bg-card p-5 shadow-card">
           <div className="flex items-center gap-2">
             <div className="grid h-8 w-8 shrink-0 place-items-center rounded-xl gradient-primary">
               <Lock className="h-4 w-4 text-white" />
@@ -804,7 +804,7 @@ function PerfilProfissionalPage() {
 
       {/* ── Save button ── */}
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md px-5 pb-5">
-        <Button onClick={handleSave} disabled={saving} size="lg" className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60">
+        <Button onClick={handleSave} disabled={saving} size="lg" className="h-14 w-full rounded-md gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60">
           {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
           Salvar alterações
         </Button>
@@ -816,7 +816,7 @@ function PerfilProfissionalPage() {
           <DialogHeader>
             <DialogTitle>Ajuste sua foto</DialogTitle>
           </DialogHeader>
-          <div className="relative h-72 w-full overflow-hidden rounded-2xl bg-black">
+          <div className="relative h-72 w-full overflow-hidden rounded-md bg-black">
             {cropSrc && (
               <Cropper
                 image={cropSrc} crop={crop} zoom={zoom} aspect={1}

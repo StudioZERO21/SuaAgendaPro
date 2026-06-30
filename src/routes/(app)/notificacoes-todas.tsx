@@ -189,7 +189,7 @@ function TodasNotificacoesPage() {
 
         <section className="space-y-2">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-border bg-card/50 py-16 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
                 <Bell className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -205,7 +205,7 @@ function TodasNotificacoesPage() {
                 <article
                   key={n.id}
                   className={cn(
-                    "flex items-start gap-3 rounded-2xl border border-border/60 bg-card p-3 shadow-card",
+                    "flex items-start gap-3 rounded-md border border-border/60 bg-card p-3 shadow-card",
                     !n.read && "border-primary/30 bg-primary/5",
                   )}
                 >
@@ -260,13 +260,13 @@ function TodasNotificacoesPage() {
 
       {/* View dialog */}
       <Dialog open={!!viewing} onOpenChange={(v) => !v && setViewing(null)}>
-        <DialogContent className="max-w-sm rounded-3xl">
+        <DialogContent className="max-w-sm rounded-lg">
           {viewing && (
             <>
               <DialogHeader>
                 <div
                   className={cn(
-                    "mb-2 flex h-12 w-12 items-center justify-center rounded-2xl",
+                    "mb-2 flex h-12 w-12 items-center justify-center rounded-md",
                     COLORS[viewing.type],
                   )}
                 >
@@ -293,7 +293,7 @@ function TodasNotificacoesPage() {
         open={!!deleting}
         onOpenChange={(v) => !v && setDeleting(null)}
       >
-        <AlertDialogContent className="rounded-3xl">
+        <AlertDialogContent className="rounded-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir notificação?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -314,7 +314,7 @@ function TodasNotificacoesPage() {
 
       {/* Clear all */}
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
-        <AlertDialogContent className="rounded-3xl">
+        <AlertDialogContent className="rounded-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Limpar todas as notificações?</AlertDialogTitle>
             <AlertDialogDescription>

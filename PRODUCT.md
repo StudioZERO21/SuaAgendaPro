@@ -30,7 +30,14 @@ Calmo, premium, acolhedor, competente. Estúdio de beleza de alto padrão, não 
 2. **Accent com intenção** — cor do tema (personalização) só em ações primárias, seleção e dados-chave; superfícies neutras.
 3. **Editorial nos títulos, utilitário no resto** — Playfair (ou fonte escolhida) só em títulos de página; UI em sans.
 4. **Superfícies antes de gradientes** — bordas sutis, sombras leves, hierarquia por tipografia — não por efeitos.
-5. **Consistência no app operacional** — Agenda, Clientes, Serviços e Mais compartilham o mesmo vocabulário visual (shell, nav, superfícies). O **Dashboard** é área administrativa separada — fora do escopo deste craft.
+5. **Consistência no app operacional** — Agenda, Clientes, Serviços e Mais compartilham vocabulário com Dashboard e Super Admin: cantos quadrados (`--radius: 0.375rem`), painéis `sa-panel`, labels `sa-section-label`, CTAs escuros (`bg-cta` / botão "Ver usuários"). Dashboard permanece intacto.
+
+## Design tokens (app)
+
+- **Radius:** `0.375rem` — cards e inputs quadrados, não pill em containers
+- **Superfície:** fundo `muted/50`, conteúdo em `card` com borda
+- **CTA:** `--cta: #1f1230` (ink) — ações primárias
+- **Painel:** classe `sa-panel` — border + shadow-card, sem gradiente
 
 ## Brand assets
 

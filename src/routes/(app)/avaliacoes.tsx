@@ -161,7 +161,7 @@ function AvaliacoesPage() {
               onClick={handleGenerateLink}
               disabled={generatingLink}
               size="sm"
-              className="h-9 rounded-2xl gradient-primary text-white shadow-glow gap-1.5 shrink-0"
+              className="h-9 rounded-md gradient-primary text-white shadow-glow gap-1.5 shrink-0"
             >
               {generatingLink ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -181,7 +181,7 @@ function AvaliacoesPage() {
               { label: "Publicadas",  value: `${publicCount}/${MAX_PUBLIC}` },
               { label: "Nota média",  value: reviews.length ? avgRating.toFixed(1) : "—" },
             ].map(({ label, value }) => (
-              <div key={label} className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-3 shadow-card text-center">
+              <div key={label} className="flex flex-col items-center justify-center rounded-md border border-border bg-card p-3 shadow-card text-center">
                 <p className="font-display text-xl font-bold">{value}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
               </div>
@@ -202,7 +202,7 @@ function AvaliacoesPage() {
           )}
 
           {!isLoading && reviews.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-border bg-secondary/40 px-5 py-12 text-center">
+            <div className="rounded-md border border-dashed border-border bg-secondary/40 px-5 py-12 text-center">
               <Star className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
               <p className="text-sm font-semibold">Nenhuma avaliação ainda</p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -223,7 +223,7 @@ function AvaliacoesPage() {
               <div
                 key={review.id}
                 className={cn(
-                  "flex gap-3 rounded-2xl border bg-card p-4 shadow-card transition-all",
+                  "flex gap-3 rounded-md border bg-card p-4 shadow-card transition-all",
                   review.is_public ? "border-primary/20 bg-primary/[0.02]" : "border-border"
                 )}
               >
@@ -275,7 +275,7 @@ function AvaliacoesPage() {
 
       {/* ── Link dialog ───────────────────────────────────────── */}
       <Dialog open={linkDialogOpen} onOpenChange={(o) => { setLinkDialogOpen(o); if (!o) setCopied(false); }}>
-        <DialogContent className="max-w-sm rounded-3xl">
+        <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-4 w-4 text-primary" />
@@ -289,7 +289,7 @@ function AvaliacoesPage() {
 
           {/* Link box */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 rounded-2xl border border-border bg-secondary/60 px-3 py-2.5">
+            <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/60 px-3 py-2.5">
               <p className="min-w-0 flex-1 truncate text-[11px] font-mono text-muted-foreground/70">
                 {generatedLink
                   ? (() => {
@@ -324,7 +324,7 @@ function AvaliacoesPage() {
           {/* Share */}
           <Button
             onClick={shareLink}
-            className="h-11 w-full rounded-2xl gap-2 gradient-primary text-white shadow-glow"
+            className="h-11 w-full rounded-md gap-2 gradient-primary text-white shadow-glow"
           >
             <Share2 className="h-4 w-4" />
             Compartilhar link

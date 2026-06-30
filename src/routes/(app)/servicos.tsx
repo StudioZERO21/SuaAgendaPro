@@ -4,7 +4,7 @@ import { Plus, Clock, Scissors, Search, ToggleLeft, ToggleRight, Loader2 } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MobileShell } from "@/components/mobile-shell";
-import { AppSectionLabel } from "@/components/app-page-chrome";
+import { AppPageHeader } from "@/components/app-page-chrome";
 import { BottomNav } from "@/components/bottom-nav";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -52,26 +52,22 @@ function ServicosPage() {
 
   return (
     <MobileShell withNav>
-      <header className="px-5 pt-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <AppSectionLabel>Catálogo</AppSectionLabel>
-            <h1 className="mt-1 font-display text-[1.75rem] font-semibold leading-tight tracking-tight">
-              Serviços
-            </h1>
-          </div>
+      <AppPageHeader eyebrow="Catálogo" title="Serviços" />
+      <div className="px-5">
+        <div className="flex justify-end -mt-2 mb-4">
           <Button
+            variant="cta"
             onClick={() => navigate({ to: "/servico/novo" })}
-            className="h-11 shrink-0 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-soft"
+            className="h-11 shrink-0 px-4"
           >
             <Plus className="mr-1 h-4 w-4" /> Novo
           </Button>
         </div>
 
         {/* Hero stats */}
-        <div className="studio-surface studio-accent-top mt-5 rounded-2xl p-5">
+        <div className="sa-panel p-5">
           <div>
-            <AppSectionLabel>Ticket médio</AppSectionLabel>
+            <p className="sa-section-label">Ticket médio</p>
             <p className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight">
               {isLoading ? "—" : formatPrice(Math.round(avgPrice))}
             </p>
@@ -95,7 +91,7 @@ function ServicosPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar serviço..."
-            className="h-12 rounded-2xl border-border bg-card pl-11 text-sm shadow-card focus-visible:ring-primary"
+            className="h-12 rounded-md border-border bg-card pl-11 text-sm shadow-card focus-visible:ring-primary"
           />
         </div>
 
@@ -112,7 +108,7 @@ function ServicosPage() {
               className={cn(
                 "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all",
                 filter === f.id
-                  ? "bg-primary text-primary-foreground border-transparent shadow-soft"
+                  ? "border-transparent bg-cta text-cta-foreground shadow-sm"
                   : "border-border bg-card text-foreground",
               )}
             >
@@ -120,14 +116,14 @@ function ServicosPage() {
             </button>
           ))}
         </div>
-      </header>
+      </div>
 
       <main className="mt-5 flex-1 space-y-3 px-5 pb-6">
         {/* Loading skeleton */}
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-2xl bg-secondary" />
+              <div key={i} className="h-20 animate-pulse rounded-md bg-secondary" />
             ))}
           </div>
         )}
@@ -135,7 +131,7 @@ function ServicosPage() {
         {/* Empty state */}
         {!isLoading && services.length === 0 && (
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary text-primary">
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-secondary text-primary">
               <Scissors className="h-6 w-6" />
             </div>
             <p className="font-display text-lg font-semibold">Nenhum serviço ainda</p>
@@ -144,7 +140,7 @@ function ServicosPage() {
             </p>
             <Button
               onClick={() => navigate({ to: "/servico/novo" })}
-              className="mt-2 h-11 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-soft"
+              className="mt-2 h-11 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-soft"
             >
               <Plus className="mr-1 h-4 w-4" /> Criar serviço
             </Button>
@@ -166,11 +162,11 @@ function ServicosPage() {
             className={cn("animate-sa-fade-in-up transition-opacity", !s.is_active && "opacity-60")}
           >
             <div
-              className="group relative block overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-card"
+              className="group relative block overflow-hidden rounded-md border border-border bg-card p-4 shadow-card"
               onClick={() => navigate({ to: "/servico/$id", params: { id: s.id } })}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-secondary text-2xl">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-secondary text-2xl">
                   <Scissors className="h-6 w-6 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">

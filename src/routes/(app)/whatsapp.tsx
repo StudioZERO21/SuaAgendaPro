@@ -268,7 +268,7 @@ function WhatsAppPage() {
       <main className="mt-5 flex-1 px-5 pb-10">
         {/* Status card */}
         <section
-          className="relative mb-5 overflow-hidden rounded-2xl p-5 text-white shadow-glow"
+          className="relative mb-5 overflow-hidden rounded-md p-5 text-white shadow-glow"
           style={{
             background: cfg.enabled && isPhoneReady
               ? "linear-gradient(145deg, #16a34a 0%, #15803d 50%, #14532d 100%)"
@@ -299,7 +299,7 @@ function WhatsAppPage() {
         </section>
 
         {!isPhoneReady && (
-          <section className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <section className="mb-5 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-900">
             <p className="text-sm font-bold">Número não cadastrado</p>
             <p className="mt-1 text-xs leading-relaxed">
               Adicione seu número de telefone em{" "}
@@ -331,7 +331,7 @@ function WhatsAppPage() {
 
           {/* ── Configurar ── */}
           <TabsContent value="config" className="space-y-5">
-            <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <section className="rounded-md border border-border bg-card p-4 shadow-card">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl gradient-soft text-primary">
@@ -350,7 +350,7 @@ function WhatsAppPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <section className="rounded-md border border-border bg-card p-4 shadow-card">
               <div className="flex items-start gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
                   <MessageCircle className="h-4 w-4" />
@@ -379,14 +379,14 @@ function WhatsAppPage() {
             <Button
               onClick={handleSave}
               disabled={saving || loading}
-              className="h-12 w-full rounded-2xl gradient-primary font-semibold shadow-glow"
+              className="h-12 w-full rounded-md gradient-primary font-semibold shadow-glow"
             >
               {saving ? "Salvando..." : "Salvar configurações"}
             </Button>
 
             {/* Quick send */}
             {isPhoneReady && (
-              <section className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-card">
+              <section className="space-y-3 rounded-md border border-border bg-card p-4 shadow-card">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Falar com uma cliente agora</p>
                   <p className="mt-1 text-xs text-muted-foreground">Abre o WhatsApp com a mensagem pronta.</p>
@@ -414,7 +414,7 @@ function WhatsAppPage() {
                 <Button
                   onClick={() => window.open(clientWaLink, "_blank", "noopener,noreferrer")}
                   disabled={!clientValid}
-                  className="h-12 w-full rounded-2xl gradient-primary font-semibold shadow-glow"
+                  className="h-12 w-full rounded-md gradient-primary font-semibold shadow-glow"
                 >
                   <Send className="mr-2 h-4 w-4" /> Abrir conversa no WhatsApp
                 </Button>
@@ -422,7 +422,7 @@ function WhatsAppPage() {
             )}
 
             {isPhoneReady && myWaLink && (
-              <section className="space-y-2 rounded-2xl border border-border bg-secondary/40 p-4">
+              <section className="space-y-2 rounded-md border border-border bg-secondary/40 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Meu link de atendimento</p>
                 <p className="break-all text-xs text-foreground/70">{myWaLink}</p>
                 <div className="flex gap-2">
@@ -450,7 +450,7 @@ function WhatsAppPage() {
           {/* ── Templates ── */}
           <TabsContent value="templates" className="space-y-4">
             {/* Variáveis */}
-            <section className="rounded-2xl border border-border bg-card p-3 shadow-card">
+            <section className="rounded-md border border-border bg-card p-3 shadow-card">
               <p className="text-[11px] text-muted-foreground">
                 <span className="font-semibold text-foreground">Variáveis:</span>{" "}
                 {TEMPLATE_VARS}
@@ -485,7 +485,7 @@ function WhatsAppPage() {
                 {g.items.map(({ key, label, emoji, desc }) => (
                   <div
                     key={key}
-                    className={`space-y-2 rounded-2xl border bg-card p-4 shadow-card transition-all ${
+                    className={`space-y-2 rounded-md border bg-card p-4 shadow-card transition-all ${
                       previewKey === key ? "border-primary/40 ring-1 ring-primary/20" : "border-border"
                     }`}
                   >
@@ -520,13 +520,13 @@ function WhatsAppPage() {
             ))}
 
             {/* Preview dinâmico — mensagem completa como a cliente vai receber */}
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+            <div className="rounded-md border border-primary/20 bg-primary/5 p-4">
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-primary">
                 Preview — como a cliente recebe
               </p>
 
               {/* Bolha de mensagem estilo WhatsApp */}
-              <div className="rounded-2xl rounded-tl-none bg-card px-4 py-4 shadow-sm space-y-0">
+              <div className="rounded-md rounded-tl-none bg-card px-4 py-4 shadow-sm space-y-0">
                 {/* Linha 1 — título */}
                 <p className="text-[12px] font-bold text-foreground">
                   📱 Mensagem automática
@@ -564,7 +564,7 @@ function WhatsAppPage() {
             <Button
               onClick={handleSave}
               disabled={saving || loading}
-              className="h-12 w-full rounded-2xl gradient-primary font-semibold shadow-glow"
+              className="h-12 w-full rounded-md gradient-primary font-semibold shadow-glow"
             >
               {saving ? "Salvando..." : "Salvar templates"}
             </Button>
@@ -580,7 +580,7 @@ function WhatsAppPage() {
             </div>
 
             {messages.length === 0 ? (
-              <section className="rounded-2xl border border-dashed border-border bg-card/70 p-8 text-center">
+              <section className="rounded-md border border-dashed border-border bg-card/70 p-8 text-center">
                 <MessageCircle className="mx-auto h-7 w-7 text-muted-foreground" />
                 <p className="mt-2 text-sm font-semibold">Nenhuma mensagem ainda</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -614,7 +614,7 @@ function MessageCard({
   const waLink = buildWaLink(msg.client_phone, msg.message_text);
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
+    <section className="rounded-md border border-border bg-card p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-sm font-bold">{msg.client_name || msg.client_phone}</p>

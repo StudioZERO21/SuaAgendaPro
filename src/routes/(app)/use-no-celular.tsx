@@ -42,11 +42,11 @@ function UseNoCelularPage() {
         {/* QR Code */}
         <div className="flex justify-center">
           {qrUrl ? (
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
+            <div className="rounded-md border border-border bg-card p-4 shadow-card">
               <LazyImage src={qrUrl} alt="QR Code para o app" width={208} height={208} className="h-52 w-52" />
             </div>
           ) : (
-            <div className="flex h-52 w-52 items-center justify-center rounded-2xl border border-border bg-muted/30">
+            <div className="flex h-52 w-52 items-center justify-center rounded-md border border-border bg-muted/30">
               <QrCode className="h-10 w-10 text-muted-foreground/50" />
             </div>
           )}
