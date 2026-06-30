@@ -10,6 +10,7 @@ import { useDashboard, pctDelta } from "@/hooks/useDashboard";
 import { formatPrice } from "@/hooks/useServicos";
 import { cn } from "@/lib/utils";
 import { PeakHeatmapSection } from "@/components/dashboard/peak-heatmap";
+import { ThemeTimeBadge } from "@/components/dashboard/theme-time-badge";
 
 const RevenueChart = lazy(() =>
   import("@/components/dashboard/revenue-chart").then((m) => ({
@@ -178,9 +179,7 @@ function DashboardPage() {
               <div className="space-y-2">
                 {d.upcoming.map((u) => (
                   <div key={u.id} className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-card">
-                    <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg gradient-primary text-white shadow-glow">
-                      <span className="font-display text-sm font-bold leading-none">{u.time}</span>
-                    </div>
+                    <ThemeTimeBadge time={u.time} className="h-12 w-12" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{u.client}</p>
                       <p className="truncate text-[11px] text-muted-foreground">{u.service}</p>

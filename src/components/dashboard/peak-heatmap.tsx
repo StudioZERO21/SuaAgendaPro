@@ -1,30 +1,13 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback } from "react";
 import { Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PEAK_DAYS, PEAK_SLOTS, type PeakCell } from "@/hooks/useDashboard";
-import { peakIntensityAlpha, primaryRgba } from "@/lib/theme-color";
-
-function subscribeTheme(cb: () => void) {
-  if (typeof document === "undefined") return () => {};
-  const obs = new MutationObserver(cb);
-  obs.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["style", "class"],
-  });
-  window.addEventListener("storage", cb);
-  return () => {
-    obs.disconnect();
-    window.removeEventListener("storage", cb);
-  };
-}
-
-function readPrimaryHex(): string {
-  if (typeof document === "undefined") return "#6b7280";
-  return (
-    getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() ||
-    "#6b7280"
-  );
-}
+import {
+  peakIntensityAlpha,
+  peakTopCardStyle,
+  primaryRgba,
+  useThemeBrand,
+} from "@/lib/theme-color";
 
 type Props = {
   peakTop: PeakCell[];
@@ -33,11 +16,11 @@ type Props = {
 
 /** Heatmap de pico de atendimento — cores sempre seguem o accent ativo. */
 export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
-  const primaryHex = useSyncExternalStore(subscribeTheme, readPrimaryHex, () => "#6b7280");
+  const brand = useThemeBrand();
 
   const cellColor = useCallback(
-    (intensity: number) => primaryRgba(peakIntensityAlpha(intensity), primaryHex),
-    [primaryHex],
+    (intensity: number) => primaryRgba(peakIntensityAlpha(intensity), brand.primary),
+    [brand.primary],
   );
 
   if (peakTop[0]?.count === 0) {
@@ -53,34 +36,44 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
   return (
     <div className="rounded-lg border border-border bg-card p-4 shadow-card">
       <div className="grid grid-cols-3 gap-2">
-        {peakTop.map((p, i) => (
-          <div
-            key={`${p.day}-${p.slot}`}
-            style={{ animationDelay: `${i * 80}ms` }}
-            className={cn(
-              "rounded-md p-3 animate-sa-fade-in-up",
-              i === 0 ? "gradient-primary text-white" : "bg-muted text-foreground",
-            )}
-          >
-            <p
+        {peakTop.map((p, i) => {
+          const isLead = i === 0;
+          return (
+            <div
+              key={`${p.day}-${p.slot}`}
+              style={{ animationDelay: `${i * 80}ms`, ...peakTopCardStyle(i, brand) }}
               className={cn(
-                "text-[9px] font-semibold uppercase tracking-wider",
-                i === 0 ? "text-white/70" : "text-muted-foreground",
+                "rounded-md p-3 animate-sa-fade-in-up",
+                isLead ? "text-white shadow-glow" : "text-foreground",
               )}
             >
-              {p.day}
-            </p>
-            <p className="mt-1 font-display text-lg font-bold leading-none">{p.slot}</p>
-            <p
-              className={cn(
-                "mt-2 text-[10px] font-semibold",
-                i === 0 ? "text-white/80" : "text-muted-foreground",
-              )}
-            >
-              {p.count} atend.
-            </p>
-          </div>
-        ))}
+              <p
+                className={cn(
+                  "text-[9px] font-semibold uppercase tracking-wider",
+                  isLead ? "text-white/70" : "text-muted-foreground",
+                )}
+                style={!isLead ? { color: brand.primary } : undefined}
+              >
+                {p.day}
+              </p>
+              <p
+                className="mt-1 font-display text-lg font-bold leading-none"
+                style={!isLead ? { color: brand.primary } : undefined}
+              >
+                {p.slot}
+              </p>
+              <p
+                className={cn(
+                  "mt-2 text-[10px] font-semibold",
+                  isLead ? "text-white/80" : "opacity-80",
+                )}
+                style={!isLead ? { color: brand.primary } : undefined}
+              >
+                {p.count} atend.
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-4">
@@ -112,11 +105,9 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
                       style={{
                         animationDelay: `${(ri * 6 + ci) * 12}ms`,
                         backgroundColor: cellColor(v),
+                        boxShadow: isMax ? `0 0 0 2px ${brand.primary}` : undefined,
                       }}
-                      className={cn(
-                        "relative aspect-square rounded-sm animate-sa-scale-in",
-                        isMax && "ring-2 ring-primary",
-                      )}
+                      className="relative aspect-square rounded-sm animate-sa-scale-in"
                       title={`${PEAK_DAYS[ci]} ${PEAK_SLOTS[ri]} — ${v}/10`}
                     />
                   );
@@ -133,7 +124,7 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
             <span
               key={o}
               className="h-2.5 w-3 rounded-sm"
-              style={{ backgroundColor: primaryRgba(o, primaryHex) }}
+              style={{ backgroundColor: primaryRgba(o, brand.primary) }}
             />
           ))}
           <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -145,17 +136,22 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
   );
 }
 
-export function PeakHeatmapSection({
-  peakTop,
-  peakMatrix,
-}: Props) {
+export function PeakHeatmapSection({ peakTop, peakMatrix }: Props) {
+  const brand = useThemeBrand();
+
   return (
     <section className="mt-6 px-5">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Pico de atendimento
         </h2>
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+          style={{
+            backgroundColor: primaryRgba(0.12, brand.primary),
+            color: brand.primary,
+          }}
+        >
           <Flame className="h-3 w-3" /> Alta demanda
         </span>
       </div>
