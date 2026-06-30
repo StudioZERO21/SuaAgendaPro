@@ -285,6 +285,12 @@ export const createPublicBooking = createServerFn({ method: "POST" })
         body:           `${data.clientName} agendou para ${datePt} às ${timePt}.`,
         appointment_id: appt.id,
       });
+      const { sendPushToUser } = await import("@/lib/push.server");
+      await sendPushToUser(data.professionalId, {
+        title: "Novo agendamento! 🎉",
+        body:  `${data.clientName} agendou para ${datePt} às ${timePt}.`,
+        url:   "/app",
+      });
     } catch {}
 
     // Sync to Google Calendar (best-effort — never fail booking)

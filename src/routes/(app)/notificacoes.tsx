@@ -32,6 +32,54 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { LucideIcon } from "lucide-react";
+import { pushSupported, isPushSubscribed, enablePush, disablePush } from "@/lib/push-client";
+
+// Toggle de notificações push do PWA (por aparelho)
+function PushToggleCard() {
+  const [supported, setSupported] = useState(true);
+  const [on, setOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setSupported(pushSupported());
+    isPushSubscribed().then(setOn);
+  }, []);
+
+  async function toggle(next: boolean) {
+    setBusy(true);
+    try {
+      if (next) {
+        const r = await enablePush();
+        if (r.ok) { setOn(true); toast.success("Notificações push ativadas neste aparelho 🔔"); }
+        else if (r.reason === "denied") toast.error("Permissão negada. Libere as notificações nas configurações do navegador.");
+        else if (r.reason === "no_vapid") toast.error("Push ainda não configurado no servidor (VAPID).");
+        else if (r.reason === "unsupported") toast.error("Este navegador não suporta notificações push.");
+        else toast.error("Não foi possível ativar agora.");
+      } else {
+        await disablePush();
+        setOn(false);
+        toast.message("Notificações push desativadas neste aparelho.");
+      }
+    } finally { setBusy(false); }
+  }
+
+  if (!supported) return null;
+
+  return (
+    <section className="flex items-center justify-between gap-3 rounded-3xl border border-border bg-card p-5 shadow-card">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl gradient-soft text-primary">
+          <Bell className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-sm font-bold">Notificações no aparelho</p>
+          <p className="text-xs text-muted-foreground">Receba avisos (novo agendamento, etc.) mesmo com o app fechado.</p>
+        </div>
+      </div>
+      <Switch checked={on} disabled={busy} onCheckedChange={toggle} />
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/(app)/notificacoes")({
   head: () => ({
@@ -334,6 +382,7 @@ function NotificacoesPage() {
       </header>
 
       <main className="flex-1 space-y-5 px-5 pb-32 pt-5">
+        <PushToggleCard />
         {/* Resumo */}
         <section
           className="rounded-3xl p-5 text-white shadow-glow"
