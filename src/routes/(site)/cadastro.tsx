@@ -81,18 +81,9 @@ function SignupPage() {
     setErrors({});
     setLoading(true);
 
-    // Anti-fraude: bloqueia novo cadastro com telefone já vinculado a uma conta
-    try {
-      const { data: inUse } = await supabase.rpc("phone_in_use", { p: values.telefone });
-      if (inUse) {
-        setLoading(false);
-        setErrors({ telefone: "Este telefone já está vinculado a uma conta." });
-        toast.error("Este telefone já tem uma conta. Faça login ou use outro número.");
-        return;
-      }
-    } catch {
-      /* se a checagem falhar, não bloqueia o cadastro */
-    }
+    // Anti-fraude: telefone repetido NÃO bloqueia o cadastro, mas a conta entra
+    // sem Acesso Livre (trigger create_trial_subscription cria suspensa). O super
+    // admin pode liberar o trial manualmente com justificativa.
 
     const { data: authData, error } = await supabase.auth.signUp({
       email: values.email,

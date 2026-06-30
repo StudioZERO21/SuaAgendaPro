@@ -3,10 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarClock, RefreshCw, AlertTriangle, Clock, ShieldOff,
   CheckCircle2, XCircle, Mail, MessageSquare, DollarSign, X,
-  RotateCw, Ban, Unlock, Activity, Search, Download,
+  RotateCw, Ban, Unlock, Activity, Search, Download, Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { downloadCSV } from "@/lib/csv";
@@ -16,7 +17,7 @@ import {
   getBillingOverview, getUserBillingDetail, getCronRuns, adminRenewSubscription,
   type BillingRow, type TimelineItem, type CronRun,
 } from "@/lib/super-billing.functions";
-import { adminSuspendUser, adminUnblockUser } from "@/lib/super-admin.functions";
+import { adminSuspendUser, adminUnblockUser, adminGrantTrial } from "@/lib/super-admin.functions";
 
 export const Route = createFileRoute("/(admin)/super/_app/cobrancas")({
   ssr: false,
@@ -264,8 +265,11 @@ function CobrancasPage() {
                     <span className="font-medium">{r.planName}</span>
                     {r.priceCents > 0 && <span className="ml-1 text-xs text-muted-foreground">{brl(r.priceCents)}</span>}
                   </div>
-                  <div>
+                  <div className="flex flex-wrap items-center gap-1">
                     <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold", st.color)}>{st.label}</span>
+                    {r.notes?.includes("Reentrada") && (
+                      <span className="inline-flex rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">reentrada</span>
+                    )}
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">{r.nextEventLabel !== "—" ? r.nextEventLabel + ": " : ""}</span>
@@ -297,6 +301,8 @@ function DetailDialog({ row, onClose, onChanged }: { row: BillingRow; onClose: (
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [loading, setLoading]   = useState(true);
   const [busy, setBusy]         = useState(false);
+  const [granting, setGranting] = useState(false);
+  const [reason, setReason]     = useState("");
 
   useEffect(() => {
     getUserBillingDetail({ data: withSuperToken({ userId: row.userId }) })
@@ -359,7 +365,28 @@ function DetailDialog({ row, onClose, onChanged }: { row: BillingRow; onClose: (
               <Ban className="h-3.5 w-3.5" /> Suspender
             </Button>
           )}
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => setGranting((g) => !g)}>
+            <Gift className="h-3.5 w-3.5" /> Liberar trial
+          </Button>
         </div>
+
+        {/* Painel: liberar trial com justificativa obrigatória */}
+        {granting && (
+          <div className="space-y-2 border-b border-border bg-amber-50/50 px-5 py-3">
+            <label className="text-xs font-semibold text-amber-800">
+              Justifique a liberação do Acesso Livre (obrigatório)
+            </label>
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
+              placeholder="Ex: cliente entrou em contato, conta anterior foi engano…" className="text-sm" />
+            <div className="flex items-center justify-end gap-2">
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => { setGranting(false); setReason(""); }}>Cancelar</Button>
+              <Button size="sm" disabled={busy || reason.trim().length < 5}
+                onClick={() => act(() => adminGrantTrial({ data: withSuperToken({ userId: row.userId, userEmail: row.email, reason: reason.trim(), days: 7 }) }), "Acesso Livre liberado (7 dias)")}>
+                <Gift className="h-3.5 w-3.5" /> Liberar 7 dias
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Timeline */}
         <div className="max-h-[50vh] overflow-y-auto px-5 py-4">

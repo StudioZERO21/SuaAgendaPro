@@ -338,6 +338,45 @@ export const adminResetToTrial = createServerFn({ method: "POST" })
     await auditLog(supabaseAdmin, "reset_to_trial", data.userId, data.userEmail ?? "", { notes: data.notes, trialEndsAt });
   });
 
+// Libera o Acesso Livre (trial) manualmente — justificativa OBRIGATÓRIA (auditada).
+export const adminGrantTrial = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z.object({
+      _st,
+      userId:    z.string().uuid(),
+      userEmail: z.string().optional(),
+      reason:    z.string().min(5, "Justifique com pelo menos 5 caracteres"),
+      days:      z.number().int().min(1).max(60).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await requireSuperAuth(data._st ?? null);
+    const { getSuperAuthEmail } = await import("@/lib/super-auth.server");
+    const grantedBy = await getSuperAuthEmail(data._st ?? null);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const days = data.days ?? 7;
+    const trialEndsAt = new Date(Date.now() + days * 86_400_000).toISOString();
+
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update({
+        plan_id:            "trial",
+        status:             "trial",
+        trial_ends_at:      trialEndsAt,
+        current_period_end: null,
+        cancelled_at:       null,
+        notes:              `Trial liberado por ${grantedBy ?? "admin"}: ${data.reason}`,
+      })
+      .eq("user_id", data.userId);
+    if (error) throw new Error(error.message);
+
+    await auditLog(supabaseAdmin, "grant_trial", data.userId, data.userEmail ?? "", {
+      reason: data.reason, days, trialEndsAt, grantedBy,
+    });
+    return { ok: true, trialEndsAt };
+  });
+
 export const adminCancelSubscription = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
     z.object({ _st, userId: z.string().uuid(), userEmail: z.string().optional() }).parse(input),
