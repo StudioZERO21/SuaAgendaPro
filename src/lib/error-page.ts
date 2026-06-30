@@ -1,10 +1,14 @@
+import { SITE_LANG } from "@/lib/site-locale";
+
 export function renderErrorPage(): string {
   return `<!doctype html>
-<html lang="en">
+<html lang="${SITE_LANG}">
   <head>
     <meta charset="utf-8" />
-    <title>This page didn't load</title>
+    <title>Não foi possível carregar a página</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="content-language" content="${SITE_LANG}" />
+    <meta name="google" content="notranslate" />
     <style>
       body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #fafafa; color: #111; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
       .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
@@ -18,11 +22,11 @@ export function renderErrorPage(): string {
   </head>
   <body>
     <div class="card">
-      <h1>This page didn't load</h1>
-      <p>Something went wrong on our end. You can try refreshing or head back home.</p>
+      <h1>Não foi possível carregar a página</h1>
+      <p>Algo deu errado do nosso lado. Você pode tentar atualizar ou voltar ao início.</p>
       <div class="actions">
-        <button class="primary" onclick="location.reload()">Try again</button>
-        <a class="secondary" href="/">Go home</a>
+        <button class="primary" onclick="location.reload()">Tentar novamente</button>
+        <a class="secondary" href="/">Ir ao início</a>
       </div>
     </div>
   </body>

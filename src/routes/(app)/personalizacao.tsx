@@ -53,7 +53,9 @@ import {
 } from "@/lib/personalization";
 import { THEMES, GOOGLE_FONTS_URL } from "@/lib/themes";
 import { THEME_CATEGORY_ORDER } from "@/lib/theme-meta";
+import { PROFILE_UI_SETTINGS_KEY } from "@/hooks/useProfileUiSettings";
 import { TemplatePreviewCard } from "@/components/public-page/template-preview-card";
+import { LazyImage } from "@/components/ui/lazy-image";
 
 
 function PersonalizacaoPage() {
@@ -168,23 +170,18 @@ function PersonalizacaoPage() {
     }
   }, []);
 
-  // Quando dados do Supabase chegarem, sobrescreve accent/font/theme do localStorage
+  // Sincroniza formulário quando settings públicos carregarem (tema já aplicado via __root)
   useEffect(() => {
     if (!pubSettings?.uiSettings) return;
     const ui = pubSettings.uiSettings;
-    setData((prev) => {
-      const next: Personalization = {
-        ...prev,
-        accent:      ui.accent,
-        font:        ui.font,
-        theme:       ui.theme,
-        highContrast: ui.highContrast,
-      };
-      savePersonalization(next);
-      applyPersonalization(next);
-      return next;
-    });
-  }, [pubSettings?.uiSettings?.accent, pubSettings?.uiSettings?.font, pubSettings?.uiSettings?.theme]);
+    setData((prev) => ({
+      ...prev,
+      accent: ui.accent,
+      font: ui.font,
+      theme: ui.theme,
+      highContrast: ui.highContrast,
+    }));
+  }, [pubSettings?.uiSettings]);
 
   // Sync: se logo está como data URL no localStorage (nunca foi upado), faz upload silencioso
   const logoSyncedRef = useRef(false);
@@ -283,6 +280,7 @@ function PersonalizacaoPage() {
         },
       }).catch(() => {/* silent — cache invalidation best-effort */});
       qc.invalidateQueries({ queryKey: ["public-profile-settings"] });
+      qc.invalidateQueries({ queryKey: [PROFILE_UI_SETTINGS_KEY] });
       toast.success("Banner salvo! A página pública já está atualizada.");
     } catch {
       toast.error("Erro ao processar banner.");
@@ -383,6 +381,7 @@ function PersonalizacaoPage() {
         },
       });
       qc.invalidateQueries({ queryKey: ["public-profile-settings"] });
+      qc.invalidateQueries({ queryKey: [PROFILE_UI_SETTINGS_KEY] });
       toast.success("Configurações salvas!");
     } catch {
       toast.error("Erro ao salvar. Tente novamente.");
@@ -467,7 +466,7 @@ function PersonalizacaoPage() {
               style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-glow))" }}
             >
               {data.business.logo ? (
-                <img src={data.business.logo} alt="Logo" className="h-full w-full object-contain" />
+                <LazyImage src={data.business.logo} alt="Logo" width={80} height={80} className="h-full w-full object-contain" />
               ) : (
                 <span className={data.business.logoShape === "wide" ? "text-lg" : "text-2xl"}>{initials || "S"}</span>
               )}
@@ -755,7 +754,7 @@ function PersonalizacaoPage() {
             </p>
             {pub.bannerUrl ? (
               <div className="relative overflow-hidden rounded-2xl border border-border">
-                <img src={pub.bannerUrl} alt="Banner" className="h-24 w-full object-cover" />
+                <LazyImage src={pub.bannerUrl} alt="Banner" width={400} height={96} className="h-24 w-full object-cover" />
                 <button type="button"
                   onClick={() => setPub((s) => ({ ...s, bannerUrl: "" }))}
                   className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm"

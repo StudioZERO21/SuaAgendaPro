@@ -23,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { useClientes, type UIClient } from "@/hooks/useClientes";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { useServices } from "@/hooks/useServicos";
@@ -1145,7 +1146,7 @@ function PagamentosPage() {
 
             <div className="mx-auto mt-4 flex aspect-square w-full max-w-[280px] items-center justify-center rounded-2xl border border-border bg-card p-3">
               {qrDataUrl ? (
-                <img src={qrDataUrl} alt="QR Code Pix" className="h-full w-full" />
+                <LazyImage src={qrDataUrl} alt="QR Code Pix" width={256} height={256} className="h-full w-full" />
               ) : (
                 <p className="text-xs text-muted-foreground">Gerando QR Code...</p>
               )}

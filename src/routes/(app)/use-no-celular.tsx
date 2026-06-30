@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Smartphone, QrCode } from "lucide-react";
+import { LazyImage } from "@/components/ui/lazy-image";
 
 export const Route = createFileRoute("/(app)/use-no-celular")({
   head: () => ({ meta: [{ title: "Use no Celular — SuaAgenda.Pro" }, { name: "robots", content: "noindex,nofollow" }] }),
@@ -43,7 +44,7 @@ function UseNoCelularPage() {
         <div className="flex justify-center">
           {qrUrl ? (
             <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
-              <img src={qrUrl} alt="QR Code para o app" className="h-52 w-52" />
+              <LazyImage src={qrUrl} alt="QR Code para o app" width={208} height={208} className="h-52 w-52" />
             </div>
           ) : (
             <div className="flex h-52 w-52 items-center justify-center rounded-2xl border border-border bg-muted/30">

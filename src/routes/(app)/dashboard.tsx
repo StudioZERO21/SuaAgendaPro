@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   TrendingUp, TrendingDown, Calendar, Users, DollarSign, Clock,
   Star, ArrowUpRight, Trophy, Medal, Award, Flame, Loader2,
@@ -10,9 +9,12 @@ import { BottomNav } from "@/components/bottom-nav";
 import { useDashboard, pctDelta, PEAK_DAYS, PEAK_SLOTS } from "@/hooks/useDashboard";
 import { formatPrice } from "@/hooks/useServicos";
 import { cn } from "@/lib/utils";
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from "recharts";
+
+const RevenueChart = lazy(() =>
+  import("@/components/dashboard/revenue-chart").then((m) => ({
+    default: m.RevenueChart,
+  })),
+);
 
 export const Route = createFileRoute("/(app)/dashboard")({
   head: () => ({
@@ -105,55 +107,42 @@ function DashboardPage() {
                 const Icon  = k.icon;
                 const Trend = k.up ? TrendingUp : TrendingDown;
                 return (
-                  <motion.div
+                  <div
                     key={k.key}
-                    initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: i * 0.08, type: "spring", stiffness: 220, damping: 22 }}
-                    whileHover={{ y: -2 }}
+                    style={{ animationDelay: `${i * 80}ms` }}
                     className={cn(
-                      "relative overflow-visible rounded-lg p-4 pb-3 text-white shadow-card",
+                      "relative overflow-visible rounded-lg p-4 pb-3 text-white shadow-card animate-sa-fade-in-up hover-lift",
                       k.bg,
                       k.premium && "ring-2 ring-primary/30 shadow-glow",
                     )}
                   >
                     {k.premium && (
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.6 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.35 + i * 0.08, type: "spring", stiffness: 260 }}
-                        className="pointer-events-none absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary shadow-md"
+                      <span
+                        style={{ animationDelay: `${350 + i * 80}ms` }}
+                        className="pointer-events-none absolute -top-2 left-3 inline-flex animate-sa-scale-in items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary shadow-md"
                       >
                         <Star className="h-2.5 w-2.5 fill-primary text-primary" /> Premium
-                      </motion.span>
+                      </span>
                     )}
                     <div className="flex items-start justify-between">
                       <span className="inline-flex items-center gap-0.5 rounded-md bg-white/20 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
                         <Trend className="h-3 w-3" /> {k.delta}
                       </span>
                     </div>
-                    <motion.p
-                      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15 + i * 0.08, duration: 0.4 }}
-                      className="mt-4 font-display text-3xl font-bold leading-none tracking-tight"
-                    >
+                    <p className="mt-4 font-display text-3xl font-bold leading-none tracking-tight">
                       {k.value}
-                    </motion.p>
+                    </p>
                     <p className="mt-6 text-[11px] font-semibold uppercase tracking-wider text-white/20">{k.label}</p>
                     {"subtitle" in k && k.subtitle && (
                       <p className="text-[9px] text-white/30 mt-0.5">{k.subtitle as string}</p>
                     )}
-                    <motion.div
-                      initial={{ y: 24, opacity: 0, rotate: -8 }} animate={{ y: 0, opacity: 1, rotate: 0 }}
-                      transition={{ delay: 0.2 + i * 0.08, type: "spring", stiffness: 180, damping: 14 }}
-                      className="pointer-events-none absolute -bottom-3 -right-3"
-                    >
+                    <div className="pointer-events-none absolute -bottom-3 -right-3">
                       <Icon
                         className={cn("h-16 w-16", k.premium ? "text-white/30 drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]" : "text-white/15")}
                         strokeWidth={1.2}
                       />
-                    </motion.div>
-                  </motion.div>
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -228,25 +217,15 @@ function DashboardPage() {
               </div>
 
               <div className="mt-4 h-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} tickFormatter={(v) => v === 0 ? "" : `R$${Math.round((v as number) / 100)}`} />
-                    <Tooltip
-                      formatter={(v) => [formatPrice(v as number), "Receita"]}
-                      labelStyle={{ fontSize: 11, fontWeight: 600 }}
-                      contentStyle={{ fontSize: 12, borderRadius: 12, border: "1px solid var(--border)", background: "var(--card)" }}
-                    />
-                    <Area type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} fill="url(#revenueGrad)" dot={false} activeDot={{ r: 4, fill: "var(--primary)" }} />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <Suspense
+                  fallback={
+                    <div className="flex h-full items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  }
+                >
+                  <RevenueChart data={chartData} />
+                </Suspense>
               </div>
             </div>
           </section>
@@ -267,15 +246,18 @@ function DashboardPage() {
                 <>
                   <div className="grid grid-cols-3 gap-2">
                     {d.peakTop.map((p, i) => (
-                      <motion.div key={`${p.day}-${p.slot}`}
-                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08, type: "spring", stiffness: 220, damping: 22 }}
-                        className={cn("rounded-md p-3", i === 0 ? "gradient-primary text-white" : "bg-muted text-foreground")}
+                      <div
+                        key={`${p.day}-${p.slot}`}
+                        style={{ animationDelay: `${i * 80}ms` }}
+                        className={cn(
+                          "rounded-md p-3 animate-sa-fade-in-up",
+                          i === 0 ? "gradient-primary text-white" : "bg-muted text-foreground",
+                        )}
                       >
                         <p className={cn("text-[9px] font-semibold uppercase tracking-wider", i === 0 ? "text-white/70" : "text-muted-foreground")}>{p.day}</p>
                         <p className="mt-1 font-display text-lg font-bold leading-none">{p.slot}</p>
                         <p className={cn("mt-2 text-[10px] font-semibold", i === 0 ? "text-white/80" : "text-muted-foreground")}>{p.count} atend.</p>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
 
@@ -298,12 +280,16 @@ function DashboardPage() {
                               const isMax = v >= 9;
                               const mixPct = Math.round(op * 100);
                               return (
-                                <motion.div
+                                <div
                                   key={`${ri}-${ci}`}
-                                  initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
-                                  transition={{ delay: (ri * 6 + ci) * 0.012, type: "spring", stiffness: 260, damping: 22 }}
-                                  className={cn("relative aspect-square rounded-sm", isMax && "ring-2 ring-primary")}
-                                  style={{ backgroundColor: `color-mix(in srgb, var(--primary) ${mixPct}%, transparent)` }}
+                                  style={{
+                                    animationDelay: `${(ri * 6 + ci) * 12}ms`,
+                                    backgroundColor: `color-mix(in srgb, var(--primary) ${mixPct}%, transparent)`,
+                                  }}
+                                  className={cn(
+                                    "relative aspect-square rounded-sm animate-sa-scale-in",
+                                    isMax && "ring-2 ring-primary",
+                                  )}
                                   title={`${PEAK_DAYS[ci]} ${PEAK_SLOTS[ri]} — ${v}/10`}
                                 />
                               );

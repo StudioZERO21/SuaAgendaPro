@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getMyAppRating, submitAppRating, type MyRating } from "@/lib/app-rating.functions";
-import { getMyReferralStats, type MyReferralStats } from "@/lib/referral.functions";
+import { LazyImage } from "@/components/ui/lazy-image";
 
 export const Route = createFileRoute("/(app)/mais")({
   head: () => ({
@@ -175,7 +175,7 @@ function MaisPage() {
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin opacity-60" />
               ) : avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                <LazyImage src={avatarUrl} alt="Avatar" priority width={64} height={64} className="h-full w-full object-cover" />
               ) : (
                 <span>{initials}</span>
               )}
@@ -681,7 +681,7 @@ function SupportTicketModal({
                 <div className="flex flex-wrap gap-2">
                   {previews.map((p, i) => (
                     <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-border">
-                      <img src={p} alt="" className="h-full w-full object-cover" />
+                      <LazyImage src={p} alt="" width={80} height={80} className="h-full w-full object-cover" />
                       <button
                         onClick={() => removeFile(i)}
                         className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"

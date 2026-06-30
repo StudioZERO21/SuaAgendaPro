@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Plus, Clock, Scissors, Search, ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,12 +163,10 @@ function ServicosPage() {
 
         {/* Services list */}
         {filtered.map((s, i) => (
-          <motion.div
+          <div
             key={s.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
-            className={cn("transition-opacity", !s.is_active && "opacity-60")}
+            style={{ animationDelay: `${i * 40}ms` }}
+            className={cn("animate-sa-fade-in-up transition-opacity", !s.is_active && "opacity-60")}
           >
             <div
               className="group relative block overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-card"
@@ -224,7 +221,7 @@ function ServicosPage() {
                 <p className="mt-2 line-clamp-1 text-xs text-muted-foreground">{s.description}</p>
               )}
             </div>
-          </motion.div>
+          </div>
         ))}
       </main>
 

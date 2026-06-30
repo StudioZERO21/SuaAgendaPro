@@ -10,6 +10,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { useReviews, useToggleReviewPublic, useDeleteReview, MAX_PUBLIC } from "@/hooks/useReviews";
 import { generateReviewToken } from "@/lib/review-tokens.functions";
 import type { Review } from "@/integrations/supabase/types";
@@ -63,7 +64,7 @@ function AvatarPlaceholder({ name, avatarUrl, isAnonymous }: { name: string; ava
       </div>
     );
   }
-  return <img src={avatarUrl} alt={name} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
+  return <LazyImage src={avatarUrl} alt={name} width={36} height={36} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
 }
 
 // ── Page ──────────────────────────────────────────────────────

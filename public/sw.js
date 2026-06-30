@@ -1,93 +1,100 @@
 // Service Worker — SuaAgenda.Pro
-const CACHE_VERSION = "v1";
-const STATIC_CACHE  = `static-${CACHE_VERSION}`;
+const CACHE_VERSION = "v2";
+const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
-const STATIC_ASSETS = [
-  "/app",
+const PRECACHE_ASSETS = [
   "/offline.html",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/manifest.json",
+  "/app-manifest.json",
 ];
 
-// Install: cache offline page
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_ASSETS)),
   );
   self.skipWaiting();
 });
 
-// Activate: remove old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys
           .filter((k) => k !== STATIC_CACHE && k !== RUNTIME_CACHE)
-          .map((k) => caches.delete(k))
-      )
-    )
+          .map((k) => caches.delete(k)),
+      ),
+    ),
   );
   self.clients.claim();
 });
 
-// Fetch strategy
+function isHashedAsset(pathname) {
+  return /\.[a-f0-9]{8,}\.(js|css)$/i.test(pathname);
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and cross-origin
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
-  // API routes: network-first, no cache fallback
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_server/")) {
     event.respondWith(
-      fetch(request).catch(() => new Response("Service unavailable", { status: 503 }))
+      fetch(request).catch(
+        () => new Response("Serviço indisponível", { status: 503 }),
+      ),
     );
     return;
   }
 
-  // Static assets (JS/CSS/fonts/images): cache-first
+  // JS/CSS com hash: stale-while-revalidate (rápido + atualiza em background)
   if (
-    url.pathname.match(/\.(js|css|woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico)$/)
+    isHashedAsset(url.pathname) ||
+    url.pathname.match(/\.(woff2?|ttf|otf|png|jpg|jpeg|webp|svg|ico)$/)
   ) {
     event.respondWith(
       caches.open(RUNTIME_CACHE).then(async (cache) => {
         const cached = await cache.match(request);
-        if (cached) return cached;
-        const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
-        return response;
-      })
+        const network = fetch(request)
+          .then((response) => {
+            if (response.ok) cache.put(request, response.clone());
+            return response;
+          })
+          .catch(() => cached);
+        return cached ?? network;
+      }),
     );
     return;
   }
 
-  // HTML navigation: network-first, offline page fallback
   if (request.headers.get("accept")?.includes("text/html")) {
     event.respondWith(
       fetch(request).catch(() =>
-        caches.match("/offline.html").then((r) => r ?? new Response("Offline", { status: 503 }))
-      )
+        caches
+          .match("/offline.html")
+          .then((r) => r ?? new Response("Offline", { status: 503 })),
+      ),
     );
     return;
   }
 });
 
-// Push notifications
 self.addEventListener("push", (event) => {
   const payload = event.data?.json() ?? {};
-  const title   = payload.title ?? "SuaAgenda.Pro";
+  const title = payload.title ?? "SuaAgenda.Pro";
   const options = {
-    body:    payload.body ?? "Você tem uma nova notificação.",
-    icon:    "/icon-192.png",
-    badge:   "/icon-192.png",
-    data:    { url: payload.url ?? "/" },
+    body: payload.body ?? "Você tem uma nova notificação.",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url: payload.url ?? "/" },
     vibrate: [200, 100, 200],
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Notification click: open/focus the app
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target = event.notification.data?.url ?? "/app";
@@ -101,6 +108,6 @@ self.addEventListener("notificationclick", (event) => {
           return existing.navigate(target);
         }
         return clients.openWindow(target);
-      })
+      }),
   );
 });

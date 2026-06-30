@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Cropper, { type Area } from "react-easy-crop";
 import { MobileShell } from "@/components/mobile-shell";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -387,7 +388,7 @@ function PortfolioPage() {
             {editing && (
               <div className="space-y-4">
                 <div className="mx-auto aspect-[9/16] w-40 overflow-hidden rounded-xl border border-border bg-secondary">
-                  <img src={editing.src} alt="" className="h-full w-full object-cover" />
+                  <LazyImage src={editing.src} alt="" width={120} height={120} className="h-full w-full object-cover" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="t">Título</Label>
@@ -466,7 +467,7 @@ function PortfolioPage() {
                   <X className="h-4 w-4" />
                 </button>
                 <div className="aspect-[9/16] w-full overflow-hidden rounded-t-lg bg-black">
-                  <img src={preview.src} alt="" className="h-full w-full object-cover" />
+                  <LazyImage src={preview.src} alt="" width={120} height={120} className="h-full w-full object-cover" />
                 </div>
                 <div className="space-y-1 p-4">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">

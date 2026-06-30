@@ -36,6 +36,14 @@ import {
 import { SystemModeProvider, useSystemConfig } from "@/components/system-mode-provider";
 import { TestModeBanner } from "@/components/test-mode-banner";
 import { CookieConsentBanner } from "@/components/cookie-consent-banner";
+import {
+  LOCALE_HEAD_META,
+  SITE_LANG,
+} from "@/lib/site-locale";
+import {
+  mergeAndApplyUiSettings,
+  useProfileUiSettings,
+} from "@/hooks/useProfileUiSettings";
 
 const PUBLIC_PATHS = [
   "/",
@@ -202,7 +210,7 @@ function NotFoundComponent() {
               }}
             >
               <Home className="h-4 w-4" />
-              Home
+              Início
             </Link>
           </div>
         </div>
@@ -235,10 +243,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Não foi possível carregar a página
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Algo deu errado do nosso lado. Você pode tentar atualizar ou voltar ao início.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -248,13 +256,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Tentar novamente
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Ir ao início
           </a>
         </div>
       </div>
@@ -311,6 +319,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
         { name: "theme-color", content: "#6b7280" },
+        ...LOCALE_HEAD_META,
         { title },
         { name: "description", content: description },
         { property: "og:title", content: "SuaAgenda.Pro" },
@@ -321,12 +330,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       links: [
         { rel: "stylesheet", href: appCss },
         { rel: "manifest", href: isApp ? "/app-manifest.json" : "/manifest.json" },
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600;1,700&family=Space+Grotesk:wght@400;500;600;700&display=swap",
-        },
       ],
     };
   },
@@ -370,7 +373,7 @@ const THEME_INIT_SCRIPT = buildThemeInitScript();
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={SITE_LANG} translate="no" suppressHydrationWarning>
       <head>
         {/* eslint-disable-next-line react/no-danger */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
@@ -409,6 +412,8 @@ function RootComponent() {
 
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
+  const { data: remoteUiSettings } = useProfileUiSettings(user?.id);
+
   // 1. Aplica tema do localStorage imediatamente (sem flash)
   useEffect(() => {
     import("../lib/personalization").then((m) => {
@@ -416,31 +421,11 @@ function RootComponent() {
     });
   }, []);
 
-  // 2. Quando autenticado, busca ui_settings do Supabase e sobrescreve localStorage
+  // 2. Quando ui_settings chegar do Supabase (cache compartilhado), sobrescreve localStorage
   useEffect(() => {
-    if (!user?.id) return;
-    supabase
-      .from("profiles")
-      .select("ui_settings")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!data?.ui_settings) return;
-        import("../lib/personalization").then((m) => {
-          const local = m.loadPersonalization();
-          const ui = data.ui_settings as { accent?: string; font?: string; theme?: string; highContrast?: boolean };
-          const merged = {
-            ...local,
-            accent:      (ui.accent      as AccentId) ?? local.accent,
-            font:        (ui.font        as FontId)   ?? local.font,
-            theme:       (ui.theme       as ThemeId)  ?? local.theme,
-            highContrast: ui.highContrast               ?? local.highContrast,
-          };
-          m.savePersonalization(merged);
-          m.applyPersonalization(merged);
-        });
-      });
-  }, [user?.id]);
+    if (!remoteUiSettings) return;
+    mergeAndApplyUiSettings(remoteUiSettings);
+  }, [remoteUiSettings]);
 
   // 3. Busca assinatura e verifica bloqueio
   useEffect(() => {

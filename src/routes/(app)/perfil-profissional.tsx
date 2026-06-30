@@ -5,6 +5,7 @@ import { ArrowLeft, Save, Camera, Upload, X, Loader2, Plus, Share2, Lock, Eye, E
 import { toast } from "sonner";
 import Cropper, { type Area } from "react-easy-crop";
 import { MobileShell } from "@/components/mobile-shell";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -356,7 +357,7 @@ function PerfilProfissionalPage() {
           <div className="relative">
             <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full text-3xl font-bold text-white shadow-glow" style={{ background: "var(--gradient-primary)" }}>
               {photo ? (
-                <img src={photo} alt="Foto do perfil" className="h-full w-full object-cover" />
+                <LazyImage src={photo} alt="Foto do perfil" priority width={112} height={112} className="h-full w-full object-cover" />
               ) : (
                 <span>{initials}</span>
               )}

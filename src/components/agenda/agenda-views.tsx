@@ -1,6 +1,5 @@
 // Grades da agenda (dia/semana/mês) + helpers/tipos compartilhados.
 // Extraído de (app)/app.tsx para reduzir o tamanho do arquivo (sem mudar lógica).
-import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -129,10 +128,10 @@ function DayGrid({ appointments, maps, scheduleBlocks, activeDate, onOpenAppoint
               const service = maps.serviceMap.get(a.serviceId);
               const meta    = statusMeta(a.status);
               return (
-                <motion.button key={a.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                <button key={a.id}
+                  style={{ top, height, animationDelay: `${i * 40}ms` }}
                   onClick={() => onOpenAppointment(a)}
-                  className={cn("absolute left-0 right-0 cursor-pointer overflow-hidden rounded-lg border px-2.5 py-1.5 text-left shadow-card backdrop-blur-md transition-all active:scale-[0.98]", a.status === "concluido" ? "border-border/60 bg-card/30 opacity-55 saturate-50 dark:bg-card/20" : "border-border/60 bg-card/80 dark:bg-card/70")}
-                  style={{ top, height }}
+                  className={cn("absolute left-0 right-0 cursor-pointer overflow-hidden rounded-lg border px-2.5 py-1.5 text-left shadow-card backdrop-blur-md transition-all active:scale-[0.98] animate-sa-fade-in-right", a.status === "concluido" ? "border-border/60 bg-card/30 opacity-55 saturate-50 dark:bg-card/20" : "border-border/60 bg-card/80 dark:bg-card/70")}
                 >
                   <div className="flex items-center gap-2">
                     <span className={cn("w-1 shrink-0 rounded-full", meta.dot)} style={{ height: Math.max(20, height - 16) }} />
@@ -142,7 +141,7 @@ function DayGrid({ appointments, maps, scheduleBlocks, activeDate, onOpenAppoint
                     </div>
                     <span className={cn("h-2 w-2 shrink-0 rounded-full", meta.dot)} />
                   </div>
-                </motion.button>
+                </button>
               );
             })}
           </div>
@@ -175,11 +174,14 @@ function WeekGrid({ appointments, week, activeDateIdx, maps, scheduleBlocks, onS
         const ds       = dateToStr(d);
         const block    = scheduleBlocks.find((b) => ds >= b.start_date && ds <= b.end_date);
         return (
-          <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-            className={cn("overflow-hidden rounded-2xl border shadow-card backdrop-blur-md",
-              isActive ? "border-primary/40 bg-white/70" :
-              block ? "border-amber-200 bg-amber-50/60" :
-              "border-border bg-card/60"
+          <div
+            key={i}
+            style={{ animationDelay: `${i * 30}ms` }}
+            className={cn(
+              "overflow-hidden rounded-2xl border shadow-card backdrop-blur-md animate-sa-fade-in-up",
+              isActive ? "border-primary/40 bg-card/70 dark:bg-card/60" :
+              block ? "border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/40" :
+              "border-border bg-card/60",
             )}
           >
             <button onClick={() => onSelectDay(i)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
@@ -227,7 +229,7 @@ function WeekGrid({ appointments, week, activeDateIdx, maps, scheduleBlocks, onS
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
         );
       })}
     </div>

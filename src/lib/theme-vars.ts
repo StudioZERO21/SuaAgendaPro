@@ -139,6 +139,7 @@ e.style.setProperty("--rose-cloud",ac.cl);
 e.style.setProperty("--gradient-soft",ac.gs);e.style.setProperty("--gradient-card",ac.gc);
 }
 e.style.setProperty("--font-display",font);
+e.lang="pt-BR";e.setAttribute("translate","no");
 e.classList.toggle("dark",dark);if(d&&d.highContrast)e.classList.add("high-contrast");
 var mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute("content",ac.p);
 }catch(e){}})();`;
