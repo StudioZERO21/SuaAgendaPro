@@ -73,7 +73,7 @@ function PrivacidadeDadosPage() {
     <MobileShell>
       <div className="flex flex-1 flex-col px-5 pb-24 pt-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-md gradient-primary text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl gradient-primary text-white">
             <Shield className="h-5 w-5" />
           </div>
           <div>
@@ -82,7 +82,7 @@ function PrivacidadeDadosPage() {
           </div>
         </div>
 
-        <section className="mt-8 rounded-md border border-border/60 p-5">
+        <section className="mt-8 rounded-2xl border border-border/60 p-5">
           <h2 className="font-semibold">Portabilidade</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Baixe uma cópia dos seus dados em JSON.
@@ -98,7 +98,7 @@ function PrivacidadeDadosPage() {
           </Button>
         </section>
 
-        <section className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-5">
+        <section className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
           <h2 className="font-semibold text-destructive">Excluir conta</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Remove permanentemente sua conta, perfil e dados. Agendamentos futuros serão

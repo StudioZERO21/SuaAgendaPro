@@ -141,13 +141,13 @@ function AgendaPage() {
     <TooltipProvider delayDuration={100}>
       <MobileShell withNav>
         {/* Header */}
-        <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-xl">
-          <div className="flex items-center justify-between px-6 pb-5 pt-6">
+        <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl">
+          <div className="flex items-center justify-between px-6 pb-5 pt-8">
             <div>
               <AppSectionLabel>
                 {today.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
               </AppSectionLabel>
-              <h1 className="mt-1 font-display text-3xl font-bold leading-tight tracking-tight">
+              <h1 className="font-display mt-1 text-[1.75rem] font-semibold leading-tight tracking-tight">
                 Agenda
               </h1>
             </div>
@@ -185,7 +185,7 @@ function AgendaPage() {
 
           {/* View toggle */}
           <div className="px-6 pb-4">
-            <div className="inline-flex rounded-md border border-border bg-card p-1.5 shadow-card">
+            <div className="inline-flex rounded-2xl border border-border bg-card p-1.5 shadow-card">
               {([
                 { id: "timeline", label: "Timeline", icon: ListChecks },
                 { id: "grade",    label: "Grade",    icon: LayoutGrid  },
@@ -196,14 +196,14 @@ function AgendaPage() {
                     key={v.id}
                     onClick={() => setView(v.id)}
                     className={cn(
-                      "relative inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors duration-200",
+                      "relative inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors duration-200",
                       active ? "text-background" : "text-muted-foreground",
                     )}
                   >
                     {active && (
                       <motion.div
                         layoutId="view-pill"
-                        className="absolute inset-0 rounded-md bg-foreground shadow-soft"
+                        className="absolute inset-0 rounded-xl bg-foreground shadow-soft"
                         transition={{ type: "spring", stiffness: 500, damping: 35 }}
                       />
                     )}
@@ -219,10 +219,10 @@ function AgendaPage() {
         {/* Date strip */}
         <div className="mt-6 px-6">
           <div className="flex items-center gap-3">
-            <div className="flex flex-1 items-center gap-2 rounded-md border border-border bg-card px-2 py-2 shadow-card">
+            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-border bg-card px-2 py-2 shadow-card">
               <button
                 onClick={() => { setWeekOffset((w) => w - (navMode === "mes" ? 4 : 1)); setActiveDateIdx(0); }}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary active:scale-95"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary active:scale-95"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -257,15 +257,14 @@ function AgendaPage() {
               </div>
               <button
                 onClick={() => { setWeekOffset((w) => w + (navMode === "mes" ? 4 : 1)); setActiveDateIdx(0); }}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary active:scale-95"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-secondary active:scale-95"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
             <Button
-              variant="cta"
               onClick={() => setSheetOpen(true)}
-              className="h-12 px-5"
+              className="h-12 rounded-2xl bg-primary text-primary-foreground px-5 text-sm font-bold shadow-soft"
             >
               <Plus className="mr-1.5 h-[18px] w-[18px]" /> Novo
             </Button>
@@ -285,7 +284,7 @@ function AgendaPage() {
                   className={cn(
                     "relative flex aspect-square flex-col items-center justify-center rounded-full text-center transition-all",
                     active
-                      ? "bg-cta text-cta-foreground shadow-sm"
+                      ? "bg-primary text-primary-foreground shadow-soft"
                       : block
                       ? "border border-amber-200 bg-amber-50"
                       : "border border-border bg-card/60 backdrop-blur-sm shadow-card",
@@ -329,7 +328,7 @@ function AgendaPage() {
                   {period === p && (
                     <motion.div
                       layoutId="period-pill"
-                      className="absolute inset-0 rounded-full bg-cta text-cta-foreground shadow-sm"
+                      className="absolute inset-0 rounded-full bg-primary text-primary-foreground shadow-soft"
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
                     />
                   )}
@@ -369,7 +368,7 @@ function AgendaPage() {
                         className={cn(
                           "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold transition-all",
                           active
-                            ? "bg-cta text-cta-foreground border-transparent shadow-sm"
+                            ? "bg-primary text-primary-foreground border-transparent shadow-soft"
                             : "border-border bg-card text-foreground hover:border-primary/30",
                         )}
                       >
@@ -402,12 +401,12 @@ function AgendaPage() {
 
           {!loadingAppts && sorted.length === 0 && (
             <div className="mt-12 flex flex-col items-center gap-4 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-secondary/60 text-primary">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-secondary/60 text-primary">
                 <Sparkles className="h-8 w-8" />
               </div>
               <p className="font-display text-xl font-semibold">Nenhum agendamento</p>
               <p className="text-sm text-muted-foreground">Ajuste os filtros ou crie um novo.</p>
-              <Button variant="cta" onClick={() => setSheetOpen(true)} className="mt-1 h-11 px-5">
+              <Button onClick={() => setSheetOpen(true)} className="mt-1 h-11 rounded-2xl bg-primary text-primary-foreground px-5 shadow-soft">
                 <Plus className="mr-1 h-4 w-4" /> Novo agendamento
               </Button>
             </div>
@@ -518,7 +517,7 @@ function AppointmentCard({
         {!isLast && <div className="mt-1 w-px flex-1 bg-gradient-to-b from-primary/30 via-border to-transparent min-h-[12px]" />}
       </div>
 
-      <div className={cn("relative flex-1 overflow-hidden rounded-md border shadow-card backdrop-blur-md", isDone ? "border-border/60 bg-card/30 dark:bg-card/20" : "border-border/60 bg-card/60 dark:bg-card/50")}>
+      <div className={cn("relative flex-1 overflow-hidden rounded-xl border shadow-card backdrop-blur-md", isDone ? "border-border/60 bg-card/30 dark:bg-card/20" : "border-border/60 bg-card/60 dark:bg-card/50")}>
         <div className="flex items-center gap-2.5 px-3 py-2.5">
           <div className="flex flex-col items-center text-center min-w-[2.75rem] shrink-0">
             <span className="font-display text-sm font-bold text-foreground leading-none">{a.start}</span>
@@ -540,7 +539,7 @@ function AppointmentCard({
           </div>
           <button
             onClick={() => setOpen((o) => !o)}
-            className={cn("relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all", open ? "bg-cta text-cta-foreground border-transparent shadow-sm rotate-45" : isDone ? "border-border bg-muted text-muted-foreground" : "border-border bg-secondary text-foreground")}
+            className={cn("relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all", open ? "bg-primary text-primary-foreground border-transparent shadow-soft rotate-45" : isDone ? "border-border bg-muted text-muted-foreground" : "border-border bg-secondary text-foreground")}
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -558,11 +557,11 @@ function AppointmentCard({
                 </div>
                 <div className="mt-3 flex gap-2">
                   {phone && (
-                    <a href={waUrl} target="_blank" rel="noreferrer" className="flex h-10 flex-1 items-center justify-center gap-2 rounded-md bg-emerald-500 text-sm font-bold text-white shadow-soft transition hover:bg-emerald-600">
+                    <a href={waUrl} target="_blank" rel="noreferrer" className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 text-sm font-bold text-white shadow-soft transition hover:bg-emerald-600">
                       <MessageCircle className="h-4 w-4" /> WhatsApp
                     </a>
                   )}
-                  <button onClick={onOpenDetail} className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition hover:bg-secondary">
+                  <button onClick={onOpenDetail} className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition hover:bg-secondary">
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
                 </div>
@@ -726,15 +725,15 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                     <>
                       <div className="relative">
                         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Buscar por nome ou telefone..." className="h-12 rounded-md pl-11" />
+                        <Input value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Buscar por nome ou telefone..." className="h-12 rounded-2xl pl-11" />
                       </div>
                       {filteredClients.slice(0, 8).map((c) => {
                         const active = draft.client?.id === c.id && !draft.isNewClient;
                         return (
                           <button key={c.id} onClick={() => setDraft({ ...draft, client: c, isNewClient: false })}
-                            className={cn("flex w-full items-center gap-3 rounded-md border p-3 text-left transition-all", active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card")}
+                            className={cn("flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all", active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card")}
                           >
-                            <div className="flex h-11 w-11 items-center justify-center rounded-md text-sm font-bold text-primary-foreground shadow-soft" style={{ backgroundColor: c.color }}>
+                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold text-primary-foreground shadow-soft" style={{ backgroundColor: c.color }}>
                               {c.initials}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -749,9 +748,9 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                         <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma cliente encontrada.</p>
                       )}
                       <button onClick={() => { setShowNewForm(true); setDraft({ ...draft, client: null, isNewClient: true, newClientName: clientSearch }); }}
-                        className="flex w-full items-center gap-3 rounded-md border border-dashed border-primary/50 bg-primary/5 p-3 text-left text-primary transition hover:bg-primary/10"
+                        className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/50 bg-primary/5 p-3 text-left text-primary transition hover:bg-primary/10"
                       >
-                        <div className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
                           <User className="h-5 w-5" />
                         </div>
                         <div>
@@ -771,7 +770,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                       <div className="space-y-3">
                         <div>
                           <Label className="text-xs text-muted-foreground">Nome *</Label>
-                          <Input value={draft.newClientName ?? ""} onChange={(e) => setDraft({ ...draft, newClientName: e.target.value })} placeholder="Nome da cliente" className="mt-1 h-12 rounded-md" />
+                          <Input value={draft.newClientName ?? ""} onChange={(e) => setDraft({ ...draft, newClientName: e.target.value })} placeholder="Nome da cliente" className="mt-1 h-12 rounded-2xl" />
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">WhatsApp *</Label>
@@ -779,7 +778,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">E-mail (opcional)</Label>
-                          <Input value={draft.newClientEmail ?? ""} onChange={(e) => setDraft({ ...draft, newClientEmail: e.target.value })} placeholder="email@exemplo.com" className="mt-1 h-12 rounded-md" />
+                          <Input value={draft.newClientEmail ?? ""} onChange={(e) => setDraft({ ...draft, newClientEmail: e.target.value })} placeholder="email@exemplo.com" className="mt-1 h-12 rounded-2xl" />
                         </div>
                       </div>
                     </>
@@ -794,7 +793,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                     const active = draft.service?.id === s.id;
                     return (
                       <button key={s.id} onClick={() => setDraft({ ...draft, service: s, time: null })}
-                        className={cn("flex w-full items-center justify-between rounded-md border p-4 text-left transition-all", active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card")}
+                        className={cn("flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all", active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card")}
                       >
                         <div className="min-w-0 flex-1">
                           <p className="font-display text-base font-bold truncate">{s.name}</p>
@@ -818,7 +817,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
               {/* Step 2 — Data e Hora */}
               {step === 2 && (
                 <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                  <div className="rounded-md border border-border bg-card p-3 shadow-card">
+                  <div className="rounded-2xl border border-border bg-card p-3 shadow-card">
                     <MiniCalendar
                       selected={draft.date ?? null}
                       onSelect={(d) => setDraft({ ...draft, date: d, time: null })}
@@ -833,14 +832,14 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                         Horários disponíveis — {formatDuration(draft.service?.duration_minutes ?? 0)}
                       </p>
                       {slots.length === 0 ? (
-                        <p className="rounded-md border border-dashed border-border bg-card p-4 text-center text-sm text-muted-foreground">
+                        <p className="rounded-2xl border border-dashed border-border bg-card p-4 text-center text-sm text-muted-foreground">
                           Nenhum horário disponível neste dia.
                         </p>
                       ) : (
                         <div className="grid grid-cols-4 gap-2">
                           {slots.map((t) => (
                             <button key={t} onClick={() => setDraft({ ...draft, time: t })}
-                              className={cn("rounded-md border py-3 font-display text-sm font-semibold transition-all", draft.time === t ? "bg-cta text-cta-foreground border-transparent shadow-sm" : "border-border bg-card text-foreground")}
+                              className={cn("rounded-xl border py-3 font-display text-sm font-semibold transition-all", draft.time === t ? "bg-primary text-primary-foreground border-transparent shadow-soft" : "border-border bg-card text-foreground")}
                             >
                               {t}
                             </button>
@@ -855,7 +854,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
               {/* Step 3 — Confirmação */}
               {step === 3 && (
                 <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                  <div className="rounded-md bg-secondary/60 p-4 space-y-3">
+                  <div className="rounded-2xl bg-secondary/60 p-4 space-y-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resumo</p>
                     <div className="grid grid-cols-2 gap-3">
                       <SummaryItem label="Cliente"  value={clientForDisplay ?? "—"} />
@@ -873,7 +872,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                       onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
                       placeholder="Preferências, informações extras..."
                       rows={3}
-                      className="mt-1 resize-none rounded-md"
+                      className="mt-1 resize-none rounded-2xl"
                     />
                   </div>
                 </motion.div>
@@ -885,14 +884,14 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
           <div className="border-t border-border bg-background/95 p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] backdrop-blur-xl">
             <div className="flex gap-2">
               {step > 0 && (
-                <Button variant="outline" onClick={() => setStep((s) => s - 1)} className="h-14 flex-1 rounded-md">
+                <Button variant="outline" onClick={() => setStep((s) => s - 1)} className="h-14 flex-1 rounded-2xl">
                   Voltar
                 </Button>
               )}
               <Button
                 onClick={step === STEPS - 1 ? handleConfirm : () => setStep((s) => s + 1)}
                 disabled={!canNext || isSaving}
-                className="h-14 flex-[2] rounded-md bg-primary text-primary-foreground text-base font-semibold shadow-soft disabled:opacity-50"
+                className="h-14 flex-[2] rounded-2xl bg-primary text-primary-foreground text-base font-semibold shadow-soft disabled:opacity-50"
               >
                 {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : step === STEPS - 1 ? "Confirmar agendamento" : "Continuar"}
               </Button>
@@ -957,11 +956,11 @@ function MiniCalendar({
   return (
     <div className="w-full">
       <div className="mb-3 flex items-center justify-between">
-        <button type="button" onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary transition hover:bg-primary hover:text-white">
+        <button type="button" onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary transition hover:bg-primary hover:text-white">
           <ChevronLeft className="h-4 w-4" />
         </button>
         <p className="font-display text-sm font-bold">{MONTH_NAMES[viewMonth]} {viewYear}</p>
-        <button type="button" onClick={nextMonth} className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary transition hover:bg-primary hover:text-white">
+        <button type="button" onClick={nextMonth} className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary transition hover:bg-primary hover:text-white">
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -984,8 +983,8 @@ function MiniCalendar({
               onClick={() => !disabled && onSelect(d)}
               disabled={disabled}
               className={cn(
-                "flex aspect-square w-full flex-col items-center justify-center rounded-md text-xs font-semibold transition-all",
-                isSelected && "bg-cta text-cta-foreground shadow-sm",
+                "flex aspect-square w-full flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all",
+                isSelected && "bg-primary text-primary-foreground shadow-soft",
                 !isSelected && isToday && "ring-2 ring-primary ring-offset-1",
                 !isSelected && block && "cursor-not-allowed bg-amber-50 text-amber-600",
                 !isSelected && !block && !disabled && "hover:bg-secondary",
@@ -1063,7 +1062,7 @@ function AppointmentDetailSheet({
               </SheetHeader>
 
               <div className="mt-5 flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-md text-lg font-bold text-primary-foreground shadow-soft" style={{ backgroundColor: client.color }}>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-primary-foreground shadow-soft" style={{ backgroundColor: client.color }}>
                   {client.initials}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -1083,7 +1082,7 @@ function AppointmentDetailSheet({
                 <Detail label="Valor"     value={formatPrice(appointment.priceCents)} highlight />
               </div>
               {appointment.notes && (
-                <div className="mt-3 rounded-md bg-secondary/50 px-3 py-2">
+                <div className="mt-3 rounded-xl bg-secondary/50 px-3 py-2">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Observações</p>
                   <p className="mt-0.5 text-sm text-foreground">{appointment.notes}</p>
                 </div>
@@ -1091,14 +1090,14 @@ function AppointmentDetailSheet({
 
               <div className="mt-6 flex gap-2">
                 {phone && (
-                  <a href={waUrl} target="_blank" rel="noreferrer" className="flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-emerald-500 text-sm font-bold text-white shadow-soft">
+                  <a href={waUrl} target="_blank" rel="noreferrer" className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-sm font-bold text-white shadow-soft">
                     <MessageCircle className="h-4 w-4" /> WhatsApp
                   </a>
                 )}
 
                 {appointment.status === "pendente" && (
                   <button onClick={() => changeStatus("confirmado")} disabled={updateStatus.isPending}
-                    className="flex h-12 w-12 items-center justify-center rounded-md bg-cta text-cta-foreground shadow-sm disabled:opacity-50"
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft disabled:opacity-50"
                     title="Confirmar"
                   >
                     {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -1107,7 +1106,7 @@ function AppointmentDetailSheet({
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex h-12 w-12 items-center justify-center rounded-md border border-border bg-card text-muted-foreground" title="Mais ações">
+                    <button className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-card text-muted-foreground" title="Mais ações">
                       <MoreHorizontal className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
@@ -1145,7 +1144,7 @@ function AppointmentDetailSheet({
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Ex: cliente desmarcou, emergência..."
               rows={2}
-              className="resize-none rounded-md"
+              className="resize-none rounded-xl"
             />
           </div>
           <AlertDialogFooter>

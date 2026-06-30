@@ -76,9 +76,9 @@ export function PwaInstallBanner() {
       aria-label="Instalar aplicativo"
       className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] left-3 right-3 z-50 mx-auto max-w-md animate-sa-fade-in-up"
     >
-      <div className="sa-panel flex gap-3 p-4 shadow-soft">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-muted">
-          <Smartphone className="h-5 w-5 text-foreground" />
+      <div className="studio-surface flex gap-3 rounded-2xl p-4 shadow-soft">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+          <Smartphone className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-tight">
@@ -100,9 +100,8 @@ export function PwaInstallBanner() {
             {!iosHint && deferred && (
               <Button
                 type="button"
-                variant="cta"
                 size="sm"
-                className="h-9 px-3"
+                className="h-9 px-3 gradient-primary text-white shadow-glow"
                 onClick={install}
               >
                 <Download className="h-3.5 w-3.5" />

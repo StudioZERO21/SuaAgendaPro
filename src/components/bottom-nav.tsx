@@ -15,7 +15,7 @@ export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/90">
+    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex max-w-md items-end justify-around px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)]">
         {items.map((it) => {
           const Icon = it.icon;
@@ -27,7 +27,7 @@ export function BottomNav() {
               key={it.key}
               to={it.to}
               className={cn(
-                "relative flex flex-1 flex-col items-center gap-0.5 px-1 py-1.5 text-[10px] font-medium transition-colors",
+                "relative flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors",
                 active ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -40,14 +40,14 @@ export function BottomNav() {
                 {active && !isCenter && (
                   <motion.span
                     layoutId="bottom-nav-pill"
-                    className="absolute inset-0 bg-muted"
+                    className="absolute inset-0 rounded-xl bg-primary/12"
                     transition={{ type: "spring", stiffness: 420, damping: 32 }}
                   />
                 )}
                 {active && isCenter && (
                   <motion.span
                     layoutId="bottom-nav-fab"
-                    className="absolute inset-0 bg-cta shadow-sm"
+                    className="absolute inset-0 rounded-2xl bg-primary shadow-soft"
                     transition={{ type: "spring", stiffness: 420, damping: 32 }}
                   />
                 )}
@@ -55,8 +55,8 @@ export function BottomNav() {
                   className={cn(
                     "relative z-10 transition-colors",
                     isCenter ? "h-5 w-5" : "h-[18px] w-[18px]",
-                    active && isCenter && "text-cta-foreground",
-                    active && !isCenter && "text-foreground",
+                    active && isCenter && "text-primary-foreground",
+                    active && !isCenter && "text-primary",
                   )}
                 />
               </div>

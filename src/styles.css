@@ -47,10 +47,10 @@
 }
 
 :root {
-  /* Quadrado — alinhado ao Super Admin e Dashboard operacional */
-  --radius: 0.375rem;
+  /* App operacional — cantos arredondados (craft studio) */
+  --radius: 1rem;
 
-  --background: #fafbfc;
+  --background: #ffffff;
   --foreground: #1f1230;
 
   --card: #ffffff;
@@ -63,18 +63,18 @@
   --primary-foreground: #ffffff;
   --primary-glow: #9ca3af;
 
-  --secondary: #f3f4f6;
+  --secondary: #f9fafb;
   --secondary-foreground: #374151;
 
-  --muted: #eceef1;
-  --muted-foreground: #64748b;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
 
   --accent: #4b5563;
   --accent-foreground: #ffffff;
 
-  /* CTA escuro — mesmo tom do botão "Ver usuários" no Super Admin */
-  --cta: #1f1230;
-  --cta-foreground: #ffffff;
+  /* Reservado ao Super Admin (.super-scope) — evita CTAs escuros no app */
+  --cta: var(--primary);
+  --cta-foreground: var(--primary-foreground);
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
@@ -85,11 +85,11 @@
   --warning-foreground: #ffffff;
   --info: #3b82f6;
 
-  --border: #e2e5ea;
-  --input: #e2e5ea;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
   --ring: #6b7280;
 
-  --rose-cloud: #f3f4f6;
+  --rose-cloud: #f9fafb;
 
   /* Signature gradients (neutros por padrão) */
   --gradient-primary: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
@@ -202,13 +202,6 @@
   animation: sa-scale-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Painéis quadrados — vocabulário Super Admin / Dashboard */
-@utility sa-panel {
-  border: 1px solid var(--border);
-  background-color: var(--card);
-  box-shadow: var(--shadow-card);
-}
-
 @utility studio-surface {
   border: 1px solid var(--border);
   background-color: var(--card);
@@ -216,31 +209,6 @@
 }
 
 @layer components {
-  .sa-section-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
-  }
-
-  .sa-cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    background-color: var(--cta);
-    color: var(--cta-foreground);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    transition: background-color 0.15s ease;
-  }
-  .sa-cta:hover {
-    background-color: color-mix(in srgb, var(--cta) 85%, transparent);
-  }
-
   .studio-accent-top {
     position: relative;
     overflow: hidden;
@@ -377,9 +345,57 @@
    Applied to the <html> element while on any /super route.
    ========================================================= */
 .super-scope {
+  /* Quadrado + cinzas — só Super Admin */
+  --radius: 0.375rem;
+  --background: #fafbfc;
+  --secondary: #f3f4f6;
+  --muted: #eceef1;
+  --muted-foreground: #64748b;
+  --border: #e2e5ea;
+  --input: #e2e5ea;
+  --rose-cloud: #f3f4f6;
+  --cta: #1f1230;
+  --cta-foreground: #ffffff;
+
   --font-display: "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif !important;
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif !important;
 }
+
+.super-scope .sa-panel {
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.super-scope .sa-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.super-scope .sa-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  background-color: var(--cta);
+  color: var(--cta-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease;
+}
+.super-scope .sa-cta:hover {
+  background-color: color-mix(in srgb, var(--cta) 85%, transparent);
+}
+.dark.super-scope {
+  --cta: #fafafa;
+  --cta-foreground: #18181b;
+}
+
 .super-scope,
 .super-scope body {
   font-family: var(--font-sans) !important;

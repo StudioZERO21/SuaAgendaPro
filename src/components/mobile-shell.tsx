@@ -11,10 +11,10 @@ export function MobileShell({
   withNav?: boolean;
 }) {
   return (
-    <div className="min-h-screen w-full bg-muted/50">
+    <div className="min-h-screen w-full bg-background">
       <div
         className={cn(
-          "mx-auto flex min-h-screen w-full max-w-md flex-col border-x border-border bg-background",
+          "mx-auto flex min-h-screen w-full max-w-md flex-col bg-background",
           withNav && "pb-24",
           className,
         )}

@@ -570,7 +570,7 @@ function PagamentosPage() {
 
       <main className="mt-5 flex-1 space-y-6 px-5 pb-8">
         {authBlocked && (
-          <section className="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
             <p className="text-sm font-bold">Acesso seguro necessário</p>
             <p className="mt-1 text-xs leading-relaxed">
               Para proteger as credenciais do Mercado Pago e salvar o histórico, entre na conta do app.
@@ -632,7 +632,7 @@ function PagamentosPage() {
           </TabsList>
 
           <TabsContent value="cobrar" className="mt-5 space-y-4">
-            <section className="rounded-md border border-border bg-card p-4 shadow-card">
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-soft text-primary">
                   <Wallet className="h-5 w-5" />
@@ -809,7 +809,7 @@ function PagamentosPage() {
                   </div>
                 )}
 
-                <Button disabled={!pixReady || saving || loading || totalCents <= 0 || !chargeClientName.trim()} onClick={generateCharge} className="h-12 w-full rounded-md gradient-primary text-sm font-bold text-white shadow-glow disabled:opacity-50">
+                <Button disabled={!pixReady || saving || loading || totalCents <= 0 || !chargeClientName.trim()} onClick={generateCharge} className="h-12 w-full rounded-2xl gradient-primary text-sm font-bold text-white shadow-glow disabled:opacity-50">
                   <QrCode className="mr-2 h-4 w-4" /> Gerar QR Code de pagamento
                 </Button>
               </div>
@@ -825,7 +825,7 @@ function PagamentosPage() {
           const mpReady = mp.connected;
           if (!active) {
             return (
-              <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
                 <div>
                   <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Nenhum método ativo</p>
@@ -839,7 +839,7 @@ function PagamentosPage() {
             );
           }
           return (
-            <div className="flex items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
                 <Check className="h-5 w-5" />
               </div>
@@ -871,7 +871,7 @@ function PagamentosPage() {
         />
 
         {/* ── Mercado Pago ── */}
-        <section className="overflow-hidden rounded-md border border-border bg-card shadow-card">
+        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           <div className="flex items-center gap-3 p-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: "linear-gradient(135deg,#00b1ea,#009ee3)" }}>
               <CreditCard className="h-5 w-5" />
@@ -944,7 +944,7 @@ function PagamentosPage() {
         <AttemptsLog attempts={attempts} />
 
         {/* ── PIX pessoal ── */}
-        <section className="overflow-hidden rounded-md border border-border bg-card shadow-card">
+        <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           <div className="flex items-center gap-3 p-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-soft text-primary">
               <QrCode className="h-5 w-5" />
@@ -1025,12 +1025,12 @@ function PagamentosPage() {
 
             <div className="flex gap-2">
               <Button onClick={handlePixSaveClick} disabled={saving || loading} variant="outline"
-                className="h-11 flex-1 rounded-md text-sm font-semibold">
+                className="h-11 flex-1 rounded-2xl text-sm font-semibold">
                 {saving ? "Salvando..." : "Salvar dados"}
               </Button>
               {cfg.activePaymentMethod !== "pix" && pix.key && pix.beneficiaryName && pix.city && (
                 <Button onClick={() => activateMethod("pix")} disabled={saving}
-                  className="h-11 flex-1 rounded-md gradient-primary text-sm font-bold text-white shadow-glow">
+                  className="h-11 flex-1 rounded-2xl gradient-primary text-sm font-bold text-white shadow-glow">
                   <Check className="mr-1.5 h-4 w-4" /> Ativar PIX
                 </Button>
               )}
@@ -1047,7 +1047,7 @@ function PagamentosPage() {
               </Button>
             </div>
             {transactions.length === 0 ? (
-              <section className="rounded-md border border-dashed border-border bg-card/70 p-6 text-center">
+              <section className="rounded-2xl border border-dashed border-border bg-card/70 p-6 text-center">
                 <History className="mx-auto h-7 w-7 text-muted-foreground" />
                 <p className="mt-2 text-sm font-semibold">Nenhuma transação ainda</p>
                 <p className="mt-1 text-xs text-muted-foreground">As cobranças Pix e pagamentos do Mercado Pago aparecem aqui.</p>
@@ -1059,7 +1059,7 @@ function PagamentosPage() {
                 ))}
               </div>
             )}
-            <Button asChild variant="outline" className="h-11 w-full rounded-md text-sm">
+            <Button asChild variant="outline" className="h-11 w-full rounded-2xl text-sm">
               <Link to="/transacoes">Ver histórico completo</Link>
             </Button>
           </TabsContent>
@@ -1144,7 +1144,7 @@ function PagamentosPage() {
               {activeTransaction ? centsToCurrency(activeTransaction.amount_cents) : centsToCurrency(parseCurrencyToCents(amount))}
             </p>
 
-            <div className="mx-auto mt-4 flex aspect-square w-full max-w-[280px] items-center justify-center rounded-md border border-border bg-card p-3">
+            <div className="mx-auto mt-4 flex aspect-square w-full max-w-[280px] items-center justify-center rounded-2xl border border-border bg-card p-3">
               {qrDataUrl ? (
                 <LazyImage src={qrDataUrl} alt="QR Code Pix" width={256} height={256} className="h-full w-full" />
               ) : (
@@ -1182,7 +1182,7 @@ function PagamentosPage() {
 function TransactionRow({ tx, onMarkPaid }: { tx: PaymentTransaction; onMarkPaid: (tx: PaymentTransaction) => void }) {
   const isPaid = tx.status === "paid";
   return (
-    <section className="rounded-md border border-border bg-card p-4 shadow-card">
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-sm font-bold">{tx.client_name}</p>
@@ -1250,7 +1250,7 @@ function AccountStatusCard({
     : "Conecte o Mercado Pago para receber pagamentos online";
 
   return (
-    <section className="rounded-md border border-border bg-card p-4 shadow-card">
+    <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
       <div className="flex items-start gap-3">
         <div className="relative mt-1 flex h-3 w-3 shrink-0">
           {connected && (
@@ -1344,7 +1344,7 @@ function StatusChip({
 function AttemptsLog({ attempts }: { attempts: OAuthAttempt[] }) {
   if (attempts.length === 0) return null;
   return (
-    <section className="overflow-hidden rounded-md border border-border bg-card shadow-card">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
       <div className="flex items-center gap-3 p-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
           <History className="h-4 w-4" />

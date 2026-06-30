@@ -28,7 +28,7 @@ const PLAN_FEATURES = [
 function BlockReasonBanner({ reason, daysLeft }: { reason: string; daysLeft: number | null }) {
   if (reason === "trial_expired") {
     return (
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-5 py-4 text-center dark:border-amber-800 dark:bg-amber-950/40">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-center dark:border-amber-800 dark:bg-amber-950/40">
         <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
           Seu período de Acesso Livre encerrou
         </p>
@@ -40,7 +40,7 @@ function BlockReasonBanner({ reason, daysLeft }: { reason: string; daysLeft: num
   }
   if (reason === "payment_overdue") {
     return (
-      <div className="rounded-md border border-red-200 bg-red-50 px-5 py-4 text-center dark:border-red-800 dark:bg-red-950/40">
+      <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-center dark:border-red-800 dark:bg-red-950/40">
         <p className="text-sm font-semibold text-red-800 dark:text-red-300">
           Seu acesso foi suspenso por inadimplência
         </p>
@@ -52,7 +52,7 @@ function BlockReasonBanner({ reason, daysLeft }: { reason: string; daysLeft: num
   }
   if (reason === "cancelled") {
     return (
-      <div className="rounded-md border border-zinc-200 bg-zinc-50 px-5 py-4 text-center dark:border-zinc-700 dark:bg-zinc-800/40">
+      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 text-center dark:border-zinc-700 dark:bg-zinc-800/40">
         <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">
           Sua assinatura foi cancelada
         </p>
@@ -65,7 +65,7 @@ function BlockReasonBanner({ reason, daysLeft }: { reason: string; daysLeft: num
   // Trial ativo com dias restantes (acesso à página voluntário)
   if (daysLeft !== null && daysLeft > 0) {
     return (
-      <div className="rounded-md border border-emerald-200 bg-emerald-50 px-5 py-4 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
         <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
           Você está no Acesso Livre — {daysLeft} {daysLeft === 1 ? "dia restante" : "dias restantes"}
         </p>
@@ -147,7 +147,7 @@ function PlanoPage() {
         )}
 
         {/* Card Premium */}
-        <div className="relative overflow-hidden rounded-lg border-2 border-primary bg-card p-6 shadow-xl">
+        <div className="relative overflow-hidden rounded-3xl border-2 border-primary bg-card p-6 shadow-xl">
           <div className="absolute right-4 top-4">
             <span className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
               Recomendado
@@ -179,7 +179,7 @@ function PlanoPage() {
           </ul>
 
           <button
-            className="mt-6 w-full rounded-md bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-md transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+            className="mt-6 w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-md transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
             onClick={handleSubscribe}
             disabled={checkoutLoading}
           >
@@ -196,7 +196,7 @@ function PlanoPage() {
         </div>
 
         {/* Card Premium IA — em breve */}
-        <div className="relative overflow-hidden rounded-lg border border-border bg-card/50 p-6 opacity-60">
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-card/50 p-6 opacity-60">
           <div className="absolute inset-0 flex items-center justify-center backdrop-blur-[1px]">
             <span className="flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow">
               <Lock className="h-3.5 w-3.5" />

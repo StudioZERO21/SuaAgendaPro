@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Smartphone, QrCode } from "lucide-react";
-import { BrandMark } from "@/components/brand-logo";
 import { LazyImage } from "@/components/ui/lazy-image";
 
 export const Route = createFileRoute("/(app)/use-no-celular")({
@@ -26,7 +25,9 @@ function UseNoCelularPage() {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/10 flex items-center justify-center p-6">
       <div className="max-w-sm w-full text-center space-y-8">
         {/* Ícone */}
-        <BrandMark size="xl" className="mx-auto" />
+        <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-primary to-primary-glow shadow-glow">
+          <Smartphone className="h-10 w-10 text-white" />
+        </div>
 
         {/* Título */}
         <div className="space-y-2">
@@ -42,11 +43,11 @@ function UseNoCelularPage() {
         {/* QR Code */}
         <div className="flex justify-center">
           {qrUrl ? (
-            <div className="rounded-md border border-border bg-card p-4 shadow-card">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
               <LazyImage src={qrUrl} alt="QR Code para o app" width={208} height={208} className="h-52 w-52" />
             </div>
           ) : (
-            <div className="flex h-52 w-52 items-center justify-center rounded-md border border-border bg-muted/30">
+            <div className="flex h-52 w-52 items-center justify-center rounded-2xl border border-border bg-muted/30">
               <QrCode className="h-10 w-10 text-muted-foreground/50" />
             </div>
           )}
@@ -60,7 +61,10 @@ function UseNoCelularPage() {
 
         {/* Logo */}
         <div className="pt-2 border-t border-border">
-          <BrandMark size="sm" className="mx-auto opacity-80" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-display font-bold text-primary">SuaAgenda</span>
+            <span className="font-bold">.Pro</span>
+          </p>
         </div>
       </div>
     </div>

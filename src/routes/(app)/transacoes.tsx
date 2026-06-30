@@ -136,21 +136,21 @@ function HistoricoTransacoesPage() {
 
       <main className="mt-5 flex-1 space-y-5 px-5 pb-8">
         <div className="grid grid-cols-2 gap-3">
-          <section className="rounded-md border border-border bg-card p-4 shadow-card">
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Recebido</p>
             <p className="mt-1 font-display text-xl font-bold text-emerald-700">{centsToCurrency(totals.paid)}</p>
           </section>
-          <section className="rounded-md border border-border bg-card p-4 shadow-card">
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-card">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pendente</p>
             <p className="mt-1 font-display text-xl font-bold text-amber-700">{centsToCurrency(totals.pending)}</p>
           </section>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={sync} disabled={syncing} className="h-11 rounded-md text-sm">
+          <Button variant="outline" onClick={sync} disabled={syncing} className="h-11 rounded-2xl text-sm">
             <RefreshCw className="mr-2 h-4 w-4" /> {syncing ? "Sincronizando..." : "Sincronizar"}
           </Button>
-          <Button variant="outline" disabled={rows.length === 0} className="h-11 rounded-md text-sm"
+          <Button variant="outline" disabled={rows.length === 0} className="h-11 rounded-2xl text-sm"
             onClick={() => downloadCSV(`transacoes-${new Date().toISOString().slice(0,10)}`, rows.map((tx) => ({
               cliente: tx.client_name, servico: tx.service_name ?? "", metodo: tx.method,
               valor: (tx.amount_cents / 100).toFixed(2), status: statusLabel(tx.status),
@@ -163,7 +163,7 @@ function HistoricoTransacoesPage() {
         {loading ? (
           <p className="py-8 text-center text-sm text-muted-foreground">Carregando transações...</p>
         ) : rows.length === 0 ? (
-          <section className="rounded-md border border-dashed border-border bg-card/70 p-8 text-center">
+          <section className="rounded-2xl border border-dashed border-border bg-card/70 p-8 text-center">
             <CreditCard className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 font-display text-lg font-bold">Sem transações</p>
             <p className="mt-1 text-xs text-muted-foreground">Cobranças Pix e Mercado Pago serão listadas aqui.</p>
@@ -171,7 +171,7 @@ function HistoricoTransacoesPage() {
         ) : (
           <div className="space-y-3">
             {rows.map((tx) => (
-              <section key={tx.id} className="rounded-md border border-border bg-card p-4 shadow-card">
+              <section key={tx.id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-base font-bold">{tx.client_name}</p>

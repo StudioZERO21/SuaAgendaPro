@@ -42,15 +42,8 @@ export const Route = createFileRoute("/(app)/personalizacao")({
   component: PersonalizacaoPage,
 });
 
-import {
-  ACCENTS,
-  FONTS,
-  DEFAULTS,
-  loadPersonalization,
-  savePersonalization,
-  applyPersonalization,
-  type Personalization,
-} from "@/lib/personalization";
+import { ACCENTS, FONTS, DEFAULTS, loadPersonalization, savePersonalization, applyPersonalization, type Personalization } from "@/lib/personalization";
+import { normalizeHexColor } from "@/lib/normalize-hex-color";
 import { THEMES, GOOGLE_FONTS_URL } from "@/lib/themes";
 import { THEME_CATEGORY_ORDER } from "@/lib/theme-meta";
 import { PROFILE_UI_SETTINGS_KEY } from "@/hooks/useProfileUiSettings";
@@ -86,6 +79,7 @@ function PersonalizacaoPage() {
     if (pubSettings) {
       setPub((prev) => ({
         ...pubSettings,
+        themeColor: normalizeHexColor(pubSettings.themeColor),
         businessName: pubSettings.businessName || prev.businessName,
       }));
       setSlug(pubSettings.slug ?? "");
@@ -277,6 +271,9 @@ function PersonalizacaoPage() {
         data: {
           ...pub,
           bannerUrl: publicUrl,
+          themeColor:
+            ACCENTS.find((a) => a.id === data.accent)?.primary ??
+            normalizeHexColor(pub.themeColor),
           uiSettings: { accent: data.accent, font: data.font, theme: data.theme, highContrast: data.highContrast },
         },
       }).catch(() => {/* silent — cache invalidation best-effort */});
@@ -370,9 +367,14 @@ function PersonalizacaoPage() {
       savePersonalization({ ...data, business: { ...data.business, logo: logoToSave } });
       applyPersonalization(data);
       // Save public profile + ui_settings to Supabase
+      const accentHex =
+        ACCENTS.find((a) => a.id === data.accent)?.primary ??
+        normalizeHexColor(pub.themeColor);
+
       await saveSettingsFn({
         data: {
           ...pub,
+          themeColor: accentHex,
           uiSettings: {
             accent:      data.accent,
             font:        data.font,
@@ -419,7 +421,7 @@ function PersonalizacaoPage() {
 
       <main className="flex-1 space-y-6 px-5 pb-32 pt-5">
         {/* Logo + nome */}
-        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
           <div>
             <h2 className="font-display text-base font-bold">Logo do negócio</h2>
             <p className="text-xs text-muted-foreground">
@@ -437,7 +439,7 @@ function PersonalizacaoPage() {
                   <button key={s.id} type="button"
                     onClick={() => setData((d) => ({ ...d, business: { ...d.business, logoShape: s.id, logo: "" } }))}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 rounded-md border p-3 transition",
+                      "flex flex-col items-center gap-1.5 rounded-2xl border p-3 transition",
                       active ? "border-primary bg-primary/10" : "border-border bg-secondary/40",
                     )}
                   >
@@ -461,7 +463,7 @@ function PersonalizacaoPage() {
               className={cn(
                 "flex shrink-0 items-center justify-center overflow-hidden text-xl font-bold text-white shadow-glow",
                 data.business.logoShape === "square"
-                  ? "h-20 w-20 rounded-md"
+                  ? "h-20 w-20 rounded-2xl"
                   : "h-14 w-40 rounded-xl",
               )}
               style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-glow))" }}
@@ -494,7 +496,7 @@ function PersonalizacaoPage() {
         </section>
 
         {/* Tema */}
-        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
           <div>
             <h2 className="font-display text-base font-bold">Tema e cores</h2>
             <p className="text-xs text-muted-foreground">
@@ -517,7 +519,7 @@ function PersonalizacaoPage() {
                   key={t.id}
                   onClick={() => setData((d) => ({ ...d, theme: t.id }))}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-md border p-3 text-xs font-semibold transition",
+                    "flex flex-col items-center gap-1 rounded-2xl border p-3 text-xs font-semibold transition",
                     active
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-secondary/40 text-foreground",
@@ -571,7 +573,7 @@ function PersonalizacaoPage() {
                     key={f.id}
                     onClick={() => setData((d) => ({ ...d, font: f.id }))}
                     className={cn(
-                      "rounded-md border p-3 text-center transition",
+                      "rounded-2xl border p-3 text-center transition",
                       active
                         ? "border-primary bg-primary/10"
                         : "border-border bg-secondary/40",
@@ -595,7 +597,7 @@ function PersonalizacaoPage() {
         </section>
 
         {/* Acessibilidade */}
-        <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
+        <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
           <div>
             <h2 className="font-display text-base font-bold">Acessibilidade</h2>
             <p className="text-xs text-muted-foreground">
@@ -610,7 +612,7 @@ function PersonalizacaoPage() {
             }
             aria-pressed={data.highContrast}
             className={cn(
-              "flex w-full items-center justify-between gap-3 rounded-md border p-4 text-left transition",
+              "flex w-full items-center justify-between gap-3 rounded-2xl border p-4 text-left transition",
               data.highContrast
                 ? "border-primary bg-primary/10"
                 : "border-border bg-secondary/40",
@@ -657,7 +659,7 @@ function PersonalizacaoPage() {
         </p>
 
         {/* ── Perfil Público (Supabase) ──────────────────────── */}
-        <section className="space-y-5 rounded-lg border border-border bg-card p-5 shadow-card">
+        <section className="space-y-5 rounded-3xl border border-border bg-card p-5 shadow-card">
           <div>
             <h2 className="font-display text-base font-bold">Perfil público</h2>
             <p className="text-xs text-muted-foreground">
@@ -669,7 +671,7 @@ function PersonalizacaoPage() {
           <div className="space-y-2">
             <Label className="text-xs font-semibold">Link público</Label>
             {!editingSlug ? (
-              <div className="flex items-center gap-2 rounded-md bg-secondary/40 px-3 py-2.5">
+              <div className="flex items-center gap-2 rounded-2xl bg-secondary/40 px-3 py-2.5">
                 <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate text-xs">
                   <span className="text-muted-foreground">suaagenda.pro/agendar/</span>
@@ -689,7 +691,7 @@ function PersonalizacaoPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="flex items-center overflow-hidden rounded-md border border-border bg-card shadow-card focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-0">
+                <div className="flex items-center overflow-hidden rounded-2xl border border-border bg-card shadow-card focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-0">
                   <span className="shrink-0 border-r border-border/60 bg-secondary/40 px-2.5 py-2.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
                     /agendar/
                   </span>
@@ -754,7 +756,7 @@ function PersonalizacaoPage() {
               Imagem de fundo do topo do seu link de agendamento. Se não enviar, usamos um banner padrão.
             </p>
             {pub.bannerUrl ? (
-              <div className="relative overflow-hidden rounded-md border border-border">
+              <div className="relative overflow-hidden rounded-2xl border border-border">
                 <LazyImage src={pub.bannerUrl} alt="Banner" width={400} height={96} className="h-24 w-full object-cover" />
                 <button type="button"
                   onClick={() => setPub((s) => ({ ...s, bannerUrl: "" }))}
@@ -765,7 +767,7 @@ function PersonalizacaoPage() {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 rounded-md border border-dashed border-border bg-secondary/40 p-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-secondary/40 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-card shadow-card">
                   <ImageIcon className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -905,7 +907,7 @@ function PersonalizacaoPage() {
           onClick={saveAll}
           disabled={saving || loadingPub}
           size="lg"
-          className="h-14 w-full rounded-md gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60"
+          className="h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60"
         >
           {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
           Salvar tudo
@@ -920,7 +922,7 @@ function PersonalizacaoPage() {
           </DialogHeader>
 
           <div className={cn(
-            "relative w-full overflow-hidden rounded-md bg-secondary/60",
+            "relative w-full overflow-hidden rounded-2xl bg-secondary/60",
             data.business.logoShape === "wide" ? "h-40" : "h-64",
           )}>
             {cropSrc && (
@@ -964,7 +966,7 @@ function PersonalizacaoPage() {
           <DialogHeader>
             <DialogTitle>Ajustar banner</DialogTitle>
           </DialogHeader>
-          <div className="relative h-48 w-full overflow-hidden rounded-md bg-secondary/60">
+          <div className="relative h-48 w-full overflow-hidden rounded-2xl bg-secondary/60">
             {bannerCropSrc && (
               <Cropper
                 image={bannerCropSrc}

@@ -2,6 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AccentId, FontId, ThemeId } from "@/lib/personalization";
+import {
+  normalizeHexColor,
+  normalizeHexColorOrEmpty,
+} from "@/lib/normalize-hex-color";
 
 export type UiSettings = {
   accent:       AccentId;
@@ -51,11 +55,20 @@ const uiSchema = z.object({
   highContrast: z.boolean().default(false),
 });
 
+const hexColorSchema = z
+  .string()
+  .transform((v) => normalizeHexColor(v))
+  .pipe(z.string().regex(/^#[0-9a-fA-F]{6}$/));
+
+const optionalHexSchema = z
+  .string()
+  .transform((v) => normalizeHexColorOrEmpty(v));
+
 const schema = z.object({
   bannerUrl:          z.string().default(""),
   businessName:       z.string().max(120).default(""),
-  themeColor:         z.string().regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida"),
-  gradientColor2:     z.string().default(""),
+  themeColor:         hexColorSchema,
+  gradientColor2:     optionalHexSchema,
   showPrices:         z.boolean(),
   showPortfolio:      z.boolean(),
   acceptOnline:       z.boolean(),
@@ -85,8 +98,8 @@ export const getPublicProfileSettings = createServerFn({ method: "GET" })
       bannerUrl:          data.banner_url          ?? "",
       logoUrl:            (data as any).cover_url  ?? "",
       businessName:       data.business_name       ?? "",
-      themeColor:         data.theme_color         ?? DEFAULT_SETTINGS.themeColor,
-      gradientColor2:     data.gradient_color_2    ?? "",
+      themeColor:         normalizeHexColor(data.theme_color),
+      gradientColor2:     normalizeHexColorOrEmpty(data.gradient_color_2),
       showPrices:         data.show_prices         ?? DEFAULT_SETTINGS.showPrices,
       showPortfolio:      data.show_portfolio      ?? DEFAULT_SETTINGS.showPortfolio,
       acceptOnline:       data.accept_online       ?? DEFAULT_SETTINGS.acceptOnline,

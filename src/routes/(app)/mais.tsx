@@ -168,9 +168,9 @@ function MaisPage() {
 
       {/* Profile card */}
       <section className="mt-5 px-5">
-        <div className="sa-panel relative overflow-hidden rounded-md p-6">
+        <div className="studio-surface studio-accent-top relative overflow-hidden rounded-2xl p-6">
           <div className="relative flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-secondary font-display text-2xl font-semibold text-primary ring-1 ring-border">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-secondary font-display text-2xl font-semibold text-primary ring-1 ring-border">
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin opacity-60" />
               ) : avatarUrl ? (
@@ -200,9 +200,9 @@ function MaisPage() {
 
       {/* Referral banner */}
       <section className="mt-5 px-5">
-        <div className="sa-panel overflow-hidden rounded-md">
+        <div className="studio-surface overflow-hidden rounded-2xl">
           <div className="flex items-center gap-3 p-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
@@ -213,7 +213,7 @@ function MaisPage() {
               <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: "2s" }} />
               <Info className="relative h-4 w-4" />
             </button>
-            <button onClick={handleShare} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta text-cta-foreground shadow-sm" aria-label="Compartilhar">
+            <button onClick={handleShare} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft" aria-label="Compartilhar">
               {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
             </button>
           </div>
@@ -248,7 +248,7 @@ function MaisPage() {
 
       {/* Dialog — regras de indicação */}
       <Dialog open={regraOpen} onOpenChange={setRegraOpen}>
-        <DialogContent className="max-w-sm rounded-lg">
+        <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" /> Regras do programa
@@ -263,12 +263,12 @@ function MaisPage() {
               { n: "5", text: "O link de indicação é exclusivo e intransferível — não pode ser repassado para uso comercial." },
             ].map(({ n, text }) => (
               <div key={n} className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cta text-cta-foreground shadow-sm">{n}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft">{n}</span>
                 <p className="leading-snug">{text}</p>
               </div>
             ))}
           </div>
-          <Button onClick={() => setRegraOpen(false)} className="mt-2 h-10 w-full rounded-md bg-cta text-cta-foreground shadow-sm">
+          <Button onClick={() => setRegraOpen(false)} className="mt-2 h-10 w-full rounded-2xl bg-primary text-primary-foreground shadow-soft">
             Entendido
           </Button>
         </DialogContent>
@@ -276,7 +276,7 @@ function MaisPage() {
 
       {/* Dialog — minhas indicações (histórico) */}
       <Dialog open={referralOpen} onOpenChange={setReferralOpen}>
-        <DialogContent className="max-w-sm rounded-lg">
+        <DialogContent className="max-w-sm rounded-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Share2 className="h-4 w-4 text-primary" /> Minhas indicações
@@ -291,7 +291,7 @@ function MaisPage() {
                   { label: "Cadastros",     value: referralStats.totalRegistered },
                   { label: "Meses ganhos",  value: referralStats.totalRewarded },
                 ].map(({ label, value }) => (
-                  <div key={label} className="rounded-md border border-border bg-secondary/50 p-3 text-center">
+                  <div key={label} className="rounded-xl border border-border bg-secondary/50 p-3 text-center">
                     <p className="text-2xl font-bold text-primary">{value}</p>
                     <p className="text-[10px] font-semibold text-muted-foreground">{label}</p>
                   </div>
@@ -299,7 +299,7 @@ function MaisPage() {
               </div>
 
               {referralStats.pendingReward > 0 && (
-                <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20">
+                <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20">
                   <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300">
                     {referralStats.pendingReward} indicação(ões) ainda aguardando 1º pagamento para você ganhar o mês grátis.
                   </p>
@@ -312,7 +312,7 @@ function MaisPage() {
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Histórico recente</p>
                   <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
                     {referralStats.recentConversions.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2">
+                      <div key={c.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
                         <div className="min-w-0">
                           <p className="truncate text-xs font-semibold">{c.refereeEmail ?? "Visitante"}</p>
                           <p className="text-[10px] text-muted-foreground">
@@ -332,7 +332,7 @@ function MaisPage() {
           ) : (
             <p className="py-4 text-center text-sm text-muted-foreground">Carregando…</p>
           )}
-          <Button onClick={() => setReferralOpen(false)} className="h-10 w-full rounded-md bg-cta text-cta-foreground shadow-sm">
+          <Button onClick={() => setReferralOpen(false)} className="h-10 w-full rounded-2xl bg-primary text-primary-foreground shadow-soft">
             Fechar
           </Button>
         </DialogContent>
@@ -343,7 +343,7 @@ function MaisPage() {
         {groups.map((g) => (
           <section key={g.title}>
             <h2 className="mb-2 px-1"><AppSectionLabel>{g.title}</AppSectionLabel></h2>
-            <div className="overflow-hidden rounded-md border border-border bg-card shadow-card">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
               {g.items.map((it, i) => {
                 const Icon = it.icon;
                 const hasLink = "to" in it;
@@ -353,7 +353,7 @@ function MaisPage() {
                 if (it.id === "support") {
                   return (
                     <button key={it.id} onClick={() => setSupportOpen(true)} className={cls}>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -370,7 +370,7 @@ function MaisPage() {
                   return (
                     <div key={it.id} className={`${cls} justify-between`}>
                       <button onClick={handleShare} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                           <Icon className="h-4 w-4" />
                         </span>
                         <p className="text-sm font-semibold">{it.label}</p>
@@ -403,7 +403,7 @@ function MaisPage() {
                 if (it.id === "review") {
                   return (
                     <button key={it.id} onClick={() => setRatingOpen(true)} className={cls}>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -429,7 +429,7 @@ function MaisPage() {
                       rel="noopener noreferrer"
                       className={cls}
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -445,7 +445,7 @@ function MaisPage() {
 
                 const inner = (
                   <>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                       <Icon className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -471,7 +471,7 @@ function MaisPage() {
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="h-12 w-full rounded-md border border-border bg-card text-sm font-semibold text-destructive shadow-card hover:bg-secondary"
+          className="h-12 w-full rounded-2xl border border-border bg-card text-sm font-semibold text-destructive shadow-card hover:bg-secondary"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Sair da conta
@@ -596,7 +596,7 @@ function SupportTicketModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-md rounded-lg">
+      <DialogContent className="max-w-md rounded-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             <HeadphonesIcon className="h-5 w-5 text-primary" />
@@ -606,7 +606,7 @@ function SupportTicketModal({
 
         {done ? (
           <div className="space-y-4 py-2 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-cta text-cta-foreground shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft">
               <CheckCircle2 className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-1">
@@ -615,11 +615,11 @@ function SupportTicketModal({
                 Em até <strong>1 dia útil</strong> nossa equipe entrará em contato com você para resolver o problema.
               </p>
             </div>
-            <div className="flex items-center gap-2 rounded-md border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm text-muted-foreground">
               <Clock className="h-4 w-4 shrink-0 text-primary" />
               <p>Acompanhe sua caixa de entrada de e-mail para atualizações.</p>
             </div>
-            <Button onClick={handleClose} className="h-11 w-full rounded-md bg-cta text-cta-foreground shadow-sm">
+            <Button onClick={handleClose} className="h-11 w-full rounded-2xl bg-primary text-primary-foreground shadow-soft">
               Entendido
             </Button>
           </div>
@@ -628,7 +628,7 @@ function SupportTicketModal({
             {/* Subject */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Assunto <span className="text-destructive">*</span></label>
-              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex: Agendamento não aparece no calendário" className="h-11 rounded-md" maxLength={120} />
+              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ex: Agendamento não aparece no calendário" className="h-11 rounded-xl" maxLength={120} />
             </div>
 
             {/* Category */}
@@ -640,7 +640,7 @@ function SupportTicketModal({
                     key={c.value}
                     onClick={() => setCategory(c.value)}
                     className={cn("rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                      category === c.value ? "bg-cta text-cta-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-secondary/70",
+                      category === c.value ? "bg-primary text-primary-foreground shadow-soft" : "bg-secondary text-muted-foreground hover:bg-secondary/70",
                     )}
                   >
                     {c.label}
@@ -662,7 +662,7 @@ function SupportTicketModal({
                 onChange={(e) => setDesc(e.target.value)}
                 placeholder="Descreva o que aconteceu, o que você estava fazendo e o que esperava que acontecesse…"
                 rows={4}
-                className="rounded-md"
+                className="rounded-xl"
               />
             </div>
 
@@ -674,7 +674,7 @@ function SupportTicketModal({
                 value={occurredAt}
                 onChange={(e) => setOccurredAt(e.target.value)}
                 max={new Date().toISOString().slice(0, 16)}
-                className="h-11 rounded-md"
+                className="h-11 rounded-xl"
               />
             </div>
 
@@ -687,7 +687,7 @@ function SupportTicketModal({
               {previews.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {previews.map((p, i) => (
-                    <div key={i} className="relative h-20 w-20 overflow-hidden rounded-md border border-border">
+                    <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-border">
                       <LazyImage src={p} alt="" width={80} height={80} className="h-full w-full object-cover" />
                       <button
                         onClick={() => removeFile(i)}
@@ -700,7 +700,7 @@ function SupportTicketModal({
                 </div>
               )}
               {files.length < 5 && (
-                <label className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-border bg-secondary/30 px-4 py-3 transition hover:bg-secondary/60">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-secondary/30 px-4 py-3 transition hover:bg-secondary/60">
                   <ImagePlus className="h-5 w-5 text-primary" />
                   <span className="text-sm text-muted-foreground">
                     {files.length === 0 ? "Clique para anexar prints do erro" : "Adicionar mais imagens"}
@@ -711,9 +711,9 @@ function SupportTicketModal({
             </div>
 
             <div className="flex gap-2 pt-1">
-              <Button variant="outline" className="flex-1 rounded-md" onClick={handleClose} disabled={sending}>Cancelar</Button>
+              <Button variant="outline" className="flex-1 rounded-2xl" onClick={handleClose} disabled={sending}>Cancelar</Button>
               <Button
-                className="flex-1 rounded-md bg-cta text-cta-foreground shadow-sm"
+                className="flex-1 rounded-2xl bg-primary text-primary-foreground shadow-soft"
                 onClick={handleSubmit}
                 disabled={sending || !subject.trim() || desc.trim().length < 30 || !occurredAt || (category === "bug" && files.length === 0)}
               >
@@ -780,7 +780,7 @@ function AppRatingModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm rounded-lg">
+      <DialogContent className="max-w-sm rounded-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display text-xl">
             <Star className="h-5 w-5 text-amber-400" fill="currentColor" />
@@ -827,7 +827,7 @@ function AppRatingModal({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="O que você mais gosta? O que poderíamos melhorar?"
-              className="min-h-[88px] rounded-md resize-none"
+              className="min-h-[88px] rounded-2xl resize-none"
               maxLength={1000}
             />
             <p className="text-right text-[10px] text-muted-foreground">{comment.length}/1000</p>
@@ -835,11 +835,11 @@ function AppRatingModal({
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1 rounded-md" onClick={onClose} disabled={saving}>
+          <Button variant="outline" className="flex-1 rounded-2xl" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
           <Button
-            className="flex-1 rounded-md bg-cta text-cta-foreground shadow-sm"
+            className="flex-1 rounded-2xl bg-primary text-primary-foreground shadow-soft"
             onClick={handleSave}
             disabled={saving || stars === 0}
           >

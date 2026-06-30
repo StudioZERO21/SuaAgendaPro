@@ -52,6 +52,7 @@ import {
   mergeAndApplyUiSettings,
   useProfileUiSettings,
 } from "@/hooks/useProfileUiSettings";
+import { BRAND_ICON_VERSION } from "@/lib/brand-asset-version";
 
 const PUBLIC_PATHS = [
   "/",
@@ -332,8 +333,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       links: [
         { rel: "stylesheet", href: appCss },
         { rel: "manifest", href: isApp ? "/app-manifest.json" : "/manifest.json" },
-        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon.png" },
-        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+        { rel: "icon", type: "image/png", sizes: "32x32", href: `/favicon.png?v=${BRAND_ICON_VERSION}` },
+        { rel: "apple-touch-icon", sizes: "180x180", href: `/apple-touch-icon.png?v=${BRAND_ICON_VERSION}` },
       ],
     };
   },

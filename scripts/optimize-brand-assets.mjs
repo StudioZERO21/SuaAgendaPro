@@ -20,6 +20,8 @@ const SOURCES = {
 const BRAND_DIR = path.join(ROOT, "src", "assets", "brand");
 const PUBLIC_DIR = path.join(ROOT, "public");
 
+const TRANSPARENT = { r: 0, g: 0, b: 0, alpha: 0 };
+
 /** Remove fundo preto sólido — melhor integração em telas claras. */
 async function stripNearBlack(input) {
   const { data, info } = await sharp(input)
@@ -55,25 +57,37 @@ async function writePair(pipeline, baseName, pngOpts = {}) {
   console.log(`  ✓ ${baseName} (${stat.width}×${stat.height})`);
 }
 
-async function writePublicIcon(source, size, outName, pad = 0.12) {
-  const meta = await sharp(source).metadata();
-  const side = Math.max(meta.width ?? size, meta.height ?? size);
-  const inner = Math.round(size * (1 - pad * 2));
+/**
+ * Ícone público com fundo transparente (sem borda branca).
+ * @param {object} opts
+ * @param {number} [opts.pad=0] — fração de padding transparente (maskable ~0.1)
+ */
+async function writePublicIcon(source, size, outName, opts = {}) {
+  const pad = opts.pad ?? 0;
+  const inner = pad > 0 ? Math.round(size * (1 - pad * 2)) : size;
 
-  await sharp(source)
-    .resize(inner, inner, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .extend({
-      top: Math.round(size * pad),
-      bottom: Math.round(size * pad),
-      left: Math.round(size * pad),
-      right: Math.round(size * pad),
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-    })
-    .resize(size, size)
-    .png({ compressionLevel: 9, palette: true, quality: 75, effort: 10 })
+  let pipeline = sharp(source).resize(inner, inner, {
+    fit: "contain",
+    background: TRANSPARENT,
+  });
+
+  if (pad > 0) {
+    const margin = Math.round(size * pad);
+    pipeline = pipeline.extend({
+      top: margin,
+      bottom: margin,
+      left: margin,
+      right: margin,
+      background: TRANSPARENT,
+    });
+  }
+
+  await pipeline
+    .resize(size, size, { fit: "contain", background: TRANSPARENT })
+    .png({ compressionLevel: 9, palette: false, quality: 90, effort: 10 })
     .toFile(path.join(PUBLIC_DIR, outName));
 
-  console.log(`  ✓ public/${outName} (${size}px)`);
+  console.log(`  ✓ public/${outName} (${size}px${pad ? `, pad ${Math.round(pad * 100)}%` : ""})`);
 }
 
 async function main() {
@@ -85,10 +99,10 @@ async function main() {
   await writePair(
     iconBase.clone().resize(256, 256, {
       fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      background: TRANSPARENT,
     }),
     "icon",
-    { palette: true, quality: 90, effort: 10 },
+    { palette: false, quality: 90, effort: 10 },
   );
 
   const stackBase = await stripNearBlack(SOURCES.stack);
@@ -105,10 +119,16 @@ async function main() {
 
   console.log("\nÍcones PWA / favicon…\n");
   const iconForPwa = path.join(BRAND_DIR, "icon.png");
-  await writePublicIcon(iconForPwa, 192, "icon-192.png");
-  await writePublicIcon(iconForPwa, 512, "icon-512.png");
-  await writePublicIcon(iconForPwa, 180, "apple-touch-icon.png");
-  await writePublicIcon(iconForPwa, 32, "favicon.png", 0.08);
+
+  // any — logo ocupa o canvas, sem padding branco
+  await writePublicIcon(iconForPwa, 192, "icon-192.png", { pad: 0 });
+  await writePublicIcon(iconForPwa, 512, "icon-512.png", { pad: 0 });
+  await writePublicIcon(iconForPwa, 180, "apple-touch-icon.png", { pad: 0 });
+  await writePublicIcon(iconForPwa, 32, "favicon.png", { pad: 0 });
+
+  // maskable — zona segura transparente (~20% total)
+  await writePublicIcon(iconForPwa, 192, "icon-192-maskable.png", { pad: 0.1 });
+  await writePublicIcon(iconForPwa, 512, "icon-512-maskable.png", { pad: 0.1 });
 
   console.log("\nConcluído.");
 }

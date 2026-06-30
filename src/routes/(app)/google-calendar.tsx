@@ -270,11 +270,11 @@ function GoogleCalendarPage() {
           <div className="relative flex items-start gap-3">
             <div className="relative">
               <motion.div
-                className="absolute inset-0 rounded-md bg-white/20 blur-md"
+                className="absolute inset-0 rounded-2xl bg-white/20 blur-md"
                 animate={{ opacity: [0.4, 0.9, 0.4] }}
                 transition={{ duration: 2.4, repeat: Infinity }}
               />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-md bg-white/15 backdrop-blur-md ring-1 ring-white/30">
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md ring-1 ring-white/30">
                 <CalendarDays className="h-5 w-5" />
               </div>
             </div>
@@ -288,20 +288,20 @@ function GoogleCalendarPage() {
               </p>
             </div>
           </div>
-          <div className="relative mt-5 flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-[11px] backdrop-blur-md ring-1 ring-white/20">
+          <div className="relative mt-5 flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2 text-[11px] backdrop-blur-md ring-1 ring-white/20">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
             <span>OAuth seguro · você desconecta quando quiser</span>
           </div>
         </section>
 
         {/* Connection card */}
-        <section className="relative overflow-hidden rounded-lg border border-border bg-card p-5 shadow-card">
+        <section className="relative overflow-hidden rounded-3xl border border-border bg-card p-5 shadow-card">
           <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/5 blur-2xl" />
           <div className="relative flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "relative flex h-12 w-12 items-center justify-center rounded-md transition",
+                  "relative flex h-12 w-12 items-center justify-center rounded-2xl transition",
                   status.connected
                     ? "bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/30"
                     : "bg-secondary text-muted-foreground",
@@ -309,7 +309,7 @@ function GoogleCalendarPage() {
               >
                 {status.connected && (
                   <motion.div
-                    className="absolute inset-0 rounded-md bg-primary/20"
+                    className="absolute inset-0 rounded-2xl bg-primary/20"
                     animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
                     transition={{ duration: 2.4, repeat: Infinity }}
                   />
@@ -337,7 +337,7 @@ function GoogleCalendarPage() {
               <Button
                 onClick={handleConnect}
                 disabled={busy}
-                className="h-12 w-full rounded-md bg-card text-foreground shadow-card ring-1 ring-border hover:bg-secondary"
+                className="h-12 w-full rounded-2xl bg-card text-foreground shadow-card ring-1 ring-border hover:bg-secondary"
               >
                 {busy ? (
                   <>
@@ -356,7 +356,7 @@ function GoogleCalendarPage() {
                 <Button
                   onClick={handleSyncNow}
                   disabled={busy}
-                  className="h-11 flex-1 rounded-md gradient-primary text-sm font-semibold text-white shadow-glow"
+                  className="h-11 flex-1 rounded-2xl gradient-primary text-sm font-semibold text-white shadow-glow"
                 >
                   {busy ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -368,7 +368,7 @@ function GoogleCalendarPage() {
                 <Button
                   onClick={handleDisconnect}
                   variant="outline"
-                  className="h-11 rounded-md text-sm"
+                  className="h-11 rounded-2xl text-sm"
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
@@ -400,9 +400,9 @@ function GoogleCalendarPage() {
         {status.connected && (
           <>
             {/* Auto sync */}
-            <section className="rounded-lg border border-border bg-card p-5 shadow-card">
+            <section className="rounded-3xl border border-border bg-card p-5 shadow-card">
               <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20">
                   <Zap className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -431,7 +431,7 @@ function GoogleCalendarPage() {
                   value={String(status.settings.autoSyncInterval)}
                   onValueChange={(v) => handleSettingChange({ autoSyncInterval: Number(v) })}
                 >
-                  <SelectTrigger className="h-11 rounded-md">
+                  <SelectTrigger className="h-11 rounded-2xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -446,7 +446,7 @@ function GoogleCalendarPage() {
             </section>
 
             {/* What to sync */}
-            <section className="space-y-1 rounded-lg border border-border bg-card p-5 shadow-card">
+            <section className="space-y-1 rounded-3xl border border-border bg-card p-5 shadow-card">
               <div className="mb-3">
                 <h2 className="font-display text-base font-bold">O que sincronizar</h2>
                 <p className="text-xs text-muted-foreground">
@@ -480,7 +480,7 @@ function GoogleCalendarPage() {
             </section>
 
             {/* Preferences */}
-            <section className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-card">
+            <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-card">
               <div>
                 <h2 className="font-display text-base font-bold">Preferências</h2>
                 <p className="text-xs text-muted-foreground">Onde os eventos serão criados.</p>
@@ -492,7 +492,7 @@ function GoogleCalendarPage() {
                   value={status.settings.calendarId}
                   onValueChange={(v) => handleSettingChange({ calendarId: v })}
                 >
-                  <SelectTrigger className="h-11 rounded-md">
+                  <SelectTrigger className="h-11 rounded-2xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -516,7 +516,7 @@ function GoogleCalendarPage() {
                   value={String(status.settings.reminderMinutes)}
                   onValueChange={(v) => handleSettingChange({ reminderMinutes: Number(v) })}
                 >
-                  <SelectTrigger className="h-11 rounded-md">
+                  <SelectTrigger className="h-11 rounded-2xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -533,7 +533,7 @@ function GoogleCalendarPage() {
         )}
 
         {/* Permissions */}
-        <section className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-5">
+        <section className="rounded-3xl border border-dashed border-primary/30 bg-primary/5 p-5">
           <div className="mb-3 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             <h2 className="font-display text-sm font-bold">O que pediremos para o Google</h2>
@@ -584,7 +584,7 @@ function SyncStatusCard({
   const progress = busy ? ((step + 1) / steps.length) * 100 : 100;
 
   return (
-    <section className="relative overflow-hidden rounded-lg border border-primary/15 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-card">
+    <section className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/[0.08] via-card to-card p-5 shadow-card">
       <div className="absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl" />
       <div className="relative flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -694,7 +694,7 @@ function Stat({
     amber: "bg-amber-50 text-amber-700",
   } as const;
   return (
-    <div className="rounded-md border border-border/60 bg-card p-3">
+    <div className="rounded-2xl border border-border/60 bg-card p-3">
       <div className="flex items-center justify-between">
         <span className={cn("flex h-6 w-6 items-center justify-center rounded-lg", tones[tone])}>
           {icon}
@@ -718,7 +718,7 @@ function ConnectingOverlay({ step }: { step: number }) {
         initial={{ scale: 0.9, opacity: 0, y: 10 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="mx-6 w-full max-w-xs overflow-hidden rounded-lg border border-border bg-card p-6 text-center shadow-glow"
+        className="mx-6 w-full max-w-xs overflow-hidden rounded-3xl border border-border bg-card p-6 text-center shadow-glow"
       >
         <div className="relative mx-auto mb-5 h-20 w-20">
           <motion.span

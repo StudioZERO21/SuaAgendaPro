@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Rótulo de seção — padrão Dashboard / Super Admin. */
+/** Rótulo de seção — tom editorial, sem gritar ALL CAPS. */
 export function AppSectionLabel({
   children,
   className,
@@ -10,13 +10,18 @@ export function AppSectionLabel({
   className?: string;
 }) {
   return (
-    <p className={cn("sa-section-label", className)}>
+    <p
+      className={cn(
+        "text-xs font-medium tracking-wide text-muted-foreground",
+        className,
+      )}
+    >
       {children}
     </p>
   );
 }
 
-/** Cabeçalho padrão das telas do app logado (tipografia do Dashboard). */
+/** Cabeçalho padrão das telas do app logado. */
 export function AppPageHeader({
   eyebrow,
   title,
@@ -29,13 +34,13 @@ export function AppPageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("border-b border-border px-5 pb-5 pt-6", className)}>
+    <header className={cn("px-5 pt-6", className)}>
       <AppSectionLabel>{eyebrow}</AppSectionLabel>
-      <h1 className="mt-1 font-display text-3xl font-bold leading-tight tracking-tight">
+      <h1 className="mt-1 font-display text-[1.75rem] font-semibold leading-tight tracking-tight">
         {title}
       </h1>
       {subtitle && (
-        <p className="mt-1 text-sm capitalize text-muted-foreground">{subtitle}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
       )}
     </header>
   );

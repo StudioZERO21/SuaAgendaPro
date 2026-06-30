@@ -1,12 +1,16 @@
 // Service Worker — SuaAgenda.Pro
-const CACHE_VERSION = "v4-pwa-fix";
+const CACHE_VERSION = "v6-brand-icons";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
   "/offline.html",
+  "/favicon.png",
+  "/apple-touch-icon.png",
   "/icon-192.png",
   "/icon-512.png",
+  "/icon-192-maskable.png",
+  "/icon-512-maskable.png",
   "/manifest.json",
   "/app-manifest.json",
 ];
@@ -40,6 +44,21 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
 
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  // Ícones de marca: rede primeiro — evita PWA/favicon presos na logo antiga
+  if (/^\/(favicon|apple-touch-icon|icon-\d+(?:-maskable)?)\.png$/.test(url.pathname)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, response.clone()));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
 
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_server/")) {
     event.respondWith(

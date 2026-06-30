@@ -11,7 +11,7 @@ import { downloadCSV } from "@/lib/csv";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { MobileShell } from "@/components/mobile-shell";
-import { AppPageHeader, AppSectionLabel } from "@/components/app-page-chrome";
+import { AppSectionLabel } from "@/components/app-page-chrome";
 import { BottomNav } from "@/components/bottom-nav";
 import { useClientes, useCreateCliente, useUpdateCliente, type UIClient } from "@/hooks/useClientes";
 import { formatPrice } from "@/hooks/useServicos";
@@ -49,7 +49,7 @@ type EnrichedClient = UIClient & {
 function vipBadgeCls(type: VipType, size: "sm" | "lg" = "sm") {
   const base = size === "sm" ? "h-4 w-4" : "h-6 w-6";
   if (type === "manual" || type === "both")
-    return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-cta text-cta-foreground shadow-sm`;
+    return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft`;
   if (type === "auto")
     return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-amber-400 text-amber-900`;
   return "";
@@ -68,7 +68,7 @@ function VipBlock({
   const isAny    = vipType !== null;
 
   const iconCls = isManual
-    ? "bg-cta text-cta-foreground shadow-sm"
+    ? "bg-primary text-primary-foreground shadow-soft"
     : isAuto
     ? "bg-amber-400 text-amber-900"
     : "bg-secondary text-muted-foreground";
@@ -82,7 +82,7 @@ function VipBlock({
     : "Marcar como VIP manualmente";
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-border bg-secondary/40 px-3 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 px-3 py-2.5">
       <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-all", iconCls)}>
         <Crown className="h-4 w-4" />
       </div>
@@ -190,9 +190,15 @@ function ClientesPage() {
 
   return (
     <MobileShell withNav>
-      <AppPageHeader eyebrow="Sua base" title="Clientes" />
-      <div className="px-5">
-        <div className="mb-4 flex items-center justify-end gap-2 -mt-2">
+      <header className="px-5 pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <AppSectionLabel>Sua base</AppSectionLabel>
+            <h1 className="mt-1 font-display text-[1.75rem] font-semibold leading-tight tracking-tight">
+              Clientes
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               disabled={enriched.length === 0}
@@ -201,17 +207,21 @@ function ClientesPage() {
                 atendimentos: c.totalAppointments, total_gasto: (c.totalSpentCents / 100).toFixed(2),
                 aniversario: c.birthDate ?? "",
               })))}
-              className="h-11 w-11 p-0"
+              className="h-11 w-11 rounded-2xl p-0"
               aria-label="Exportar clientes"
             >
               <Download className="h-4 w-4" />
             </Button>
-            <Button variant="cta" onClick={() => setCreateOpen(true)} className="h-11 px-4">
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="h-11 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-soft"
+            >
               <Plus className="mr-1 h-4 w-4" /> Nova
             </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-px overflow-hidden border border-border bg-border">
+        <div className="mt-5 grid grid-cols-3 gap-2">
           <StatCard label="Total"        value={String(stats.total)}     icon={Heart}   />
           <StatCard label="VIP"          value={String(stats.vip)}       icon={Crown}   highlight />
           <StatCard label="Niver. do Mês" value={String(stats.birthdays)} icon={Cake}    />
@@ -223,11 +233,11 @@ function ClientesPage() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
             placeholder="Buscar cliente..."
-            className="h-12 rounded-md border-border bg-card pl-11 text-sm shadow-card focus-visible:ring-primary"
+            className="h-12 rounded-2xl border-border bg-card pl-11 text-sm shadow-card focus-visible:ring-primary"
           />
         </div>
 
-        <div className="mt-4 inline-flex w-full rounded-md border border-border bg-card p-1 shadow-card">
+        <div className="mt-4 inline-flex w-full rounded-2xl border border-border bg-card p-1 shadow-card">
           {(["todas", "vip", "novas"] as const).map((t) => {
             const active = tab === t;
             return (
@@ -235,8 +245,8 @@ function ClientesPage() {
                 key={t}
                 onClick={() => { setTab(t); setPage(1); }}
                 className={cn(
-                  "flex-1 rounded-md px-3 py-2 text-xs font-semibold capitalize transition-all",
-                  active ? "bg-cta text-cta-foreground shadow-sm" : "text-muted-foreground hover:bg-muted",
+                  "flex-1 rounded-xl px-3 py-2 text-xs font-semibold capitalize transition-all",
+                  active ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground",
                 )}
               >
                 {t === "todas" ? "Todas" : t === "vip" ? "VIP" : "Novas"}
@@ -244,7 +254,7 @@ function ClientesPage() {
             );
           })}
         </div>
-      </div>
+      </header>
 
       <main className="mt-5 flex-1 px-5 pb-6">
         {isLoading && (
@@ -253,12 +263,12 @@ function ClientesPage() {
 
         {!isLoading && filtered.length === 0 && (
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-secondary text-primary">
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary text-primary">
               <WomanIcon className="h-6 w-6" />
             </div>
             <p className="font-display text-lg font-semibold">Nenhuma cliente</p>
             <p className="text-sm text-muted-foreground">Tente outro filtro ou cadastre uma nova.</p>
-            <Button variant="cta" onClick={() => setCreateOpen(true)} className="mt-1 h-10 px-4">
+            <Button onClick={() => setCreateOpen(true)} className="mt-1 h-10 rounded-2xl bg-primary text-primary-foreground shadow-soft">
               <Plus className="mr-1 h-4 w-4" /> Nova cliente
             </Button>
           </div>
@@ -266,7 +276,7 @@ function ClientesPage() {
 
         {!isLoading && filtered.length > 0 && (
           <>
-            <div className="overflow-hidden rounded-md border border-border bg-card shadow-card">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
               <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border bg-secondary/40 px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 <span>Cliente</span>
                 <span className="text-right">Visitas</span>
@@ -287,7 +297,7 @@ function ClientesPage() {
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div
-                      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-sm font-bold text-white shadow-soft"
+                      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-soft"
                       style={{ background: `linear-gradient(135deg, ${c.color}, var(--primary))` }}
                     >
                       {c.initials}
@@ -305,7 +315,7 @@ function ClientesPage() {
                   <span className="text-right text-xs font-semibold text-muted-foreground">{c.totalAppointments}</span>
                   <span className="flex w-16 items-center justify-center">
                     {c.hasApptThisMonth ? (
-                      <span title="Tem agendamento no mês" className="flex h-7 w-7 items-center justify-center rounded-full bg-cta text-cta-foreground shadow-sm">
+                      <span title="Tem agendamento no mês" className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft">
                         <CalendarCheck className="h-3.5 w-3.5" />
                       </span>
                     ) : (
@@ -319,7 +329,7 @@ function ClientesPage() {
             {totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between">
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}
-                  className="flex h-9 items-center gap-1 rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-card transition active:scale-95 disabled:opacity-40"
+                  className="flex h-9 items-center gap-1 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-card transition active:scale-95 disabled:opacity-40"
                 >
                   <ChevronLeft className="h-4 w-4" /> Anterior
                 </button>
@@ -329,7 +339,7 @@ function ClientesPage() {
                     const active = n === safePage;
                     return (
                       <button key={n} onClick={() => setPage(n)}
-                        className={cn("h-8 min-w-8 rounded-lg px-2 text-xs font-bold transition", active ? "bg-cta text-cta-foreground shadow-sm" : "bg-card text-muted-foreground border border-border")}
+                        className={cn("h-8 min-w-8 rounded-lg px-2 text-xs font-bold transition", active ? "bg-primary text-primary-foreground shadow-soft" : "bg-card text-muted-foreground border border-border")}
                       >
                         {n}
                       </button>
@@ -337,7 +347,7 @@ function ClientesPage() {
                   })}
                 </div>
                 <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
-                  className="flex h-9 items-center gap-1 rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-card transition active:scale-95 disabled:opacity-40"
+                  className="flex h-9 items-center gap-1 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-card transition active:scale-95 disabled:opacity-40"
                 >
                   Próxima <ChevronRight className="h-4 w-4" />
                 </button>
@@ -388,8 +398,8 @@ function StatCard({
 }) {
   return (
     <div className={cn(
-      "relative flex h-[88px] flex-col justify-between bg-card p-3",
-      highlight && "bg-muted/60",
+      "studio-surface relative flex h-[88px] flex-col justify-between overflow-hidden rounded-2xl px-3 pb-1 pt-2",
+      highlight && "studio-accent-top ring-1 ring-primary/15",
     )}>
       <Icon className={cn("pointer-events-none absolute -bottom-4 -right-4 h-20 w-20 text-primary/10")} strokeWidth={1.5} />
       <div className="relative flex items-start justify-center pt-1">
@@ -477,7 +487,7 @@ function ClientModal({
         initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-t-3xl border border-border bg-card shadow-card sm:rounded-lg"
+        className="w-full max-w-md overflow-hidden rounded-t-3xl border border-border bg-card shadow-card sm:rounded-3xl"
       >
         <div className="relative px-5 pb-4 pt-5">
           <button onClick={onClose} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground transition hover:bg-secondary/80">
@@ -485,7 +495,7 @@ function ClientModal({
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-md text-xl font-bold text-white shadow-soft"
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-soft"
               style={{ background: `linear-gradient(135deg, ${client.color}, var(--primary))` }}
             >
               {client.initials}
@@ -494,7 +504,7 @@ function ClientModal({
                   "absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full",
                   client.vipType === "auto"
                     ? "bg-amber-400 text-amber-900"
-                    : "bg-cta text-cta-foreground shadow-sm",
+                    : "bg-primary text-primary-foreground shadow-soft",
                 )}>
                   <Crown className="h-3.5 w-3.5" />
                 </span>
@@ -502,7 +512,7 @@ function ClientModal({
             </div>
             <div className="min-w-0 flex-1 pr-8">
               {editing ? (
-                <Input value={form.name} onChange={(e) => update("name", e.target.value)} className="h-9 rounded-md border-border bg-secondary/50 text-base font-bold" />
+                <Input value={form.name} onChange={(e) => update("name", e.target.value)} className="h-9 rounded-xl border-border bg-secondary/50 text-base font-bold" />
               ) : (
                 <p className="font-display text-xl font-bold leading-tight">{client.name}</p>
               )}
@@ -532,14 +542,14 @@ function ClientModal({
 
         {!editing && (
           <div className="flex items-center gap-2 px-5 pb-3">
-            <a href={`tel:${phone}`} className="flex h-10 flex-1 items-center justify-center gap-2 rounded-md bg-secondary text-sm font-semibold text-primary transition active:scale-95">
+            <a href={`tel:${phone}`} className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-secondary text-sm font-semibold text-primary transition active:scale-95">
               <Phone className="h-4 w-4" /> Ligar
             </a>
-            <a href={waUrl} target="_blank" rel="noreferrer" className="flex h-10 flex-1 items-center justify-center gap-2 rounded-md bg-emerald-500 text-sm font-semibold text-white shadow-soft transition active:scale-95">
+            <a href={waUrl} target="_blank" rel="noreferrer" className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 text-sm font-semibold text-white shadow-soft transition active:scale-95">
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </a>
             <button onClick={onToggleDetails}
-              className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-all", showFullDetails ? "bg-cta text-cta-foreground shadow-sm rotate-45" : "border-border bg-secondary text-foreground")}
+              className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all", showFullDetails ? "bg-primary text-primary-foreground shadow-soft rotate-45" : "border-border bg-secondary text-foreground")}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -561,7 +571,7 @@ function ClientModal({
                 />
                 {editing && (
                   <button type="button" onClick={() => setShowAddress((s) => { const next = !s; if (!next) update("address", ""); return next; })}
-                    className={cn("flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left transition", showAddress ? "bg-cta text-cta-foreground shadow-sm" : "border-border bg-secondary/40 text-foreground")}
+                    className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "bg-primary text-primary-foreground shadow-soft" : "border-border bg-secondary/40 text-foreground")}
                   >
                     <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", showAddress ? "bg-white/20 text-white" : "bg-secondary text-primary")}><MapPin className="h-4 w-4" /></div>
                     <div className="flex-1">
@@ -596,13 +606,13 @@ function ClientModal({
               <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
                 {editing ? (
                   <>
-                    <Button variant="ghost" onClick={onCancelEdit} className="h-10 rounded-md px-4 text-sm font-semibold">Cancelar</Button>
-                    <Button onClick={handleSave} disabled={updateCliente.isPending} className="h-10 rounded-md bg-cta text-cta-foreground shadow-sm">
+                    <Button variant="ghost" onClick={onCancelEdit} className="h-10 rounded-xl px-4 text-sm font-semibold">Cancelar</Button>
+                    <Button onClick={handleSave} disabled={updateCliente.isPending} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-soft">
                       {updateCliente.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="mr-1 h-4 w-4" /> Salvar</>}
                     </Button>
                   </>
                 ) : (
-                  <Button onClick={onEdit} className="h-10 rounded-md bg-cta text-cta-foreground shadow-sm">
+                  <Button onClick={onEdit} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-soft">
                     <Pencil className="mr-1 h-4 w-4" /> Editar
                   </Button>
                 )}
@@ -632,7 +642,7 @@ function Field({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
@@ -645,10 +655,10 @@ function Field({
             <PhoneInputBR value={value} onChange={onChange} className="mt-1 h-9 text-sm [&>span]:text-xs [&>span]:px-2" />
           ) : multiline ? (
             <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder}
-              className="mt-1 w-full rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              className="mt-1 w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
             />
           ) : (
-            <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="mt-1 h-9 rounded-md border-border bg-secondary/50 text-sm" />
+            <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="mt-1 h-9 rounded-xl border-border bg-secondary/50 text-sm" />
           )
         ) : (
           <p className="mt-0.5 break-words text-sm font-semibold text-foreground">{value || <span className="text-muted-foreground">—</span>}</p>
@@ -704,7 +714,7 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
         initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-t-3xl border border-border bg-card shadow-card sm:rounded-lg max-h-[92vh] overflow-y-auto"
+        className="w-full max-w-md overflow-hidden rounded-t-3xl border border-border bg-card shadow-card sm:rounded-3xl max-h-[92vh] overflow-y-auto"
       >
         <div className="relative px-5 pb-3 pt-5">
           <button onClick={onClose} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-muted-foreground transition hover:bg-secondary/80">
@@ -733,7 +743,7 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
           />
 
           <button type="button" onClick={() => { setShowAddress((s) => { const next = !s; if (!next) update("address", ""); return next; }); }}
-            className={cn("flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left transition", showAddress ? "bg-cta text-cta-foreground shadow-sm" : "border-border bg-secondary/40 text-foreground")}
+            className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "bg-primary text-primary-foreground shadow-soft" : "border-border bg-secondary/40 text-foreground")}
           >
             <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", showAddress ? "bg-white/20 text-white" : "bg-secondary text-primary")}><MapPin className="h-4 w-4" /></div>
             <div className="flex-1">
@@ -770,8 +780,8 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border bg-card px-5 py-3">
-          <Button variant="ghost" onClick={onClose} className="h-10 rounded-md px-4 text-sm font-semibold">Cancelar</Button>
-          <Button onClick={submit} disabled={createCliente.isPending} className="h-10 rounded-md bg-cta text-cta-foreground shadow-sm disabled:opacity-50">
+          <Button variant="ghost" onClick={onClose} className="h-10 rounded-xl px-4 text-sm font-semibold">Cancelar</Button>
+          <Button onClick={submit} disabled={createCliente.isPending} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-soft disabled:opacity-50">
             {createCliente.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="mr-1 h-4 w-4" /> Cadastrar</>}
           </Button>
         </div>
@@ -800,11 +810,11 @@ function FormField({
       </div>
       {multiline ? (
         <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder}
-          className="w-full rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
         />
       ) : (
         <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-          className="h-10 rounded-md border-border bg-secondary/50 text-sm"
+          className="h-10 rounded-xl border-border bg-secondary/50 text-sm"
         />
       )}
     </div>
