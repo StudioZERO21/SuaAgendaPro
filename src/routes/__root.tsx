@@ -37,6 +37,13 @@ import { SystemModeProvider, useSystemConfig } from "@/components/system-mode-pr
 import { TestModeBanner } from "@/components/test-mode-banner";
 import { MaintenanceOverlay } from "@/components/maintenance-overlay";
 import { CookieConsentBanner } from "@/components/cookie-consent-banner";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
+import {
+  resolveSubdomain,
+  resolveSubdomainFromPathOnly,
+  shouldRegisterServiceWorker,
+  type AppSubdomain,
+} from "@/lib/pwa-context";
 import {
   LOCALE_HEAD_META,
   SITE_LANG,
@@ -271,34 +278,21 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-// Rotas que pertencem ao domínio app.suaagenda.pro
-const APP_ROUTE_PREFIXES = [
-  "/app", "/dashboard", "/clientes", "/servicos", "/servico",
-  "/horarios", "/portfolio", "/avaliacoes", "/notificacoes",
-  "/notificacoes-todas", "/perfil-profissional", "/personalizacao",
-  "/pagamentos", "/transacoes", "/plano", "/mais", "/onboarding",
-  "/whatsapp", "/google-calendar", "/saudacao", "/use-no-celular",
-];
-
-// Detecta subdomínio pelo path — seguro em SSR e no cliente sem server imports.
-// O subdomainMiddleware (src/start.ts) já garante que cada path chega no domínio certo.
-function subdomainFromPath(pathname: string): "site" | "app" | "admin" {
-  if (pathname.startsWith("/super")) return "admin";
-  if (APP_ROUTE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return "app";
-  return "site";
+function resolveSubdomainForRequest(pathname: string): AppSubdomain {
+  if (typeof window !== "undefined") {
+    return resolveSubdomain(window.location.hostname, pathname);
+  }
+  return resolveSubdomainFromPathOnly(pathname);
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  beforeLoad: async ({ location }) => {
-    const subdomain = subdomainFromPath(location.pathname);
-    return { subdomain };
-  },
+  beforeLoad: async ({ location }) => ({
+    subdomain: resolveSubdomainForRequest(location.pathname),
+  }),
 
-  loader: async ({ context }) => {
-    // loaderData é o único jeito de passar dados para head()
-    const subdomain = (context as any).subdomain as "site" | "app" | "admin" ?? "site";
-    return { subdomain };
-  },
+  loader: async ({ location }) => ({
+    subdomain: resolveSubdomainForRequest(location.pathname),
+  }),
 
   head: ({ loaderData }) => {
     const subdomain = loaderData?.subdomain ?? "site";
@@ -327,6 +321,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary" },
+        ...(isApp
+          ? [
+              { name: "mobile-web-app-capable", content: "yes" },
+              { name: "apple-mobile-web-app-capable", content: "yes" },
+              { name: "apple-mobile-web-app-title", content: "SuaAgenda" },
+            ]
+          : []),
       ],
       links: [
         { rel: "stylesheet", href: appCss },
@@ -445,12 +446,10 @@ function RootComponent() {
   }, [user?.id]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
-    const hostname = window.location.hostname;
-    const isAppDomain = hostname.startsWith("app.") || hostname === "localhost";
-    if (isAppDomain) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    }
+    if (!shouldRegisterServiceWorker(window.location.hostname)) return;
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -471,6 +470,7 @@ function RootComponent() {
           <SystemModeGate isSuperRoute={isSuperRoute} />
           <AuthGuard subscription={subscription}>
             <Outlet />
+            <PwaInstallBanner />
           </AuthGuard>
         </SystemModeProvider>
         <Toaster position="top-center" richColors />

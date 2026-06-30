@@ -3,11 +3,12 @@ import {
   Bell, CalendarDays, CreditCard, Globe, History,
   Link as LinkIcon, LogOut, Palette, Share2, Sparkles,
   Star, User, ChevronRight, Crown, MessageCircle, Loader2, Info, Copy, Check, X,
-  HeadphonesIcon, ImagePlus, Clock, CheckCircle2, Trash2, Shield,
+  HeadphonesIcon, ImagePlus, Clock, CheckCircle2, Trash2, Shield, Download,
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
 import { AppPageHeader, AppSectionLabel } from "@/components/app-page-chrome";
+import { PwaInstallButton } from "@/components/pwa-install-banner";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/usePerfil";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +54,7 @@ const groups = [
   {
     title: "Conta",
     items: [
+      { id: "install",   label: "Instalar aplicativo",      icon: Download },
       { id: "privacidade", label: "Privacidade e dados", icon: Shield, to: "/privacidade-dados" as const },
       { id: "notif",      label: "Notificações",             icon: Bell,        to: "/notificacoes" as const },
       { id: "gcal",       label: "Google Calendar",          icon: CalendarDays,to: "/google-calendar" as const },
@@ -384,6 +386,15 @@ function MaisPage() {
                         </button>
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </div>
+                    </div>
+                  );
+                }
+
+                // ── Instalar PWA ─────────────────────────────────
+                if (it.id === "install") {
+                  return (
+                    <div key={it.id} className="px-4 py-3">
+                      <PwaInstallButton className="w-full justify-start gap-2 h-11" />
                     </div>
                   );
                 }
