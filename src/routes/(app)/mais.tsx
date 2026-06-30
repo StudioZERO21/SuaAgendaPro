@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getMyAppRating, submitAppRating, type MyRating } from "@/lib/app-rating.functions";
+import { getMyReferralStats, type MyReferralStats } from "@/lib/referral.functions";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { APP_VERSION_LABEL } from "@/lib/app-version";
 

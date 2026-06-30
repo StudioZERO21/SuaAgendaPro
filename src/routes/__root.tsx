@@ -35,6 +35,7 @@ import {
 } from "@/lib/theme-vars";
 import { SystemModeProvider, useSystemConfig } from "@/components/system-mode-provider";
 import { TestModeBanner } from "@/components/test-mode-banner";
+import { MaintenanceOverlay } from "@/components/maintenance-overlay";
 import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 import {
   LOCALE_HEAD_META,
