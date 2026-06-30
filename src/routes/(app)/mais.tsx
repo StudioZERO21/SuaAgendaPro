@@ -166,7 +166,7 @@ function MaisPage() {
 
       {/* Profile card */}
       <section className="mt-5 px-5">
-        <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-glow" style={{ background: prof?.theme_color ? `linear-gradient(145deg,${prof.theme_color} 0%,${prof.gradient_color_2 ?? prof.theme_color}cc 60%,${prof.theme_color}99 100%)` : "var(--gradient-primary)" }}>
+        <div className="relative overflow-hidden rounded-2xl gradient-primary p-6 text-white shadow-glow">
           <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute -bottom-12 -left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
 

@@ -255,7 +255,7 @@ function DashboardPage() {
           <section className="mt-6 px-5">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Pico de atendimento</h2>
-              <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-bold text-pink-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                 <Flame className="h-3 w-3" /> Alta demanda
               </span>
             </div>
@@ -296,13 +296,14 @@ function DashboardPage() {
                             {row.map((v, ci) => {
                               const op    = 0.12 + (v / 10) * 0.88;
                               const isMax = v >= 9;
+                              const mixPct = Math.round(op * 100);
                               return (
                                 <motion.div
                                   key={`${ri}-${ci}`}
                                   initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
                                   transition={{ delay: (ri * 6 + ci) * 0.012, type: "spring", stiffness: 260, damping: 22 }}
-                                  className={cn("relative aspect-square rounded-sm", isMax && "ring-2 ring-pink-400")}
-                                  style={{ backgroundColor: `rgba(236, 72, 153, ${op})` }}
+                                  className={cn("relative aspect-square rounded-sm", isMax && "ring-2 ring-primary")}
+                                  style={{ backgroundColor: `color-mix(in srgb, var(--primary) ${mixPct}%, transparent)` }}
                                   title={`${PEAK_DAYS[ci]} ${PEAK_SLOTS[ri]} — ${v}/10`}
                                 />
                               );
@@ -314,7 +315,11 @@ function DashboardPage() {
                     <div className="mt-3 flex items-center justify-end gap-1.5">
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Menos</span>
                       {[0.15, 0.35, 0.55, 0.75, 1].map((o) => (
-                        <span key={o} className="h-2.5 w-3 rounded-sm" style={{ backgroundColor: `rgba(236, 72, 153, ${o})` }} />
+                        <span
+                          key={o}
+                          className="h-2.5 w-3 rounded-sm"
+                          style={{ backgroundColor: `color-mix(in srgb, var(--primary) ${Math.round(o * 100)}%, transparent)` }}
+                        />
                       ))}
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Mais</span>
                     </div>
