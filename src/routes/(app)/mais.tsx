@@ -61,7 +61,7 @@ const groups = [
     title: "Suporte",
     items: [
       { id: "support", label: "Solicitar suporte",   icon: HeadphonesIcon },
-      { id: "share",   label: "Indicar para amigas", icon: Share2 },
+      { id: "share",   label: "Indicar e ganhar", icon: Share2 },
       { id: "review",  label: "Avaliar o app",       icon: Star   },
     ],
   },
@@ -257,10 +257,10 @@ function MaisPage() {
           </DialogHeader>
           <div className="space-y-3 text-sm text-muted-foreground">
             {[
-              { n: "1", text: "Compartilhe seu link exclusivo de indicação com outras profissionais." },
-              { n: "2", text: "Quando uma amiga se cadastrar pelo seu link e ativar uma assinatura paga, você ganha 1 mês grátis." },
+              { n: "1", text: "Compartilhe seu link exclusivo de indicação com outros profissionais." },
+              { n: "2", text: "Quando alguém se cadastrar pelo seu link e ativar uma assinatura paga, você ganha 1 mês grátis." },
               { n: "3", text: "Não há limite de indicações — indique quantas quiser e acumule meses grátis." },
-              { n: "4", text: "O mês bônus é creditado automaticamente após a confirmação do pagamento da indicada." },
+              { n: "4", text: "O mês bônus é creditado automaticamente após a confirmação do pagamento de quem você indicou." },
               { n: "5", text: "O link de indicação é exclusivo e intransferível — não pode ser repassado para uso comercial." },
             ].map(({ n, text }) => (
               <div key={n} className="flex gap-3">
@@ -302,7 +302,7 @@ function MaisPage() {
               {referralStats.pendingReward > 0 && (
                 <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-900/20">
                   <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300">
-                    {referralStats.pendingReward} indicada(s) ainda aguardando 1º pagamento para você ganhar o mês grátis.
+                    {referralStats.pendingReward} indicação(ões) ainda aguardando 1º pagamento para você ganhar o mês grátis.
                   </p>
                 </div>
               )}
@@ -366,7 +366,7 @@ function MaisPage() {
                   );
                 }
 
-                // ── Indicar para amigas ──────────────────────────
+                // ── Indicar e ganhar ──────────────────────────
                 if (it.id === "share") {
                   return (
                     <div key={it.id} className={`${cls} justify-between`}>
