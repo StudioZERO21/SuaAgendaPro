@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import logoUrl from "@/assets/logo-saudacao.png";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const Route = createFileRoute("/(app)/saudacao")({
   head: () => ({
@@ -95,11 +95,7 @@ function SaudacaoPage() {
           animation: "fadeUp 0.6s ease both",
         }}
       >
-        <img
-          src={logoUrl}
-          alt="SuaAgenda.Pro"
-          style={{ height: 64, width: "auto", objectFit: "contain" }}
-        />
+        <BrandLogo variant="stack" size="lg" priority className="h-16" />
       </div>
 
       {/* Centro: saudação + nome — nome centralizado na página, saudação alinhada à esquerda do nome */}

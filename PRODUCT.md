@@ -32,6 +32,9 @@ Calmo, premium, acolhedor, competente. Estúdio de beleza de alto padrão, não 
 4. **Superfícies antes de gradientes** — bordas sutis, sombras leves, hierarquia por tipografia — não por efeitos.
 5. **Consistência no app operacional** — Agenda, Clientes, Serviços e Mais compartilham o mesmo vocabulário visual (shell, nav, superfícies). O **Dashboard** é área administrativa separada — fora do escopo deste craft.
 
-## Accessibility & Inclusion
+## Brand assets
 
-WCAG AA em texto e controles. Respeitar `prefers-reduced-motion`. Alto contraste já suportado via personalização.
+- `src/assets/brand/` — logos otimizados (stack, horizontal, icon) em PNG + WebP
+- `public/icon-*.png`, `favicon.png`, `apple-touch-icon.png` — PWA / favicon
+- Regenerar: `npm run brand:optimize`
+- Componentes: `BrandLogo` (variantes) e `BrandMark` (ícone 3D)

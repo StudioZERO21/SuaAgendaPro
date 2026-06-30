@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Smartphone, QrCode } from "lucide-react";
+import { BrandMark } from "@/components/brand-logo";
 import { LazyImage } from "@/components/ui/lazy-image";
 
 export const Route = createFileRoute("/(app)/use-no-celular")({
@@ -25,9 +26,7 @@ function UseNoCelularPage() {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/10 flex items-center justify-center p-6">
       <div className="max-w-sm w-full text-center space-y-8">
         {/* Ícone */}
-        <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-primary to-primary-glow shadow-glow">
-          <Smartphone className="h-10 w-10 text-white" />
-        </div>
+        <BrandMark size="xl" className="mx-auto" />
 
         {/* Título */}
         <div className="space-y-2">
@@ -61,10 +60,7 @@ function UseNoCelularPage() {
 
         {/* Logo */}
         <div className="pt-2 border-t border-border">
-          <p className="text-xs text-muted-foreground">
-            <span className="font-display font-bold text-primary">SuaAgenda</span>
-            <span className="font-bold">.Pro</span>
-          </p>
+          <BrandMark size="sm" className="mx-auto opacity-80" />
         </div>
       </div>
     </div>

@@ -78,7 +78,7 @@ function ResetPasswordPage() {
     return (
       <MobileShell>
         <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-          <BrandLogo size="lg" />
+          <BrandLogo variant="stack" size="lg" priority />
           <h1 className="mt-8 font-display text-2xl font-bold">Link inválido</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Este link de recuperação expirou ou é inválido.
@@ -122,7 +122,7 @@ function ResetPasswordPage() {
           animate={{ opacity: 1, y: 0 }}
           className="relative mb-8 flex flex-col items-center text-center"
         >
-          <BrandLogo size="2xl" />
+          <BrandLogo variant="stack" size="2xl" priority />
           <h1 className="mt-6 font-display text-3xl font-bold leading-tight">
             Nova <span className="text-gradient italic">senha</span>
           </h1>

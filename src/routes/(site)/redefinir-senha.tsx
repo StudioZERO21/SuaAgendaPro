@@ -105,7 +105,7 @@ function RedefinirSenhaPage() {
         <div className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full gradient-hero opacity-70 blur-3xl" />
         <div className="space-y-6">
           <div>
-            <BrandLogo className="mb-4 h-9 w-auto" />
+            <BrandLogo variant="horizontal" size="sm" className="mb-4" />
             <h1 className="font-display text-2xl font-bold">Defina sua nova senha</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Crie uma senha segura para continuar acessando o SuaAgenda.Pro.

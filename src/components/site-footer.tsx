@@ -1,19 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, Sparkles } from "lucide-react";
+import { Instagram } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-border/60 bg-gradient-to-b from-background to-secondary/40">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 md:grid-cols-5">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary text-white shadow-glow">
-              <Sparkles className="h-4 w-4" fill="currentColor" />
-            </div>
-            <span className="font-display text-lg font-bold">
-              SuaAgenda<span className="text-gradient">.Pro</span>
-            </span>
-          </div>
+          <BrandLogo variant="horizontal" size="md" className="max-w-[220px]" />
           <p className="mt-3 max-w-sm text-sm text-muted-foreground">
             A agenda premium feita para profissionais da beleza que querem mais
             tempo, mais clientes e mais resultado.

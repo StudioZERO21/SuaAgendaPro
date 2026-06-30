@@ -319,7 +319,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-        { name: "theme-color", content: "#6b7280" },
+        { name: "theme-color", content: "#1e3a5f" },
         ...LOCALE_HEAD_META,
         { title },
         { name: "description", content: description },
@@ -331,6 +331,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       links: [
         { rel: "stylesheet", href: appCss },
         { rel: "manifest", href: isApp ? "/app-manifest.json" : "/manifest.json" },
+        { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon.png" },
+        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       ],
     };
   },

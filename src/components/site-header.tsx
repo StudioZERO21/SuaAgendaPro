@@ -17,7 +17,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5">
         <Link to="/" className="flex items-center">
-          <BrandLogo size="sm" />
+          <BrandLogo variant="horizontal" size="sm" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

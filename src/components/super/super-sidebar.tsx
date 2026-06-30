@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Users,
   LogOut,
-  ShieldAlert,
   CreditCard,
   DollarSign,
   CalendarClock,
@@ -33,6 +32,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { clearSuperAuth, getSuperAuth, getSuperToken } from "@/lib/super-auth";
+import { BrandMark } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 
 const NAV_PRINCIPAL = [
@@ -93,9 +93,7 @@ export function SuperSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-primary-glow text-primary-foreground shadow-glow">
-            <ShieldAlert className="h-4 w-4" />
-          </div>
+          <BrandMark size="sm" />
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="truncate text-sm font-bold leading-tight">
               Super Admin

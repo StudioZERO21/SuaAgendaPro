@@ -15,6 +15,7 @@
     "sync:convert": "node scripts/sync-convert.mjs",
     "sync:validate": "node scripts/sync-validate.mjs",
     "sync:all": "npm run sync:validate && npm run type-check",
+    "brand:optimize": "node scripts/optimize-brand-assets.mjs",
     "convert:lovable": "node scripts/convert-lovable.mjs",
     "maestro:all": "node scripts/maestro-auto-all.mjs",
     "setup-all-scripts": "node scripts/setup-all-scripts.mjs"
@@ -107,6 +108,7 @@
     "globals": "^15.15.0",
     "nitro": "3.0.260603-beta",
     "prettier": "^3.7.3",
+    "sharp": "^0.35.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.16"

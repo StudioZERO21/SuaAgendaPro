@@ -139,7 +139,7 @@ function SignupPage() {
           animate={{ opacity: 1, y: 0 }}
           className="relative mt-4 flex flex-col items-center text-center"
         >
-          <BrandLogo size="lg" />
+          <BrandLogo variant="stack" size="lg" priority />
           <h1 className="mt-8 font-display text-4xl font-bold leading-tight">
             Comece <span className="text-gradient italic">grátis</span> hoje
           </h1>

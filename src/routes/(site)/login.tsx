@@ -111,7 +111,7 @@ function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           className="relative mb-6 flex flex-col items-center text-center"
         >
-          <BrandLogo size="2xl" />
+          <BrandLogo variant="stack" size="2xl" priority />
           <h1 className="mt-6 font-display text-4xl font-bold leading-tight">
             Que bom <span className="text-gradient italic">te ver</span>
           </h1>

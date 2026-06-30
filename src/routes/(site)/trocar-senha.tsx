@@ -85,7 +85,7 @@ function TrocarSenhaPage() {
         <div className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full gradient-hero opacity-70 blur-3xl" />
         <div className="space-y-6">
           <div className="text-center">
-            <BrandLogo className="mx-auto mb-4 h-9 w-auto" />
+            <BrandLogo variant="stack" size="sm" className="mx-auto mb-4" />
             <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-amber-600">
               <ShieldAlert className="h-7 w-7" />
             </div>

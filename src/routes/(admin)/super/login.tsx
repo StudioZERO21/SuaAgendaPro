@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ShieldAlert, Loader2, ShieldCheck, KeyRound } from "lucide-react";
+import { Loader2, ShieldCheck, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import {
   superAdminVerifyMfa,
   superAdminForcedChangePassword,
 } from "@/lib/super-auth.server";
-import logoUrl from "@/assets/logo-suaagenda.png";
+import { BrandLogo, BrandMark } from "@/components/brand-logo";
 
 export const Route = createFileRoute("/(admin)/super/login")({
   ssr: false,
@@ -128,9 +128,7 @@ function SuperLoginPage() {
       {/* Brand panel */}
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[#1f1230] via-[#2a1530] to-[#4c1d95] lg:flex lg:flex-col lg:justify-between lg:p-12 lg:text-white">
         <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 backdrop-blur">
-            <ShieldAlert className="h-5 w-5" />
-          </div>
+          <BrandMark size="sm" />
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/60">
               SuaAgenda.Pro
@@ -158,7 +156,7 @@ function SuperLoginPage() {
       <section className="flex items-center justify-center px-6 py-12 sm:px-8 lg:px-10">
         <div className="w-full max-w-sm">
           <div className="mb-10 flex flex-col items-center">
-            <img src={logoUrl} alt="SuaAgenda.Pro" className="h-32 w-auto object-contain" />
+            <BrandLogo variant="stack" size="2xl" priority className="max-h-32" />
           </div>
 
           {step === "change-password" ? (
