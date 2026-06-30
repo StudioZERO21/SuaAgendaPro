@@ -239,6 +239,89 @@ export type CronRun = {
   createdAt: string;
 };
 
+// ─── Visão 360 do profissional ────────────────────────────────────────────────
+
+export type User360 = {
+  status:            string;
+  planName:          string;
+  trialEndsAt:       string | null;
+  currentPeriodEnd:  string | null;
+  daysToBlock:       number | null;
+  ticketsOpen:       number;
+  ticketsTotal:      number;
+  referralsCount:    number;
+  clientPaidCents:   number;   // total recebido dos clientes (Mercado Pago)
+  clientPaidCount:   number;
+  recentEvents:      { type: string; amountCents: number; at: string }[];
+  recentNotifs:      { kind: string; channel: string; status: string; at: string }[];
+};
+
+export const getUser360 = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st, userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }): Promise<User360> => {
+    await requireSuperAuth(data._st ?? null);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+    const uid = data.userId;
+
+    const safe = <T,>(p: Promise<{ data: T }>, fallback: T): Promise<T> =>
+      p.then((r) => r.data ?? fallback).catch(() => fallback);
+
+    const [sub, tickets, payments, events, notifs, referrals] = await Promise.all([
+      safe(db.from("subscriptions").select("status, trial_ends_at, current_period_end, plans(display_name)").eq("user_id", uid).maybeSingle(), null),
+      safe(db.from("support_tickets").select("status").eq("user_id", uid), [] as any[]),
+      safe(db.from("payment_transactions").select("amount_cents, paid_at").eq("user_id", uid), [] as any[]),
+      safe(db.from("billing_events").select("event_type, amount_cents, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5), [] as any[]),
+      safe(db.from("subscription_notifications").select("kind, channel, status, created_at, sent_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(5), [] as any[]),
+      safe(db.from("referral_conversions").select("id").eq("referrer_id", uid), [] as any[]),
+    ]);
+
+    const s: any = sub ?? {};
+    const nextAt = s.status === "trial" ? s.trial_ends_at : s.status === "active" ? s.current_period_end : null;
+    const daysToBlock = nextAt ? Math.ceil((new Date(nextAt).getTime() - Date.now()) / DAY) : null;
+
+    const paid = (payments as any[]).filter((p) => p.paid_at);
+
+    return {
+      status:           s.status ?? "—",
+      planName:         (s.plans as any)?.display_name ?? "—",
+      trialEndsAt:      s.trial_ends_at ?? null,
+      currentPeriodEnd: s.current_period_end ?? null,
+      daysToBlock,
+      ticketsOpen:      (tickets as any[]).filter((t) => ["open", "in_progress", "waiting_user"].includes(t.status)).length,
+      ticketsTotal:     (tickets as any[]).length,
+      referralsCount:   (referrals as any[]).length,
+      clientPaidCents:  paid.reduce((sum, p) => sum + (p.amount_cents ?? 0), 0),
+      clientPaidCount:  paid.length,
+      recentEvents:     (events as any[]).map((e) => ({ type: e.event_type, amountCents: e.amount_cents ?? 0, at: e.created_at })),
+      recentNotifs:     (notifs as any[]).map((n) => ({ kind: n.kind, channel: n.channel, status: n.status, at: n.sent_at ?? n.created_at })),
+    };
+  });
+
+// ─── Histórico de métricas (analytics) ────────────────────────────────────────
+
+export type MetricsPoint = {
+  date: string; total: number; active: number; trial: number;
+  suspended: number; cancelled: number; especial: number; mrrCents: number;
+};
+
+export const getMetricsHistory = createServerFn({ method: "GET" })
+  .validator((input: unknown) => z.object({ _st }).parse(input ?? {}))
+  .handler(async ({ data }): Promise<MetricsPoint[]> => {
+    await requireSuperAuth(data._st ?? null);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows } = await (supabaseAdmin as any)
+      .from("metrics_snapshots")
+      .select("*")
+      .order("date", { ascending: true })
+      .limit(180);
+    return (rows ?? []).map((r: any) => ({
+      date: r.date, total: r.total, active: r.active, trial: r.trial,
+      suspended: r.suspended, cancelled: r.cancelled, especial: r.especial,
+      mrrCents: Number(r.mrr_cents ?? 0),
+    }));
+  });
+
 export const getCronRuns = createServerFn({ method: "GET" })
   .validator((input: unknown) => z.object({ _st }).parse(input ?? {}))
   .handler(async ({ data }): Promise<CronRun[]> => {

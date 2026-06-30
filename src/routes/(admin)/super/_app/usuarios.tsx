@@ -64,6 +64,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { User360 } from "@/components/super/user-360";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -791,7 +792,7 @@ function UsuariosPage() {
               <Tabs defaultValue="info" className="mt-2">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="info">Informações</TabsTrigger>
-                  <TabsTrigger value="metricas">Métricas</TabsTrigger>
+                  <TabsTrigger value="metricas">Visão 360</TabsTrigger>
                   <TabsTrigger value="auditoria">
                     Auditoria
                     {auditForViewing.length > 0 && (
@@ -821,9 +822,7 @@ function UsuariosPage() {
                 </TabsContent>
 
                 <TabsContent value="metricas" className="space-y-3 pt-4">
-                  <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                    Métricas de agendamentos serão exibidas em breve.
-                  </div>
+                  <User360 userId={viewing.id} />
                 </TabsContent>
 
                 <TabsContent value="auditoria" className="pt-4">

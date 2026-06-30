@@ -81,6 +81,19 @@ function SignupPage() {
     setErrors({});
     setLoading(true);
 
+    // Anti-fraude: bloqueia novo cadastro com telefone já vinculado a uma conta
+    try {
+      const { data: inUse } = await supabase.rpc("phone_in_use", { p: values.telefone });
+      if (inUse) {
+        setLoading(false);
+        setErrors({ telefone: "Este telefone já está vinculado a uma conta." });
+        toast.error("Este telefone já tem uma conta. Faça login ou use outro número.");
+        return;
+      }
+    } catch {
+      /* se a checagem falhar, não bloqueia o cadastro */
+    }
+
     const { data: authData, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.senha,

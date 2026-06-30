@@ -8,9 +8,10 @@ import {
 import { motion } from "framer-motion";
 import {
   Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart,
 } from "recharts";
 import { getSuperAdminMetrics, type SuperMetrics } from "@/lib/super-admin.functions";
+import { getMetricsHistory, type MetricsPoint } from "@/lib/super-billing.functions";
 import { getAuditLog } from "@/lib/super-audit.functions";
 import { withSuperToken } from "@/lib/super-client";
 import { Button } from "@/components/ui/button";
@@ -75,18 +76,21 @@ const STATUS_COLORS = [
 function SuperDashboard() {
   const [metrics, setMetrics]   = useState<SuperMetrics | null>(null);
   const [audit,   setAudit]     = useState<AuditEntry[]>([]);
+  const [history, setHistory]   = useState<MetricsPoint[]>([]);
   const [loading, setLoading]   = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [m, auditResult] = await Promise.all([
+      const [m, auditResult, hist] = await Promise.all([
         getSuperAdminMetrics({ data: withSuperToken() }),
         getAuditLog({ data: withSuperToken({ limit: 20, offset: 0 }) }),
+        getMetricsHistory({ data: withSuperToken() }).catch(() => [] as MetricsPoint[]),
       ]);
       setMetrics(m);
       setAudit(auditResult.entries);
+      setHistory(hist);
       setLastRefresh(new Date());
     } catch (e) {
       console.error(e);
@@ -208,6 +212,52 @@ function SuperDashboard() {
           </motion.div>
         ))}
       </section>
+
+      {/* Evolução (analytics histórico) */}
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="border border-border bg-card p-5 shadow-sm"
+      >
+        <header className="mb-5 flex items-start justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Evolução</p>
+            <h2 className="mt-1 font-display text-lg font-bold">MRR e usuários ativos ao longo do tempo</h2>
+          </div>
+        </header>
+        {history.length < 2 ? (
+          <div className="flex h-48 items-center justify-center text-center text-sm text-muted-foreground">
+            Coletando dados diários — o gráfico aparece a partir de 2 dias de histórico.
+          </div>
+        ) : (
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={history.map((h) => ({
+                  date: new Date(h.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+                  mrr: Math.round(h.mrrCents / 100),
+                  ativos: h.active,
+                }))}
+                margin={{ top: 10, right: 8, left: -16, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                <YAxis yAxisId="l" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                <YAxis yAxisId="r" orientation="right" tickLine={false} axisLine={false} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 0, fontSize: 12 }}
+                  formatter={(v: number, n: string) => n === "mrr" ? [`R$ ${v}`, "MRR"] : [v, "Ativos"]} />
+                <Line yAxisId="l" type="monotone" dataKey="mrr" stroke="#10b981" strokeWidth={2} dot={false} />
+                <Line yAxisId="r" type="monotone" dataKey="ativos" stroke="#7c3aed" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        <div className="mt-3 flex gap-4 text-xs">
+          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" /> MRR (R$)</span>
+          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-violet-600" /> Usuários ativos</span>
+        </div>
+      </motion.section>
 
       {/* Charts + Audit */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">

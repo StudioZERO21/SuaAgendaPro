@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import { DollarSign, TrendingDown, AlertTriangle, Users, Download, Search, Filter } from "lucide-react";
 import { motion } from "framer-motion";
@@ -139,9 +139,13 @@ function FinanceiroPage() {
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <header className="flex items-end justify-between border-b border-border pb-6">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Receita</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Receita &amp; contábil</p>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">Financeiro</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">MRR, assinantes e histórico de cobranças.</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Visão de receita: MRR, assinantes e histórico de cobranças. Para gestão operacional
+            (quem vai bloquear, renovar, suspender), use{" "}
+            <Link to="/super/cobrancas" className="font-semibold text-primary hover:underline">Cobranças</Link>.
+          </p>
         </div>
         <Button onClick={exportCSV} variant="outline" disabled={filteredEvents.length === 0}>
           <Download className="mr-2 h-4 w-4" /> Exportar CSV

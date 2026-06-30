@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Bell, RefreshCw, Play, Send, Clock, Mail, MessageSquare,
-  CheckCircle2, XCircle, Hourglass, Settings, Inbox, Save,
+  CheckCircle2, XCircle, Hourglass, Settings, Inbox, Save, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { downloadCSV } from "@/lib/csv";
 import { toast } from "sonner";
 import { withSuperToken } from "@/lib/super-client";
 import {
@@ -145,6 +146,14 @@ function FeedTab() {
         <div><label className="mb-1 block text-[11px] font-semibold text-muted-foreground">Até</label>
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-36" /></div>
         <Button size="sm" variant="outline" onClick={load} disabled={loading}><RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /></Button>
+        <Button size="sm" variant="outline" disabled={rows.length === 0}
+          onClick={() => downloadCSV(`notificacoes-${new Date().toISOString().slice(0,10)}`, rows.map((r) => ({
+            profissional: r.userName, destinatario: r.target ?? r.userEmail, tipo: r.kind, canal: r.channel,
+            status: r.status, enviado_em: r.sentAt ? new Date(r.sentAt).toLocaleString("pt-BR") : "",
+            criado_em: new Date(r.createdAt).toLocaleString("pt-BR"), erro: r.error ?? "",
+          })))}>
+          <Download className="h-3.5 w-3.5" /> CSV
+        </Button>
       </div>
 
       <NotifTable rows={rows} loading={loading} showWhen="sentAt" />

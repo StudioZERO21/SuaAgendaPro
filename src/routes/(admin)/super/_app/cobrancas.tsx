@@ -3,12 +3,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarClock, RefreshCw, AlertTriangle, Clock, ShieldOff,
   CheckCircle2, XCircle, Mail, MessageSquare, DollarSign, X,
-  RotateCw, Ban, Unlock, Activity, Search,
+  RotateCw, Ban, Unlock, Activity, Search, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { downloadCSV } from "@/lib/csv";
 import { toast } from "sonner";
 import { withSuperToken } from "@/lib/super-client";
 import {
@@ -163,9 +164,19 @@ function CobrancasPage() {
             Quem vai bloquear, notificações enviadas, pagamentos e ações manuais.
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => downloadCSV(`cobrancas-${new Date().toISOString().slice(0,10)}`, filtered.map((r) => ({
+            nome: r.name, email: r.email, telefone: r.phone, plano: r.planName,
+            valor: (r.priceCents / 100).toFixed(2), status: r.status,
+            proximo_evento: r.nextEventLabel, data: r.nextEventAt ? new Date(r.nextEventAt).toLocaleDateString("pt-BR") : "",
+            dias_para_bloquear: r.daysToBlock ?? "", bloqueado: r.isBlocked ? "sim" : "não",
+          })))} disabled={loading || filtered.length === 0}>
+            <Download className="h-3.5 w-3.5" /> CSV
+          </Button>
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} /> Atualizar
+          </Button>
+        </div>
       </header>
 
       {/* Health do cron */}
