@@ -4,6 +4,19 @@ import { requireSuperAuth } from "@/lib/super-auth.server";
 
 const _st = z.string().optional();
 
+// Resolve nome (profiles) e email (auth) para uma lista de user_ids, sem depender
+// de FK/embed do PostgREST (subscription_notifications referencia auth.users).
+async function resolveUsers(supabaseAdmin: any, userIds: string[]) {
+  const ids = [...new Set(userIds.filter(Boolean))];
+  const [authRes, profRes] = await Promise.all([
+    supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
+    ids.length ? supabaseAdmin.from("profiles").select("id, display_name").in("id", ids) : Promise.resolve({ data: [] }),
+  ]);
+  const emailMap = new Map((authRes?.data?.users ?? []).map((u: any) => [u.id, u.email ?? ""]));
+  const nameMap  = new Map((profRes?.data ?? []).map((p: any) => [p.id, p.display_name ?? ""]));
+  return { emailMap, nameMap };
+}
+
 // ─── Feed de notificações (log com filtros) ──────────────────────────────────
 
 export type NotifRow = {
@@ -38,7 +51,7 @@ export const getNotificationFeed = createServerFn({ method: "GET" })
 
     let q = (supabaseAdmin as any)
       .from("subscription_notifications")
-      .select("id, user_id, kind, channel, status, target, error, scheduled_for, sent_at, created_at, profiles!inner(display_name)")
+      .select("id, user_id, kind, channel, status, target, error, scheduled_for, sent_at, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -51,13 +64,12 @@ export const getNotificationFeed = createServerFn({ method: "GET" })
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    const emailMap = new Map((authUsers?.users ?? []).map((u) => [u.id, u.email ?? ""]));
+    const { emailMap, nameMap } = await resolveUsers(supabaseAdmin, (rows ?? []).map((r: any) => r.user_id));
 
     return (rows ?? []).map((r: any) => ({
       id:           r.id,
       userId:       r.user_id,
-      userName:     r.profiles?.display_name ?? "—",
+      userName:     nameMap.get(r.user_id) ?? "—",
       userEmail:    emailMap.get(r.user_id) ?? "—",
       kind:         r.kind,
       channel:      r.channel,
@@ -80,16 +92,15 @@ export const getNotificationQueue = createServerFn({ method: "GET" })
 
     const { data: rows } = await (supabaseAdmin as any)
       .from("subscription_notifications")
-      .select("id, user_id, kind, channel, status, target, error, scheduled_for, sent_at, created_at, profiles!inner(display_name)")
+      .select("id, user_id, kind, channel, status, target, error, scheduled_for, sent_at, created_at")
       .eq("status", "pending")
       .order("scheduled_for", { ascending: true })
       .limit(300);
 
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    const emailMap = new Map((authUsers?.users ?? []).map((u) => [u.id, u.email ?? ""]));
+    const { emailMap, nameMap } = await resolveUsers(supabaseAdmin, (rows ?? []).map((r: any) => r.user_id));
 
     return (rows ?? []).map((r: any) => ({
-      id: r.id, userId: r.user_id, userName: r.profiles?.display_name ?? "—",
+      id: r.id, userId: r.user_id, userName: nameMap.get(r.user_id) ?? "—",
       userEmail: emailMap.get(r.user_id) ?? "—", kind: r.kind, channel: r.channel,
       status: r.status, target: r.target ?? null, error: r.error ?? null,
       scheduledFor: r.scheduled_for ?? null, sentAt: r.sent_at ?? null, createdAt: r.created_at,
