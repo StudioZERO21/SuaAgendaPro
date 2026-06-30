@@ -24,11 +24,12 @@ import { cn } from "@/lib/utils";
 import { PhoneInputBR } from "@/components/ui/phone-input";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSlug, isSlugAvailable } from "@/lib/auth";
+import { ACCENTS, applyPersonalization, loadPersonalization, savePersonalization, type AccentId } from "@/lib/personalization";
 
 export const Route = createFileRoute("/(app)/onboarding")({
   head: () => ({
     meta: [
-      { title: "Bem-vinda — SuaAgenda.Pro" },
+      { title: "Boas-vindas — SuaAgenda.Pro" },
       { name: "description", content: "Personalize seu studio em 3 passos." },
     ],
   }),
@@ -119,7 +120,19 @@ function OnboardingPage() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [accent, setAccent] = useState<AccentId>("rose");
   const totalSteps = 4;
+
+  // Reflete a cor já salva (caso o usuário volte ao onboarding)
+  useEffect(() => { setAccent(loadPersonalization().accent); }, []);
+
+  // Escolhe a cor do tema: aplica na hora e salva — tudo daqui pra frente segue a cor
+  function chooseAccent(id: AccentId) {
+    setAccent(id);
+    const next = { ...loadPersonalization(), accent: id };
+    savePersonalization(next);
+    applyPersonalization(next);
+  }
 
   // Pre-fill display_name from user metadata
   useEffect(() => {
@@ -399,6 +412,34 @@ function OnboardingPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Essas informações aparecem no seu link público.
                 </p>
+
+                {/* Cor do app — primeira escolha, aplicada na hora */}
+                <div className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-card">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Escolha a cor do seu app
+                  </Label>
+                  <div className="mt-2.5 flex flex-wrap gap-2.5">
+                    {ACCENTS.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => chooseAccent(a.id)}
+                        aria-label={a.label}
+                        title={a.label}
+                        className={cn(
+                          "flex h-11 w-11 items-center justify-center rounded-full transition",
+                          accent === a.id ? "scale-110 ring-2 ring-foreground ring-offset-2 ring-offset-card" : "hover:scale-105",
+                        )}
+                        style={{ background: `linear-gradient(135deg, ${a.primary}, ${a.glow})` }}
+                      >
+                        {accent === a.id && <Check className="h-4 w-4 text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2.5 text-xs text-muted-foreground">
+                    Dá pra mudar quando quiser em <strong>Mais → Personalização</strong>.
+                  </p>
+                </div>
 
                 <div className="mt-6 space-y-4">
                   {/* Nome */}

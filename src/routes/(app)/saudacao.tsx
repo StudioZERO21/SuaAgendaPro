@@ -6,7 +6,7 @@ import logoUrl from "@/assets/logo-saudacao.png";
 export const Route = createFileRoute("/(app)/saudacao")({
   head: () => ({
     meta: [
-      { title: "Bem-vinda — SuaAgenda.Pro" },
+      { title: "Boas-vindas — SuaAgenda.Pro" },
       { name: "description", content: "Saudação personalizada após login." },
     ],
   }),
@@ -168,7 +168,7 @@ function SaudacaoPage() {
               alignSelf: "center",
             }}
           >
-            Bem-vindo de volta
+            Que bom te ver de novo
           </p>
         </div>
       </div>

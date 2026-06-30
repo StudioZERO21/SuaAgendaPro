@@ -371,7 +371,7 @@ function DashboardPage() {
             </div>
             {d.topClients.length === 0 ? (
               <div className="rounded-lg border border-border bg-card px-4 py-6 text-center shadow-card">
-                <p className="text-sm text-muted-foreground">Nenhuma cliente cadastrada ainda.</p>
+                <p className="text-sm text-muted-foreground">Nenhum cliente cadastrado ainda.</p>
               </div>
             ) : (
               <div className="space-y-2">

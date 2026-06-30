@@ -842,7 +842,7 @@ function PersonalizacaoPage() {
               id="welcome"
               rows={2}
               maxLength={300}
-              placeholder="Ex: Bem-vinda ao Studio! Escolha seu serviço abaixo 💅"
+              placeholder="Ex: Boas-vindas ao Studio! Escolha seu serviço abaixo 💅"
               value={pub.welcomeMessage}
               onChange={(e) => setPub((s) => ({ ...s, welcomeMessage: e.target.value }))}
             />

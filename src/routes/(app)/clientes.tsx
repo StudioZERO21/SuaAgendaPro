@@ -678,7 +678,7 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
         birthDate:     toIso(form.birthday),
         isVip:         form.isVip,
       });
-      toast.success("Cliente cadastrada ✨");
+      toast.success("Cliente adicionado ✨");
       onCreated();
     } catch {
       toast.error("Erro ao cadastrar. Tente novamente.");

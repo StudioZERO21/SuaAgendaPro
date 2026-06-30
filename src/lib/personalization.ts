@@ -145,6 +145,9 @@ export function applyAccent(id: AccentId) {
   root.style.setProperty("--rose-cloud", a.cloud);
   root.style.setProperty("--gradient-soft", a.gradientSoft);
   root.style.setProperty("--gradient-card", a.gradientCard);
+  // Barra do app instalado (PWA) acompanha a cor escolhida, ao vivo
+  const mt = typeof document !== "undefined" ? document.querySelector('meta[name="theme-color"]') : null;
+  if (mt) mt.setAttribute("content", a.primary);
 }
 
 export function applyFont(id: FontId) {

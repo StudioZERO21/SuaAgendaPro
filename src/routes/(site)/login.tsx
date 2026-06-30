@@ -75,7 +75,7 @@ function LoginPage() {
 
     const onboarded = await getOnboardingStatus(data.user.id);
     setLoading(false);
-    toast.success("Bem-vinda de volta ✨");
+    toast.success("Que bom te ver de novo ✨");
     navigate({ to: onboarded ? "/dashboard" : "/onboarding" });
   }
 
@@ -113,7 +113,7 @@ function LoginPage() {
         >
           <BrandLogo size="2xl" />
           <h1 className="mt-6 font-display text-4xl font-bold leading-tight">
-            Bem-vinda <span className="text-gradient italic">de volta</span>
+            Que bom <span className="text-gradient italic">te ver</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Entre para continuar gerenciando sua agenda.

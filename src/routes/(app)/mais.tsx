@@ -808,7 +808,7 @@ function AppRatingModal({
               {display === 2 && "Tem bastante espaço para melhorar 🤔"}
               {display === 3 && "Razoável, vamos trabalhar nisso! 🙂"}
               {display === 4 && "Muito bom! Quase perfeito ✨"}
-              {display === 5 && "Incrível! Muito obrigada 💜"}
+              {display === 5 && "Incrível! Valeu demais 💜"}
             </p>
           )}
 

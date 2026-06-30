@@ -299,7 +299,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-        { name: "theme-color", content: "#ec4899" },
+        { name: "theme-color", content: "#6b7280" },
         { title },
         { name: "description", content: description },
         { property: "og:title", content: "SuaAgenda.Pro" },
@@ -373,6 +373,9 @@ function applyThemeVars() {
     const isDark = theme === "dark" || (theme === "auto" && window.matchMedia("(prefers-color-scheme:dark)").matches);
     e.classList.toggle("dark", isDark);
     if (d && d.highContrast) e.classList.add("high-contrast");
+    // Barra do app instalado (PWA) segue a cor do tema
+    const mt = document.querySelector('meta[name="theme-color"]');
+    if (mt) mt.setAttribute("content", ac.p);
   } catch { /* silent */ }
 }
 
