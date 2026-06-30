@@ -74,7 +74,7 @@ fi
 echo ""
 echo "Iniciando build (pode levar alguns minutos)..."
 echo ""
-docker compose up -d --build --remove-orphans
+docker compose up -d --build --force-recreate --remove-orphans
 
 echo ""
 ok "Build concluído!"
@@ -110,5 +110,5 @@ echo ""
 echo "Comandos úteis:"
 echo "  Logs:       docker compose -f $DEPLOY_DIR/docker-compose.yml logs -f app"
 echo "  Reiniciar:  docker compose -f $DEPLOY_DIR/docker-compose.yml restart app"
-echo "  Atualizar:  cd $DEPLOY_DIR && git pull && docker compose up -d --build"
+  echo "  Atualizar:  cd $DEPLOY_DIR && git pull && docker compose up -d --build --force-recreate"
 echo ""

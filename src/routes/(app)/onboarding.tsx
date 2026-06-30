@@ -418,7 +418,7 @@ function OnboardingPage() {
                   <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Escolha a cor do seu app
                   </Label>
-                  <div className="mt-2.5 flex flex-wrap gap-2.5">
+                  <div className="mt-2.5 grid grid-cols-7 gap-2 sm:grid-cols-8">
                     {ACCENTS.map((a) => (
                       <button
                         key={a.id}
@@ -427,12 +427,12 @@ function OnboardingPage() {
                         aria-label={a.label}
                         title={a.label}
                         className={cn(
-                          "flex h-11 w-11 items-center justify-center rounded-full transition",
-                          accent === a.id ? "scale-110 ring-2 ring-foreground ring-offset-2 ring-offset-card" : "hover:scale-105",
+                          "aspect-square w-full max-w-11 rounded-full transition",
+                          accent === a.id ? "scale-105 ring-2 ring-foreground ring-offset-2 ring-offset-card" : "hover:scale-105",
                         )}
                         style={{ background: `linear-gradient(135deg, ${a.primary}, ${a.glow})` }}
                       >
-                        {accent === a.id && <Check className="h-4 w-4 text-white" />}
+                        {accent === a.id && <Check className="m-auto h-4 w-4 text-white" />}
                       </button>
                     ))}
                   </div>

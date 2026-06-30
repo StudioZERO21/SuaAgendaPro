@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSuperAuth } from "@/lib/super-auth.server";
 import { getServerEnv, getServerEnvStatus } from "@/lib/server-env";
+import { evolutionFetch, getEvolutionConfig } from "@/lib/evolution-api.server";
 
 const _st = z.string().optional();
 
@@ -68,19 +69,24 @@ export const testApiConnection = createServerFn({ method: "POST" })
     }
 
     if (data.api === "evolution") {
-      const url = getServerEnv("EVOLUTION_API_URL");
-      const key = getServerEnv("EVOLUTION_API_KEY");
-      if (!url || !key) return { ok: false, message: "EVOLUTION_API_URL ou EVOLUTION_API_KEY não configurado no .env" };
-      try {
-        const base = url.replace(/\/+$/, "");
-        const r = await fetch(`${base}/instance/all`, { headers: { apikey: key } });
-        if (r.ok) {
-          const json = await r.json() as any;
-          const count = Array.isArray(json) ? json.length : (json?.data?.length ?? "?");
-          return { ok: true, message: `Evolution conectado — ${count} instância(s)` };
-        }
-        return { ok: false, message: `Evolution retornou status ${r.status}` };
-      } catch (e: any) { return { ok: false, message: e?.message ?? "Erro de conexão" }; }
+      const cfg = getEvolutionConfig();
+      if (!cfg.configured) {
+        return {
+          ok: false,
+          message:
+            "Evolution não configurado. Na VPS use .env.production (não .env) e recrie o container: docker compose up -d --force-recreate",
+        };
+      }
+      const probe = await evolutionFetch("/instance/all");
+      if (probe.ok) {
+        const json = probe.data as any;
+        const count = Array.isArray(json) ? json.length : (json?.data?.length ?? "?");
+        return { ok: true, message: `Evolution conectado — ${count} instância(s)` };
+      }
+      return {
+        ok: false,
+        message: `Evolution HTTP ${probe.status || "—"}: ${probe.error}`,
+      };
     }
 
     return { ok: false, message: "API desconhecida" };

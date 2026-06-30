@@ -1,6 +1,6 @@
 export { ACCENTS, FONTS, type AccentId, type FontId } from "@/lib/accents-data";
 
-import { ACCENTS, FONTS, type AccentId, type FontId } from "@/lib/accents-data";
+import { ACCENTS, FONTS, isAccentId, type AccentId, type FontId } from "@/lib/accents-data";
 import {
   applyAccentVars,
   resolveIsDark,
@@ -53,6 +53,8 @@ export function loadPersonalization(): Personalization {
     return {
       ...DEFAULTS,
       ...parsed,
+      accent: isAccentId(parsed.accent) ? parsed.accent : DEFAULTS.accent,
+      font: FONTS.some((f) => f.id === parsed.font) ? parsed.font : DEFAULTS.font,
       business: {
         ...DEFAULTS.business,
         ...(parsed.business ?? {}),

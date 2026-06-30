@@ -2,6 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSuperAuth } from "@/lib/super-auth.server";
 import { getServerEnv } from "@/lib/server-env";
+import {
+  evolutionFetch,
+  getEvolutionConfig,
+} from "@/lib/evolution-api.server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,16 +113,15 @@ export const getInfraStats = createServerFn({ method: "GET" })
 
     const asaasKey     = getServerEnv("ASAAS_API_KEY");
     const resendKey    = getServerEnv("RESEND_API_KEY");
-    const evolutionUrl = getServerEnv("EVOLUTION_API_URL");
-    const evolutionKey = getServerEnv("EVOLUTION_API_KEY");
     const hostingerKey = getServerEnv("HOSTINGER_API_TOKEN");
     const asaasEnv     = getServerEnv("ASAAS_ENV") === "production" ? "production" : "sandbox";
+    const evolutionCfg = getEvolutionConfig();
 
     const envConfigured = {
       ASAAS_API_KEY:        !!asaasKey,
       RESEND_API_KEY:       !!resendKey,
-      EVOLUTION_API_URL:    !!evolutionUrl,
-      EVOLUTION_API_KEY:    !!evolutionKey,
+      EVOLUTION_API_URL:    !!evolutionCfg.url,
+      EVOLUTION_API_KEY:    !!evolutionCfg.instanceApiKey || !!evolutionCfg.globalApiKey,
       HOSTINGER_API_TOKEN:  !!hostingerKey,
     };
 
@@ -133,12 +136,9 @@ export const getInfraStats = createServerFn({ method: "GET" })
         } catch { return "error"; }
       })(),
       (async (): Promise<ApiStatus> => {
-        if (!evolutionUrl || !evolutionKey) return "unconfigured";
-        try {
-          const base = evolutionUrl.replace(/\/+$/, "");
-          const r = await fetch(`${base}/instance/all`, { headers: { apikey: evolutionKey } });
-          return r.ok ? "ok" : "error";
-        } catch { return "error"; }
+        if (!evolutionCfg.configured) return "unconfigured";
+        const probe = await evolutionFetch("/instance/all");
+        return probe.ok ? "ok" : "error";
       })(),
     ]);
 
@@ -274,61 +274,47 @@ export const getEvolutionStats = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<EvolutionStats> => {
     await requireSuperAuth(data._st ?? null);
 
-    const url = process.env.EVOLUTION_API_URL ?? "";
-    const key = process.env.EVOLUTION_API_KEY ?? "";
-
-    if (!url || !key) {
+    const cfg = getEvolutionConfig();
+    if (!cfg.configured) {
       return { configured: false, instances: [], version: "" };
     }
-
-    const headers = { apikey: key };
-    const base = url.replace(/\/+$/, "");
 
     let instances: EvolutionInstance[] = [];
     let version = "";
     let error: string | undefined;
 
-    // Evolution Go (evoapicloud/evolution-go) usa GET /instance/all
-    // (diferente do Evolution API v2 Node.js que usa /instance/fetchInstances)
-    try {
-      const r = await fetch(`${base}/instance/all`, { headers });
-      if (r.ok) {
-        const raw = await r.json() as any;
-        // Normaliza: pode ser array ou { data: [] }
-        const list: any[] = Array.isArray(raw) ? raw : (raw?.data ?? raw?.instances ?? []);
-        instances = list.map((item: any) => {
-          // Evolution Go usa item.connected (boolean) para estado
-          const state: "open" | "close" | "connecting" =
-            item.connected === true ? "open"
-            : (item.status === "open" || item.status === "connected") ? "open"
-            : "close";
-          // item.jid = "5521984095453:3@s.whatsapp.net" → extrair só o número
-          const rawJid = item.jid ?? item.owner ?? item.ownerJid ?? "";
-          const number = rawJid.split("@")[0].split(":")[0] || null;
-          return {
-            name:           item.name          ?? item.instanceName ?? "",
-            state,
-            profileName:    item.profileName   ?? item.profile_name ?? "",
-            profilePicture: item.profilePicUrl ?? item.profile_pic  ?? null,
-            number,
-          };
-        });
-      } else {
-        const body = await r.text().catch(() => "");
-        error = `Evolution ${r.status}: ${body.slice(0, 150)}`;
-      }
-    } catch (e: any) {
-      error = `Evolution conexão: ${e?.message ?? "timeout"}`;
+    const listRes = await evolutionFetch("/instance/all");
+    if (listRes.ok) {
+      const raw = listRes.data as any;
+      const list: any[] = Array.isArray(raw) ? raw : (raw?.data ?? raw?.instances ?? []);
+      instances = list.map((item: any) => {
+        const state: "open" | "close" | "connecting" =
+          item.connected === true ? "open"
+          : (item.status === "open" || item.status === "connected") ? "open"
+          : "close";
+        const rawJid = item.jid ?? item.owner ?? item.ownerJid ?? "";
+        const number = rawJid.split("@")[0].split(":")[0] || null;
+        return {
+          name:           item.name          ?? item.instanceName ?? "",
+          state,
+          profileName:    item.profileName   ?? item.profile_name ?? "",
+          profilePicture: item.profilePicUrl ?? item.profile_pic  ?? null,
+          number,
+        };
+      });
+    } else {
+      const hint =
+        listRes.status === 401 || listRes.status === 403
+          ? " — verifique EVOLUTION_GLOBAL_API_KEY (chave global do painel), não só o token da instância"
+          : "";
+      error = `Evolution ${listRes.status || "erro"}: ${listRes.error}${hint}`;
     }
 
-    // Fetch versão (opcional)
-    try {
-      const versionRes = await fetch(`${base}/`, { headers });
-      if (versionRes.ok) {
-        const v = await versionRes.json() as any;
-        version = v.version ?? v.EvolutionAPI?.VERSION ?? "";
-      }
-    } catch { /* version is optional */ }
+    const versionRes = await evolutionFetch("/");
+    if (versionRes.ok) {
+      const v = versionRes.data as any;
+      version = v?.version ?? v?.EvolutionAPI?.VERSION ?? "";
+    }
 
     return { configured: true, instances, version, error };
   });
@@ -396,21 +382,25 @@ export const sendEvolutionMessage = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: boolean; message: string }> => {
     await requireSuperAuth(data._st ?? null);
 
-    const url = process.env.EVOLUTION_API_URL ?? "";
-    const key = process.env.EVOLUTION_API_KEY ?? "";
-    if (!url || !key) return { ok: false, message: "Evolution não configurado" };
+    const cfg = getEvolutionConfig();
+    if (!cfg.configured) return { ok: false, message: "Evolution não configurado" };
 
-    const base = url.replace(/\/+$/, "");
+    const allRes = await evolutionFetch("/instance/all");
+    if (!allRes.ok) {
+      return {
+        ok: false,
+        message: `Erro ao buscar instâncias (${allRes.status || "rede"}): ${allRes.error}`,
+      };
+    }
 
-    // Busca o token da instância server-side — nunca exposto ao browser
-    const allRes = await fetch(`${base}/instance/all`, { headers: { apikey: key } });
-    if (!allRes.ok) return { ok: false, message: `Erro ao buscar instâncias: ${allRes.status}` };
-    const allData = await allRes.json().catch(() => ({})) as any;
+    const allData = allRes.data as any;
     const list: any[] = Array.isArray(allData) ? allData : (allData?.data ?? allData?.instances ?? []);
     const inst = list.find((i: any) => (i.name ?? i.instanceName) === data.instanceName);
-    if (!inst?.token) return { ok: false, message: `Instância "${data.instanceName}" não encontrada ou sem token` };
+    if (!inst?.token) {
+      return { ok: false, message: `Instância "${data.instanceName}" não encontrada ou sem token` };
+    }
 
-    const r = await fetch(`${base}/send/text`, {
+    const r = await fetch(`${cfg.url}/send/text`, {
       method: "POST",
       headers: { apikey: inst.token, "Content-Type": "application/json" },
       body: JSON.stringify({ number: data.to, text: data.text }),

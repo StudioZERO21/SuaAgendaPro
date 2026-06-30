@@ -534,7 +534,10 @@ function PersonalizacaoPage() {
 
           <div className="space-y-2">
             <Label className="text-xs">Cor de destaque</Label>
-            <div className="flex flex-wrap gap-3">
+            <p className="text-[11px] text-muted-foreground">
+              {ACCENTS.find((a) => a.id === data.accent)?.label ?? "Rosa"}
+            </p>
+            <div className="grid grid-cols-7 gap-2.5 sm:grid-cols-8">
               {ACCENTS.map((a) => {
                 const active = data.accent === a.id;
                 return (
@@ -547,7 +550,7 @@ function PersonalizacaoPage() {
                     }}
                     aria-label={a.label}
                     className={cn(
-                      "relative h-10 w-10 rounded-full ring-offset-2 ring-offset-card transition",
+                      "relative aspect-square w-full max-w-10 rounded-full ring-offset-2 ring-offset-card transition",
                       active && "ring-2 ring-foreground",
                     )}
                     style={{

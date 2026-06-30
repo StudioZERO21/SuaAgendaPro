@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AccentId, FontId, ThemeId } from "@/lib/personalization";
+import { ACCENT_ID_ENUM } from "@/lib/accents-data";
 import {
   normalizeHexColor,
   normalizeHexColorOrEmpty,
@@ -49,7 +50,7 @@ const DEFAULT_SETTINGS: PublicProfileSettings = {
 };
 
 const uiSchema = z.object({
-  accent:       z.enum(["rose", "violet", "amber", "emerald", "sky", "noir"]).default("rose"),
+  accent:       z.enum(ACCENT_ID_ENUM).default("rose"),
   font:         z.enum(["playfair", "inter", "dm"]).default("playfair"),
   theme:        z.enum(["light", "dark", "auto"]).default("light"),
   highContrast: z.boolean().default(false),

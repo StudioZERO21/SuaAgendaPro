@@ -82,7 +82,8 @@ function loadFileEnv(): Record<string, string> {
  *   Valor da variável ou string vazia se ausente.
  */
 export function getServerEnv(key: string): string {
-  return process.env[key] || loadFileEnv()[key] || "";
+  const raw = process.env[key] || loadFileEnv()[key] || "";
+  return raw.trim().replace(/^["']+|["']+$/g, "");
 }
 
 /**
@@ -97,6 +98,8 @@ export function getServerEnvStatus(): Record<string, boolean> {
     RESEND_API_KEY: !!getServerEnv("RESEND_API_KEY"),
     EVOLUTION_API_URL: !!getServerEnv("EVOLUTION_API_URL"),
     EVOLUTION_API_KEY: !!getServerEnv("EVOLUTION_API_KEY"),
+    EVOLUTION_GLOBAL_API_KEY: !!getServerEnv("EVOLUTION_GLOBAL_API_KEY"),
+    EVOLUTION_INSTANCE_ID: !!getServerEnv("EVOLUTION_INSTANCE_ID"),
     HOSTINGER_API_TOKEN: !!getServerEnv("HOSTINGER_API_TOKEN"),
   };
 }

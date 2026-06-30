@@ -334,7 +334,7 @@ function InfraPage() {
         ) : !evolution?.configured ? (
           <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
             <AlertCircle className="h-8 w-8 opacity-30" />
-            <p>Configure <code className="rounded bg-muted px-1 font-mono text-xs">EVOLUTION_API_URL</code> e <code className="rounded bg-muted px-1 font-mono text-xs">EVOLUTION_API_KEY</code> no <code className="rounded bg-muted px-1 font-mono text-xs">.env</code>.</p>
+            <p>Configure <code className="rounded bg-muted px-1 font-mono text-xs">EVOLUTION_API_URL</code> e <code className="rounded bg-muted px-1 font-mono text-xs">EVOLUTION_API_KEY</code> no <code className="rounded bg-muted px-1 font-mono text-xs">.env.production</code> da VPS (não o <code className="rounded bg-muted px-1 font-mono text-xs">.env</code> local).</p>
           </div>
         ) : evolution.error ? (
           <div className="flex flex-col items-center gap-2 p-8 text-center">
