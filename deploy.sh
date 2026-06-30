@@ -9,6 +9,7 @@ set -euo pipefail
 
 REPO="https://github.com/StudioZERO21/SuaAgendaPro.git"
 DEPLOY_DIR="/opt/suaagendapro"
+# A VPS faz pull desta branch — manter sincronizada com master após cada fix.
 BRANCH="main"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'

@@ -61,9 +61,21 @@ function applySecurityHeaders(response: Response): Response {
   });
 }
 
+/** Healthcheck do Docker — resposta JSON antes do router SSR (TanStack route API não cobre prod). */
+function healthResponse(): Response {
+  return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (new URL(request.url).pathname === "/api/health") {
+        return applySecurityHeaders(healthResponse());
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

@@ -403,7 +403,7 @@ function MaisPage() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold">{it.label}</p>
-                        {myRating && (
+                        {myRating && myRating.rating >= 1 && myRating.rating <= 5 && (
                           <p className="text-[11px] text-muted-foreground">
                             {"★".repeat(myRating.rating)}{"☆".repeat(5 - myRating.rating)} — sua avaliação
                           </p>
