@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, Clock, CreditCard, RefreshCw } from "lucide-react";
+import { ArrowLeft, Check, Clock, CreditCard, RefreshCw, Download } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { downloadCSV } from "@/lib/csv";
 import {
   listPaymentTransactions,
   syncMercadoPagoTransactions,
@@ -145,9 +146,19 @@ function HistoricoTransacoesPage() {
           </section>
         </div>
 
-        <Button variant="outline" onClick={sync} disabled={syncing} className="h-11 w-full rounded-2xl text-sm">
-          <RefreshCw className="mr-2 h-4 w-4" /> {syncing ? "Sincronizando..." : "Sincronizar Mercado Pago"}
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button variant="outline" onClick={sync} disabled={syncing} className="h-11 rounded-2xl text-sm">
+            <RefreshCw className="mr-2 h-4 w-4" /> {syncing ? "Sincronizando..." : "Sincronizar"}
+          </Button>
+          <Button variant="outline" disabled={rows.length === 0} className="h-11 rounded-2xl text-sm"
+            onClick={() => downloadCSV(`transacoes-${new Date().toISOString().slice(0,10)}`, rows.map((tx) => ({
+              cliente: tx.client_name, servico: tx.service_name ?? "", metodo: tx.method,
+              valor: (tx.amount_cents / 100).toFixed(2), status: statusLabel(tx.status),
+              data: new Date(tx.created_at).toLocaleString("pt-BR"),
+            })))}>
+            <Download className="mr-2 h-4 w-4" /> Exportar
+          </Button>
+        </div>
 
         {loading ? (
           <p className="py-8 text-center text-sm text-muted-foreground">Carregando transações...</p>

@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Plus, Phone, MessageCircle, Cake, Calendar, Crown, X, Pencil,
   Mail, MapPin, StickyNote, Check, ChevronLeft, ChevronRight, CalendarCheck,
-  Heart, Loader2, Lock, EyeOff,
+  Heart, Loader2, Lock, EyeOff, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { downloadCSV } from "@/lib/csv";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { MobileShell } from "@/components/mobile-shell";
@@ -195,6 +196,19 @@ function ClientesPage() {
             <h1 className="font-display text-3xl font-bold leading-tight">Clientes</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              disabled={enriched.length === 0}
+              onClick={() => downloadCSV(`clientes-${new Date().toISOString().slice(0,10)}`, enriched.map((c) => ({
+                nome: c.name, telefone: c.phone, email: c.email ?? "",
+                atendimentos: c.totalAppointments, total_gasto: (c.totalSpentCents / 100).toFixed(2),
+                aniversario: c.birthDate ?? "",
+              })))}
+              className="h-11 w-11 rounded-2xl p-0"
+              aria-label="Exportar clientes"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
             <Button
               onClick={() => setCreateOpen(true)}
               className="h-11 rounded-2xl gradient-primary px-4 text-sm font-semibold shadow-glow"
