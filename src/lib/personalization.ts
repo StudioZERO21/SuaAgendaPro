@@ -9,6 +9,9 @@ import {
 
 export const PERSONALIZATION_KEY = "sa.personalizacao";
 
+/** Disparado após applyPersonalization / applyAccent (mesma aba). */
+export const THEME_CHANGE_EVENT = "sa:theme-change";
+
 export type ThemeId = "light" | "dark" | "auto";
 
 export type LogoShape = "square" | "wide";
@@ -28,6 +31,18 @@ export const DEFAULTS: Personalization = {
   highContrast: false,
   business: { name: "Studio Beleza", logo: "", logoShape: "square" },
 };
+
+/** Accent aplicado por último — fonte imediata para componentes reativos ao tema. */
+let activeAccentId: AccentId = DEFAULTS.accent;
+
+function notifyThemeChange() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+}
+
+export function getActiveAccentId(): AccentId {
+  return activeAccentId;
+}
 
 export function loadPersonalization(): Personalization {
   if (typeof window === "undefined") return DEFAULTS;
@@ -49,9 +64,15 @@ export function loadPersonalization(): Personalization {
   }
 }
 
+if (typeof window !== "undefined") {
+  activeAccentId = loadPersonalization().accent;
+}
+
 export function savePersonalization(p: Personalization) {
   if (typeof window === "undefined") return;
   localStorage.setItem(PERSONALIZATION_KEY, JSON.stringify(p));
+  activeAccentId = p.accent;
+  notifyThemeChange();
 }
 
 let autoThemeMedia: MediaQueryList | null = null;
@@ -88,11 +109,13 @@ export function applyTheme(theme: ThemeId) {
 
 export function applyAccent(id: AccentId) {
   if (typeof document === "undefined") return;
+  activeAccentId = id;
   const accent = THEME_ACCENTS[id] ?? THEME_ACCENTS.rose;
   const isDark = document.documentElement.classList.contains("dark");
   applyAccentVars(document.documentElement, accent, isDark);
   const mt = document.querySelector('meta[name="theme-color"]');
   if (mt) mt.setAttribute("content", accent.p);
+  notifyThemeChange();
 }
 
 export function applyFont(id: FontId) {
@@ -107,6 +130,7 @@ export function applyHighContrast(enabled: boolean) {
 }
 
 export function applyPersonalization(p: Personalization) {
+  activeAccentId = p.accent;
   applyTheme(p.theme);
   applyAccent(p.accent);
   applyFont(p.font);

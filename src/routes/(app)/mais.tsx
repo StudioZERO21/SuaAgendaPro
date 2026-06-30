@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { getMyAppRating, submitAppRating, type MyRating } from "@/lib/app-rating.functions";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { APP_VERSION_LABEL } from "@/lib/app-version";
 
 export const Route = createFileRoute("/(app)/mais")({
   head: () => ({
@@ -471,7 +472,7 @@ function MaisPage() {
         </Button>
 
         <p className="pt-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          SuaAgenda.Pro · v1.0.0
+          SuaAgenda.Pro · {APP_VERSION_LABEL}
         </p>
       </main>
 

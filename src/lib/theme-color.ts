@@ -1,4 +1,12 @@
 import { useSyncExternalStore } from "react";
+import type { AccentId } from "@/lib/accents-data";
+import {
+  DEFAULTS,
+  getActiveAccentId,
+  loadPersonalization,
+  THEME_CHANGE_EVENT,
+} from "@/lib/personalization";
+import { THEME_ACCENTS } from "@/lib/theme-vars";
 
 /** Converte hex (#rgb ou #rrggbb) para componentes RGB. */
 function parseHex(hex: string): [number, number, number] | null {
@@ -25,70 +33,54 @@ export function parseCssColor(input: string): [number, number, number] | null {
   return null;
 }
 
-/**
- * Lê variável CSS do `<html>`.
- * Prioriza inline style (personalização) sobre regras `.dark` do stylesheet.
- */
-export function readCssVar(name: string, fallback = ""): string {
-  if (typeof document === "undefined") return fallback;
-  const root = document.documentElement;
-  const inline = root.style.getPropertyValue(name).trim();
-  if (inline) return inline;
-  return getComputedStyle(root).getPropertyValue(name).trim() || fallback;
-}
-
 export function subscribeTheme(cb: () => void) {
-  if (typeof document === "undefined") return () => {};
-  const obs = new MutationObserver(cb);
-  obs.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["style", "class"],
-  });
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(THEME_CHANGE_EVENT, cb);
   window.addEventListener("storage", cb);
   return () => {
-    obs.disconnect();
+    window.removeEventListener(THEME_CHANGE_EVENT, cb);
     window.removeEventListener("storage", cb);
   };
 }
 
 export type ThemeBrand = {
+  accentId: AccentId;
   primary: string;
   accent: string;
   gradient: string;
 };
 
-function readThemeBrand(): ThemeBrand {
-  const primary = readCssVar("--primary", "#6b7280");
-  const accent = readCssVar("--accent", "#4b5563");
-  const gradient = readCssVar(
-    "--gradient-primary",
-    `linear-gradient(135deg, ${primary} 0%, ${accent} 100%)`,
-  );
-  return { primary, accent, gradient };
+/** Resolve cores do accent a partir do catálogo (não depende de CSS cascade). */
+export function resolveThemeBrand(accentId: AccentId = getActiveAccentId()): ThemeBrand {
+  const pack = THEME_ACCENTS[accentId] ?? THEME_ACCENTS.rose;
+  return {
+    accentId,
+    primary: pack.p,
+    accent: pack.a,
+    gradient: `linear-gradient(135deg, ${pack.p} 0%, ${pack.a} 100%)`,
+  };
 }
 
-const SSR_BRAND: ThemeBrand = {
-  primary: "#6b7280",
-  accent: "#4b5563",
-  gradient: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)",
-};
+function readAccentSnapshot(): AccentId {
+  if (typeof window === "undefined") return DEFAULTS.accent;
+  return getActiveAccentId();
+}
 
-/** Re-render quando accent/tema mudam no DOM (personalização, ui_settings, dark). */
+/** Re-render quando accent/tema mudam (personalização, ui_settings, storage). */
 export function useThemeBrand(): ThemeBrand {
-  return useSyncExternalStore(subscribeTheme, readThemeBrand, () => SSR_BRAND);
+  const accentId = useSyncExternalStore(
+    subscribeTheme,
+    readAccentSnapshot,
+    () => DEFAULTS.accent,
+  );
+  return resolveThemeBrand(accentId);
 }
 
 /**
- * Lê `--primary` e retorna rgba com alpha informado.
- * Funciona com accent aplicado via inline style (personalização).
+ * Retorna rgba com alpha informado a partir de uma cor hex/rgb.
  */
-export function primaryRgba(alpha: number, color?: string, fallback = "#6b7280"): string {
-  const source = color ?? readCssVar("--primary", fallback);
-  const rgb = parseCssColor(source);
-  if (!rgb) {
-    const fb = parseCssColor(fallback) ?? [107, 114, 128];
-    return `rgba(${fb[0]}, ${fb[1]}, ${fb[2]}, ${alpha})`;
-  }
+export function primaryRgba(alpha: number, color: string, fallback = "#6b7280"): string {
+  const rgb = parseCssColor(color) ?? parseCssColor(fallback) ?? [107, 114, 128];
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 }
 
@@ -104,4 +96,9 @@ export function peakTopCardStyle(
 ): { background?: string; backgroundColor?: string } {
   if (rank === 0) return { background: brand.gradient };
   return { backgroundColor: primaryRgba(rank === 1 ? 0.28 : 0.14, brand.primary) };
+}
+
+/** Accent persistido (localStorage) — útil ao hidratar após reload. */
+export function readPersistedAccentId(): AccentId {
+  return loadPersonalization().accent;
 }

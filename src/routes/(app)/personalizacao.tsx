@@ -217,6 +217,7 @@ function PersonalizacaoPage() {
 
   useEffect(() => {
     applyPersonalization(data);
+    savePersonalization(data);
   }, [data.theme, data.accent, data.font, data.highContrast]);
 
   // ── Banner upload ─────────────────────────────────────────────
