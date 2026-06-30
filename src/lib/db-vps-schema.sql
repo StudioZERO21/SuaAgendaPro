@@ -68,13 +68,15 @@ CREATE INDEX IF NOT EXISTS idx_ai_reviews_prof
 
 -- Logs de atividade do profissional (login, falha de senha, sessão derrubada, logout).
 -- Criada automaticamente pelo app (recordActivityVps) — aqui só para referência.
+-- LGPD: NÃO guarda IP — apenas navegador / SO / aparelho (não sensível).
 CREATE TABLE IF NOT EXISTS professional_activity_log (
   id              BIGSERIAL    PRIMARY KEY,
   professional_id UUID,
   email           TEXT,
   event           TEXT         NOT NULL,  -- login_success | login_failed | session_kicked | logout
-  ip              TEXT,
-  user_agent      TEXT,
+  browser         TEXT,
+  os              TEXT,
+  device          TEXT,
   meta            JSONB,
   created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );

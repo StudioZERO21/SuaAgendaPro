@@ -72,11 +72,13 @@ export function ProfessionalActivity({ email }: { email: string }) {
             const cfg = EVENT_CFG[r.event] ?? { label: r.event, cls: "bg-muted text-muted-foreground", icon: LogIn };
             return (
               <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-                <span className="flex items-center gap-2">
-                  <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold", cfg.cls)}>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold", cfg.cls)}>
                     <cfg.icon className="h-3 w-3" />{cfg.label}
                   </span>
-                  {r.ip && <span className="text-xs text-muted-foreground">IP {r.ip}</span>}
+                  <span className="truncate text-xs text-muted-foreground">
+                    {[r.device, r.browser, r.os].filter((x) => x && x !== "—").join(" · ") || "—"}
+                  </span>
                 </span>
                 <span className="shrink-0 text-xs text-muted-foreground">{fmtDT(r.createdAt)}</span>
               </li>

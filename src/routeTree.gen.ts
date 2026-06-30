@@ -68,6 +68,7 @@ import { Route as adminSuperAppFaqRouteImport } from './routes/(admin)/super/_ap
 import { Route as adminSuperAppConfiguracoesRouteImport } from './routes/(admin)/super/_app/configuracoes'
 import { Route as adminSuperAppCobrancasRouteImport } from './routes/(admin)/super/_app/cobrancas'
 import { Route as adminSuperAppAuditoriaRouteImport } from './routes/(admin)/super/_app/auditoria'
+import { Route as adminSuperAppAcessosRouteImport } from './routes/(admin)/super/_app/acessos'
 
 const siteIndexRoute = siteIndexRouteImport.update({
   id: '/(site)/',
@@ -368,6 +369,11 @@ const adminSuperAppAuditoriaRoute = adminSuperAppAuditoriaRouteImport.update({
   path: '/auditoria',
   getParentRoute: () => adminSuperAppRouteRoute,
 } as any)
+const adminSuperAppAcessosRoute = adminSuperAppAcessosRouteImport.update({
+  id: '/acessos',
+  path: '/acessos',
+  getParentRoute: () => adminSuperAppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/app': typeof appAppRoute
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/super/acessos': typeof adminSuperAppAcessosRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
   '/super/cobrancas': typeof adminSuperAppCobrancasRoute
   '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
@@ -471,6 +478,7 @@ export interface FileRoutesByTo {
   '/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/super/acessos': typeof adminSuperAppAcessosRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
   '/super/cobrancas': typeof adminSuperAppCobrancasRoute
   '/super/configuracoes': typeof adminSuperAppConfiguracoesRoute
@@ -533,6 +541,7 @@ export interface FileRoutesById {
   '/(public)/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/(admin)/super/_app/acessos': typeof adminSuperAppAcessosRoute
   '/(admin)/super/_app/auditoria': typeof adminSuperAppAuditoriaRoute
   '/(admin)/super/_app/cobrancas': typeof adminSuperAppCobrancasRoute
   '/(admin)/super/_app/configuracoes': typeof adminSuperAppConfiguracoesRoute
@@ -596,6 +605,7 @@ export interface FileRouteTypes {
     | '/avaliar/$token'
     | '/api/faq/search'
     | '/api/public/mp-webhook'
+    | '/super/acessos'
     | '/super/auditoria'
     | '/super/cobrancas'
     | '/super/configuracoes'
@@ -656,6 +666,7 @@ export interface FileRouteTypes {
     | '/avaliar/$token'
     | '/api/faq/search'
     | '/api/public/mp-webhook'
+    | '/super/acessos'
     | '/super/auditoria'
     | '/super/cobrancas'
     | '/super/configuracoes'
@@ -717,6 +728,7 @@ export interface FileRouteTypes {
     | '/(public)/avaliar/$token'
     | '/api/faq/search'
     | '/api/public/mp-webhook'
+    | '/(admin)/super/_app/acessos'
     | '/(admin)/super/_app/auditoria'
     | '/(admin)/super/_app/cobrancas'
     | '/(admin)/super/_app/configuracoes'
@@ -1198,10 +1210,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof adminSuperAppAuditoriaRouteImport
       parentRoute: typeof adminSuperAppRouteRoute
     }
+    '/(admin)/super/_app/acessos': {
+      id: '/(admin)/super/_app/acessos'
+      path: '/acessos'
+      fullPath: '/super/acessos'
+      preLoaderRoute: typeof adminSuperAppAcessosRouteImport
+      parentRoute: typeof adminSuperAppRouteRoute
+    }
   }
 }
 
 interface adminSuperAppRouteRouteChildren {
+  adminSuperAppAcessosRoute: typeof adminSuperAppAcessosRoute
   adminSuperAppAuditoriaRoute: typeof adminSuperAppAuditoriaRoute
   adminSuperAppCobrancasRoute: typeof adminSuperAppCobrancasRoute
   adminSuperAppConfiguracoesRoute: typeof adminSuperAppConfiguracoesRoute
@@ -1221,6 +1241,7 @@ interface adminSuperAppRouteRouteChildren {
 }
 
 const adminSuperAppRouteRouteChildren: adminSuperAppRouteRouteChildren = {
+  adminSuperAppAcessosRoute: adminSuperAppAcessosRoute,
   adminSuperAppAuditoriaRoute: adminSuperAppAuditoriaRoute,
   adminSuperAppCobrancasRoute: adminSuperAppCobrancasRoute,
   adminSuperAppConfiguracoesRoute: adminSuperAppConfiguracoesRoute,

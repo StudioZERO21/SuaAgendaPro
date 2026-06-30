@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   HelpCircle,
   UserCircle,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const NAV_SISTEMA = [
   { title: "FAQ",           to: "/super/faq",          icon: HelpCircle,     exact: false },
   { title: "Templates",    to: "/super/templates",    icon: MessageSquare,  exact: false },
   { title: "Auditoria",    to: "/super/auditoria",    icon: ClipboardList,  exact: false },
+  { title: "Acessos",      to: "/super/acessos",      icon: Activity,       exact: false },
   { title: "Infra",        to: "/super/infra",        icon: Server,         exact: false },
   { title: "Configurações",to: "/super/configuracoes",icon: Settings,       exact: false },
   { title: "Sistema",      to: "/super/sistema",      icon: Settings,       exact: false },

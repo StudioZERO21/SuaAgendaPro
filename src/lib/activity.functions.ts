@@ -19,17 +19,15 @@ export const recordActivity = createServerFn({ method: "POST" })
     try {
       const { getRequest } = await import("@tanstack/react-start/server");
       const req = getRequest();
-      const ip = req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-        ?? req?.headers.get("x-real-ip") ?? null;
-      const ua = req?.headers.get("user-agent") ?? null;
+      const ua = req?.headers.get("user-agent") ?? "";
 
-      const { recordActivityVps } = await import("@/lib/activity-log.server");
+      const { recordActivityVps, parseUserAgent } = await import("@/lib/activity-log.server");
+      const { browser, os, device } = parseUserAgent(ua);
       await recordActivityVps({
         event:          data.event,
         email:          data.email ?? null,
         professionalId: data.professionalId ?? null,
-        ip,
-        userAgent:      ua,
+        browser, os, device,
         meta:           data.meta ?? null,
       });
     } catch (e) {
