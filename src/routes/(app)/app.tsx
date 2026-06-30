@@ -514,7 +514,7 @@ function AppointmentCard({
         {!isLast && <div className="mt-1 w-px flex-1 bg-gradient-to-b from-primary/30 via-border to-transparent min-h-[12px]" />}
       </div>
 
-      <div className={cn("relative flex-1 overflow-hidden rounded-xl border shadow-card backdrop-blur-md", isDone ? "border-zinc-200/60 bg-white/30" : "border-white/40 bg-white/60")}>
+      <div className={cn("relative flex-1 overflow-hidden rounded-xl border shadow-card backdrop-blur-md", isDone ? "border-border/60 bg-card/30 dark:bg-card/20" : "border-border/60 bg-card/60 dark:bg-card/50")}>
         <div className="flex items-center gap-2.5 px-3 py-2.5">
           <div className="flex flex-col items-center text-center min-w-[2.75rem] shrink-0">
             <span className="font-display text-sm font-bold text-foreground leading-none">{a.start}</span>
@@ -536,7 +536,7 @@ function AppointmentCard({
           </div>
           <button
             onClick={() => setOpen((o) => !o)}
-            className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all", open ? "gradient-primary border-transparent text-white shadow-glow rotate-45" : isDone ? "border-zinc-200 bg-zinc-100 text-zinc-400" : "border-border bg-secondary text-foreground")}
+            className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all", open ? "gradient-primary border-transparent text-white shadow-glow rotate-45" : isDone ? "border-border bg-muted text-muted-foreground" : "border-border bg-secondary text-foreground")}
           >
             <Plus className="h-3.5 w-3.5" />
           </button>

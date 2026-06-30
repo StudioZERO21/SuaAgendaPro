@@ -12,10 +12,34 @@ export const weekdayLabels = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
 
 export function statusMeta(s: UIStatus) {
   switch (s) {
-    case "confirmado": return { label: "Confirmado", color: "text-emerald-700", bg: "bg-emerald-100", dot: "bg-emerald-500" };
-    case "pendente":   return { label: "Pendente",   color: "text-amber-700",   bg: "bg-amber-100",   dot: "bg-amber-400"  };
-    case "concluido":  return { label: "Concluído",  color: "text-sky-700",     bg: "bg-sky-100",     dot: "bg-sky-500"    };
-    case "cancelado":  return { label: "Cancelado",  color: "text-zinc-600",    bg: "bg-zinc-100",    dot: "bg-zinc-400"   };
+    case "confirmado":
+      return {
+        label: "Confirmado",
+        color: "text-emerald-700 dark:text-emerald-300",
+        bg: "bg-emerald-100 dark:bg-emerald-950",
+        dot: "bg-emerald-500",
+      };
+    case "pendente":
+      return {
+        label: "Pendente",
+        color: "text-amber-700 dark:text-amber-300",
+        bg: "bg-amber-100 dark:bg-amber-950",
+        dot: "bg-amber-400",
+      };
+    case "concluido":
+      return {
+        label: "Concluído",
+        color: "text-sky-700 dark:text-sky-300",
+        bg: "bg-sky-100 dark:bg-sky-950",
+        dot: "bg-sky-500",
+      };
+    case "cancelado":
+      return {
+        label: "Cancelado",
+        color: "text-zinc-600 dark:text-zinc-400",
+        bg: "bg-zinc-100 dark:bg-zinc-800",
+        dot: "bg-zinc-400",
+      };
   }
 }
 
@@ -107,7 +131,7 @@ function DayGrid({ appointments, maps, scheduleBlocks, activeDate, onOpenAppoint
               return (
                 <motion.button key={a.id} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
                   onClick={() => onOpenAppointment(a)}
-                  className={cn("absolute left-0 right-0 cursor-pointer overflow-hidden rounded-lg border px-2.5 py-1.5 text-left shadow-card backdrop-blur-md transition-all active:scale-[0.98]", a.status === "concluido" ? "border-zinc-200/60 bg-white/30 opacity-55 saturate-50" : "border-white/40 bg-white/70")}
+                  className={cn("absolute left-0 right-0 cursor-pointer overflow-hidden rounded-lg border px-2.5 py-1.5 text-left shadow-card backdrop-blur-md transition-all active:scale-[0.98]", a.status === "concluido" ? "border-border/60 bg-card/30 opacity-55 saturate-50 dark:bg-card/20" : "border-border/60 bg-card/80 dark:bg-card/70")}
                   style={{ top, height }}
                 >
                   <div className="flex items-center gap-2">
@@ -188,7 +212,7 @@ function WeekGrid({ appointments, week, activeDateIdx, maps, scheduleBlocks, onS
                     const meta    = statusMeta(a.status);
                     return (
                       <button key={a.id} onClick={() => onOpenAppointment(a)}
-                        className={cn("flex items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition active:scale-[0.99]", a.status === "concluido" ? "border-zinc-200/60 bg-white/40 opacity-60" : "border-border/60 bg-background/70")}
+                        className={cn("flex items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition active:scale-[0.99]", a.status === "concluido" ? "border-border/60 bg-muted/40 opacity-60" : "border-border/60 bg-card/70")}
                       >
                         <span className={cn("h-7 w-1 shrink-0 rounded-full", meta.dot)} />
                         <span className="font-display text-xs font-bold tabular-nums text-foreground shrink-0">{a.start}</span>
@@ -293,8 +317,8 @@ function MonthGrid({ appointments, scheduleBlocks, viewDate, onPickDay }: {
               )}
               {isToday && (
                 <span className="pointer-events-none absolute right-1 top-1 flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/70" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                 </span>
               )}
             </button>

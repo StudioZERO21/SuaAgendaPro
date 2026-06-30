@@ -104,7 +104,7 @@
   --popover: #27272a;
   --popover-foreground: #fafafa;
   --primary: #9ca3af;
-  --primary-foreground: #18181b;
+  --primary-foreground: #ffffff;
   --primary-glow: #d1d5db;
   --secondary: #3f3f46;
   --secondary-foreground: #fafafa;
@@ -117,6 +117,26 @@
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.15);
   --ring: #9ca3af;
+
+  --rose-cloud: #27272a;
+
+  --gradient-soft: linear-gradient(
+    135deg,
+    #27272a 0%,
+    #18181b 50%,
+    #27272a 100%
+  );
+  --gradient-hero: linear-gradient(
+    160deg,
+    #27272a 0%,
+    #18181b 40%,
+    #3f3f46 100%
+  );
+  --gradient-card: linear-gradient(135deg, #27272a 0%, #3f3f46 100%);
+
+  --shadow-glow: 0 10px 30px -10px rgba(0, 0, 0, 0.55);
+  --shadow-soft: 0 4px 20px -8px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 2px 10px -2px rgba(0, 0, 0, 0.35);
 }
 
 @layer base {
@@ -141,6 +161,7 @@
 
 @utility gradient-primary {
   background-image: var(--gradient-primary);
+  color: #ffffff;
 }
 @utility gradient-soft {
   background-image: var(--gradient-soft);

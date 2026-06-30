@@ -399,7 +399,7 @@ function StatCard({
       <div className="relative flex items-start justify-center pt-1">
         <p className={cn("text-center font-display text-5xl font-extrabold leading-none", highlight ? "text-white" : "text-foreground")}>{value}</p>
       </div>
-      <p className={cn("relative text-center text-[9px] font-semibold uppercase tracking-wider", highlight ? "text-white/90" : "text-zinc-500")}>{label}</p>
+      <p className={cn("relative text-center text-[9px] font-semibold uppercase tracking-wider", highlight ? "text-white/90" : "text-muted-foreground")}>{label}</p>
     </div>
   );
 }

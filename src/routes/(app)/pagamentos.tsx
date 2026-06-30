@@ -1143,7 +1143,7 @@ function PagamentosPage() {
               {activeTransaction ? centsToCurrency(activeTransaction.amount_cents) : centsToCurrency(parseCurrencyToCents(amount))}
             </p>
 
-            <div className="mx-auto mt-4 flex aspect-square w-full max-w-[280px] items-center justify-center rounded-2xl border border-border bg-white p-3">
+            <div className="mx-auto mt-4 flex aspect-square w-full max-w-[280px] items-center justify-center rounded-2xl border border-border bg-card p-3">
               {qrDataUrl ? (
                 <img src={qrDataUrl} alt="QR Code Pix" className="h-full w-full" />
               ) : (

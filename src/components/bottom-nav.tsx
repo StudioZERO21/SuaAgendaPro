@@ -28,7 +28,7 @@ export function BottomNav() {
               to={it.to}
               className={cn(
                 "relative flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors",
-                active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                active ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <div

@@ -526,7 +526,7 @@ function WhatsAppPage() {
               </p>
 
               {/* Bolha de mensagem estilo WhatsApp */}
-              <div className="rounded-2xl rounded-tl-none bg-white px-4 py-4 shadow-sm dark:bg-card space-y-0">
+              <div className="rounded-2xl rounded-tl-none bg-card px-4 py-4 shadow-sm space-y-0">
                 {/* Linha 1 — título */}
                 <p className="text-[12px] font-bold text-foreground">
                   📱 Mensagem automática

@@ -25,6 +25,14 @@ import {
 } from "@/lib/subscription-guard";
 import { useDeviceGuard } from "@/lib/device-guard";
 import type { AccentId, FontId, ThemeId } from "@/lib/personalization";
+import {
+  applyAccentVars,
+  buildThemeInitScript,
+  resolveIsDark,
+  THEME_ACCENTS,
+  THEME_FONTS,
+  THEME_GRAY,
+} from "@/lib/theme-vars";
 import { SystemModeProvider, useSystemConfig } from "@/components/system-mode-provider";
 import { TestModeBanner } from "@/components/test-mode-banner";
 import { CookieConsentBanner } from "@/components/cookie-consent-banner";
@@ -332,51 +340,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 // Applied synchronously in <head> (SSR) AND immediately when the JS module
 // loads on the client — so the correct theme is set before the first React
 // render regardless of whether the server streamed the script tag first.
-const THEME_ACCENTS: Record<string, {p:string;g:string;a:string;r:string;s:string;sf:string;m:string;mf:string;b:string;cl:string;gs:string;gc:string}> = {
-  rose:    {p:"#be185d",g:"#ec4899",a:"#a21caf",r:"#be185d",s:"#fdf2f8",sf:"#831843",m:"#f7f4f8",mf:"#6b5b73",b:"#f3e8ee",cl:"#fdf2f8",gs:"linear-gradient(135deg,#fce7f3 0%,#fdf2f8 50%,#fae8ff 100%)",gc:"linear-gradient(135deg,#ffffff 0%,#fdf2f8 100%)"},
-  violet:  {p:"#6d28d9",g:"#a78bfa",a:"#5b21b6",r:"#6d28d9",s:"#f5f3ff",sf:"#4c1d95",m:"#f0eeff",mf:"#5b4e8b",b:"#e8e3fd",cl:"#f5f3ff",gs:"linear-gradient(135deg,#ede9fe 0%,#f5f3ff 50%,#f0eeff 100%)",gc:"linear-gradient(135deg,#ffffff 0%,#f5f3ff 100%)"},
-  amber:   {p:"#b45309",g:"#fbbf24",a:"#9a3412",r:"#b45309",s:"#fffbeb",sf:"#78350f",m:"#fef9e7",mf:"#8a6e3a",b:"#fde9b0",cl:"#fffbeb",gs:"linear-gradient(135deg,#fef3c7 0%,#fffbeb 50%,#fefce8 100%)",gc:"linear-gradient(135deg,#ffffff 0%,#fffbeb 100%)"},
-  emerald: {p:"#047857",g:"#34d399",a:"#065f46",r:"#047857",s:"#ecfdf5",sf:"#064e3b",m:"#f0fdf4",mf:"#3d7a5e",b:"#c9f0de",cl:"#ecfdf5",gs:"linear-gradient(135deg,#d1fae5 0%,#ecfdf5 50%,#f0fdf4 100%)",gc:"linear-gradient(135deg,#ffffff 0%,#ecfdf5 100%)"},
-  sky:     {p:"#0369a1",g:"#38bdf8",a:"#1d4ed8",r:"#0369a1",s:"#f0f9ff",sf:"#0c4a6e",m:"#e6f5ff",mf:"#3a7a9e",b:"#c8e8f8",cl:"#f0f9ff",gs:"linear-gradient(135deg,#e0f2fe 0%,#f0f9ff 50%,#e8f4ff 100%)",gc:"linear-gradient(135deg,#ffffff 0%,#f0f9ff 100%)"},
-  noir:    {p:"#1f1230",g:"#7c3aed",a:"#312e81",r:"#1f1230",s:"#f8f7f9",sf:"#1f1230",m:"#f3f1f6",mf:"#4a3f57",b:"#e4e0ed",cl:"#f8f7f9",gs:"linear-gradient(135deg,#ede9fe 0%,#f8f7f9 50%,#f3f0ff 100%)",gc:"linear-gradient(135deg,#ffffff 0%,#f8f7f9 100%)"},
-};
-const THEME_FONTS: Record<string, string> = {
-  playfair: '"Playfair Display",Georgia,serif',
-  inter: 'Inter,ui-sans-serif,system-ui,sans-serif',
-  dm: '"DM Serif Display",Georgia,serif',
-};
-// Gray fallback shown while theme is unknown (first visit / cleared storage)
-const THEME_GRAY = {p:"#6b7280",g:"#9ca3af",a:"#4b5563",r:"#6b7280",s:"#f9fafb",sf:"#374151",m:"#f3f4f6",mf:"#6b7280",b:"#e5e7eb",cl:"#f9fafb",gs:"linear-gradient(135deg,#f3f4f6 0%,#f9fafb 50%,#f3f4f6 100%)",gc:"linear-gradient(135deg,#ffffff 0%,#f9fafb 100%)"};
-
 function applyThemeVars() {
   if (typeof document === "undefined") return;
   try {
-    const d = JSON.parse(localStorage.getItem("sa.personalizacao") || "null");
-    const ac = (d && THEME_ACCENTS[d.accent]) || THEME_GRAY;
-    const font = (d && THEME_FONTS[d.font]) || THEME_FONTS.playfair;
-    const theme = (d && d.theme) || "light";
+    const d = JSON.parse(localStorage.getItem("sa.personalizacao") || "null") as {
+      accent?: AccentId;
+      font?: FontId;
+      theme?: ThemeId;
+      highContrast?: boolean;
+    } | null;
+    const ac = (d?.accent && THEME_ACCENTS[d.accent]) || THEME_GRAY;
+    const font = (d?.font && THEME_FONTS[d.font]) || THEME_FONTS.playfair;
+    const theme = d?.theme || "light";
     const e = document.documentElement;
-    e.style.setProperty("--primary", ac.p);
-    e.style.setProperty("--primary-glow", ac.g);
-    e.style.setProperty("--accent", ac.a);
-    e.style.setProperty("--ring", ac.r);
-    e.style.setProperty("--primary-foreground", "#ffffff");
-    e.style.setProperty("--gradient-primary", "linear-gradient(135deg," + ac.p + " 0%," + ac.a + " 100%)");
-    e.style.setProperty("--shadow-glow", "0 10px 30px -10px " + ac.p + "73");
-    e.style.setProperty("--secondary", ac.s);
-    e.style.setProperty("--secondary-foreground", ac.sf);
-    e.style.setProperty("--muted", ac.m);
-    e.style.setProperty("--muted-foreground", ac.mf);
-    e.style.setProperty("--border", ac.b);
-    e.style.setProperty("--input", ac.b);
-    e.style.setProperty("--rose-cloud", ac.cl);
-    e.style.setProperty("--gradient-soft", ac.gs);
-    e.style.setProperty("--gradient-card", ac.gc);
-    e.style.setProperty("--font-display", font);
-    const isDark = theme === "dark" || (theme === "auto" && window.matchMedia("(prefers-color-scheme:dark)").matches);
+    const isDark = resolveIsDark(theme);
     e.classList.toggle("dark", isDark);
-    if (d && d.highContrast) e.classList.add("high-contrast");
-    // Barra do app instalado (PWA) segue a cor do tema
+    applyAccentVars(e, ac, isDark);
+    e.style.setProperty("--font-display", font);
+    if (d?.highContrast) e.classList.add("high-contrast");
     const mt = document.querySelector('meta[name="theme-color"]');
     if (mt) mt.setAttribute("content", ac.p);
   } catch { /* silent */ }
@@ -385,28 +366,7 @@ function applyThemeVars() {
 // Run immediately when this JS module is evaluated (CSR path — before first React render)
 applyThemeVars();
 
-// Serialised version injected into <head> for the SSR path (runs before CSS loads)
-const THEME_INIT_SCRIPT = `(function(){try{
-var A=${JSON.stringify(THEME_ACCENTS)};
-var F=${JSON.stringify(THEME_FONTS)};
-var G=${JSON.stringify(THEME_GRAY)};
-var d=JSON.parse(localStorage.getItem("sa.personalizacao")||"null");
-var ac=(d&&A[d.accent])||G;var font=(d&&F[d.font])||F.playfair;var theme=(d&&d.theme)||"light";
-var e=document.documentElement;
-e.style.setProperty("--primary",ac.p);e.style.setProperty("--primary-glow",ac.g);
-e.style.setProperty("--accent",ac.a);e.style.setProperty("--ring",ac.r);
-e.style.setProperty("--primary-foreground","#ffffff");
-e.style.setProperty("--gradient-primary","linear-gradient(135deg,"+ac.p+" 0%,"+ac.a+" 100%)");
-e.style.setProperty("--shadow-glow","0 10px 30px -10px "+ac.p+"73");
-e.style.setProperty("--secondary",ac.s);e.style.setProperty("--secondary-foreground",ac.sf);
-e.style.setProperty("--muted",ac.m);e.style.setProperty("--muted-foreground",ac.mf);
-e.style.setProperty("--border",ac.b);e.style.setProperty("--input",ac.b);
-e.style.setProperty("--rose-cloud",ac.cl);
-e.style.setProperty("--gradient-soft",ac.gs);e.style.setProperty("--gradient-card",ac.gc);
-e.style.setProperty("--font-display",font);
-var dark=theme==="dark"||(theme==="auto"&&window.matchMedia("(prefers-color-scheme:dark)").matches);
-e.classList.toggle("dark",dark);if(d&&d.highContrast)e.classList.add("high-contrast");
-}catch(e){}})();`;
+const THEME_INIT_SCRIPT = buildThemeInitScript();
 
 function RootShell({ children }: { children: ReactNode }) {
   return (

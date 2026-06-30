@@ -65,12 +65,12 @@ const ICONS: Record<NotificationType, LucideIcon> = {
 };
 
 const COLORS: Record<NotificationType, string> = {
-  agendamento: "bg-emerald-100 text-emerald-700",
-  cancelamento: "bg-rose-100 text-rose-700",
-  pagamento: "bg-sky-100 text-sky-700",
-  avaliacao: "bg-amber-100 text-amber-700",
-  lembrete: "bg-violet-100 text-violet-700",
-  sistema: "bg-zinc-100 text-zinc-700",
+  agendamento: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+  cancelamento: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
+  pagamento: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
+  avaliacao: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  lembrete: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+  sistema: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
 };
 
 const FILTERS: Array<{ key: "todas" | "nao-lidas"; label: string }> = [

@@ -337,7 +337,7 @@ function GoogleCalendarPage() {
               <Button
                 onClick={handleConnect}
                 disabled={busy}
-                className="h-12 w-full rounded-2xl bg-white text-foreground shadow-card ring-1 ring-border hover:bg-secondary"
+                className="h-12 w-full rounded-2xl bg-card text-foreground shadow-card ring-1 ring-border hover:bg-secondary"
               >
                 {busy ? (
                   <>

@@ -42,7 +42,7 @@ function UseNoCelularPage() {
         {/* QR Code */}
         <div className="flex justify-center">
           {qrUrl ? (
-            <div className="rounded-2xl border border-border bg-white p-4 shadow-card">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
               <img src={qrUrl} alt="QR Code para o app" className="h-52 w-52" />
             </div>
           ) : (

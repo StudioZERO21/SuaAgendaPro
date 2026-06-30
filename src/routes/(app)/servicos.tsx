@@ -62,7 +62,7 @@ function ServicosPage() {
           </div>
           <Button
             onClick={() => navigate({ to: "/servico/novo" })}
-            className="h-11 rounded-2xl gradient-primary px-4 text-sm font-semibold shadow-glow"
+            className="h-11 rounded-2xl gradient-primary px-4 text-sm font-semibold text-white shadow-glow"
           >
             <Plus className="mr-1 h-4 w-4" /> Novo
           </Button>
@@ -148,7 +148,7 @@ function ServicosPage() {
             </p>
             <Button
               onClick={() => navigate({ to: "/servico/novo" })}
-              className="mt-2 h-11 rounded-2xl gradient-primary px-5 text-sm font-semibold shadow-glow"
+              className="mt-2 h-11 rounded-2xl gradient-primary px-5 text-sm font-semibold text-white shadow-glow"
             >
               <Plus className="mr-1 h-4 w-4" /> Criar serviço
             </Button>

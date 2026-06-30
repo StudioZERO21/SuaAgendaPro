@@ -11,7 +11,7 @@ export function MobileShell({
   withNav?: boolean;
 }) {
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-rose-cloud via-background to-background">
+    <div className="min-h-screen w-full bg-gradient-to-b from-background via-background to-background">
       <div
         className={cn(
           "mx-auto flex min-h-screen w-full max-w-md flex-col bg-background/40",
