@@ -412,20 +412,12 @@ function RootComponent() {
 
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
-  const { data: remoteUiSettings } = useProfileUiSettings(user?.id);
-
   // 1. Aplica tema do localStorage imediatamente (sem flash)
   useEffect(() => {
     import("../lib/personalization").then((m) => {
       m.applyPersonalization(m.loadPersonalization());
     });
   }, []);
-
-  // 2. Quando ui_settings chegar do Supabase (cache compartilhado), sobrescreve localStorage
-  useEffect(() => {
-    if (!remoteUiSettings) return;
-    mergeAndApplyUiSettings(remoteUiSettings);
-  }, [remoteUiSettings]);
 
   // 3. Busca assinatura e verifica bloqueio
   useEffect(() => {
@@ -470,6 +462,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <UiSettingsSync userId={user?.id} />
       <AuthContext.Provider value={authValue}>
         <SystemModeProvider>
           <SystemModeGate isSuperRoute={isSuperRoute} />
@@ -482,6 +475,16 @@ function RootComponent() {
       </AuthContext.Provider>
     </QueryClientProvider>
   );
+}
+
+// Sincroniza ui_settings do Supabase — DENTRO do QueryClientProvider (useQuery
+// não pode rodar no RootComponent, que está acima do provider que ele renderiza).
+function UiSettingsSync({ userId }: { userId: string | undefined }) {
+  const { data: remoteUiSettings } = useProfileUiSettings(userId);
+  useEffect(() => {
+    if (remoteUiSettings) mergeAndApplyUiSettings(remoteUiSettings);
+  }, [remoteUiSettings]);
+  return null;
 }
 
 function SystemModeGate({ isSuperRoute }: { isSuperRoute: boolean }) {
