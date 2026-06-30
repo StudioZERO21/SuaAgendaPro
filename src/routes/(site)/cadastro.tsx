@@ -6,11 +6,13 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MobileShell } from "@/components/mobile-shell";
 import { BrandLogo } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { recordReferralVisit, linkReferralToUser } from "@/lib/referral.functions";
+import { recordTermsAcceptance } from "@/lib/privacy.functions";
 
 export const Route = createFileRoute("/(site)/cadastro")({
   head: () => ({
@@ -47,6 +49,7 @@ function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<FieldId, string>>>({});
   const [showPwd, setShowPwd] = useState(false);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   const refCode = typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("ref") ?? null
@@ -76,6 +79,10 @@ function SignupPage() {
         if (!fieldErrors[key]) fieldErrors[key] = issue.message;
       });
       setErrors(fieldErrors);
+      return;
+    }
+    if (!acceptedLegal) {
+      toast.error("Aceite os Termos de Uso e a Política de Privacidade para continuar.");
       return;
     }
     setErrors({});
@@ -109,6 +116,8 @@ function SignupPage() {
         data: { code: refCode, refereeId: authData.user.id, refereeEmail: values.email },
       }).catch(() => {});
     }
+
+    recordTermsAcceptance({}).catch(() => {});
 
     toast.success("Conta criada! Vamos personalizar seu studio ✨");
     navigate({ to: "/onboarding" });
@@ -190,10 +199,29 @@ function SignupPage() {
             ))}
           </ul>
 
+          <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card p-4">
+            <Checkbox
+              id="legal"
+              checked={acceptedLegal}
+              onCheckedChange={(v) => setAcceptedLegal(v === true)}
+            />
+            <label htmlFor="legal" className="text-xs leading-relaxed text-muted-foreground">
+              Li e aceito os{" "}
+              <Link to="/termos" className="font-medium text-primary underline-offset-2 hover:underline">
+                Termos de Uso
+              </Link>{" "}
+              e a{" "}
+              <Link to="/privacidade" className="font-medium text-primary underline-offset-2 hover:underline">
+                Política de Privacidade
+              </Link>
+              .
+            </label>
+          </div>
+
           <Button
             type="submit"
             size="lg"
-            disabled={loading}
+            disabled={loading || !acceptedLegal}
             className="mt-3 h-14 rounded-2xl gradient-primary text-base font-semibold shadow-glow"
           >
             {loading ? "Criando..." : "Criar conta grátis"}

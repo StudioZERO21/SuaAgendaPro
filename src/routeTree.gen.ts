@@ -14,11 +14,14 @@ import { Route as UploadsSplatRouteImport } from './routes/uploads.$'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as siteTrocarSenhaRouteImport } from './routes/(site)/trocar-senha'
+import { Route as siteTermosRouteImport } from './routes/(site)/termos'
 import { Route as siteResetPasswordRouteImport } from './routes/(site)/reset-password'
 import { Route as siteRedefinirSenhaRouteImport } from './routes/(site)/redefinir-senha'
 import { Route as siteRecursosRouteImport } from './routes/(site)/recursos'
+import { Route as sitePrivacidadeRouteImport } from './routes/(site)/privacidade'
 import { Route as sitePrecosRouteImport } from './routes/(site)/precos'
 import { Route as siteLoginRouteImport } from './routes/(site)/login'
+import { Route as siteDsarRouteImport } from './routes/(site)/dsar'
 import { Route as siteContatoRouteImport } from './routes/(site)/contato'
 import { Route as siteCadastroRouteImport } from './routes/(site)/cadastro'
 import { Route as publicPerfilPublicoRouteImport } from './routes/(public)/perfil-publico'
@@ -27,6 +30,7 @@ import { Route as appUseNoCelularRouteImport } from './routes/(app)/use-no-celul
 import { Route as appTransacoesRouteImport } from './routes/(app)/transacoes'
 import { Route as appServicosRouteImport } from './routes/(app)/servicos'
 import { Route as appSaudacaoRouteImport } from './routes/(app)/saudacao'
+import { Route as appPrivacidadeDadosRouteImport } from './routes/(app)/privacidade-dados'
 import { Route as appPortfolioRouteImport } from './routes/(app)/portfolio'
 import { Route as appPlanoRouteImport } from './routes/(app)/plano'
 import { Route as appPersonalizacaoRouteImport } from './routes/(app)/personalizacao'
@@ -42,6 +46,7 @@ import { Route as appDashboardRouteImport } from './routes/(app)/dashboard'
 import { Route as appClientesRouteImport } from './routes/(app)/clientes'
 import { Route as appAvaliacoesRouteImport } from './routes/(app)/avaliacoes'
 import { Route as appAppRouteImport } from './routes/(app)/app'
+import { Route as ApiSuperSessionRouteImport } from './routes/api/super/session'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as ApiFaqSearchRouteImport } from './routes/api/faq/search'
 import { Route as publicAvaliarTokenRouteImport } from './routes/(public)/avaliar.$token'
@@ -95,6 +100,11 @@ const siteTrocarSenhaRoute = siteTrocarSenhaRouteImport.update({
   path: '/trocar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const siteTermosRoute = siteTermosRouteImport.update({
+  id: '/(site)/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const siteResetPasswordRoute = siteResetPasswordRouteImport.update({
   id: '/(site)/reset-password',
   path: '/reset-password',
@@ -110,6 +120,11 @@ const siteRecursosRoute = siteRecursosRouteImport.update({
   path: '/recursos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const sitePrivacidadeRoute = sitePrivacidadeRouteImport.update({
+  id: '/(site)/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const sitePrecosRoute = sitePrecosRouteImport.update({
   id: '/(site)/precos',
   path: '/precos',
@@ -118,6 +133,11 @@ const sitePrecosRoute = sitePrecosRouteImport.update({
 const siteLoginRoute = siteLoginRouteImport.update({
   id: '/(site)/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const siteDsarRoute = siteDsarRouteImport.update({
+  id: '/(site)/dsar',
+  path: '/dsar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const siteContatoRoute = siteContatoRouteImport.update({
@@ -158,6 +178,11 @@ const appServicosRoute = appServicosRouteImport.update({
 const appSaudacaoRoute = appSaudacaoRouteImport.update({
   id: '/(app)/saudacao',
   path: '/saudacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const appPrivacidadeDadosRoute = appPrivacidadeDadosRouteImport.update({
+  id: '/(app)/privacidade-dados',
+  path: '/privacidade-dados',
   getParentRoute: () => rootRouteImport,
 } as any)
 const appPortfolioRoute = appPortfolioRouteImport.update({
@@ -233,6 +258,11 @@ const appAvaliacoesRoute = appAvaliacoesRouteImport.update({
 const appAppRoute = appAppRouteImport.update({
   id: '/(app)/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSuperSessionRoute = ApiSuperSessionRouteImport.update({
+  id: '/api/super/session',
+  path: '/api/super/session',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
@@ -391,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/personalizacao': typeof appPersonalizacaoRoute
   '/plano': typeof appPlanoRoute
   '/portfolio': typeof appPortfolioRoute
+  '/privacidade-dados': typeof appPrivacidadeDadosRoute
   '/saudacao': typeof appSaudacaoRoute
   '/servicos': typeof appServicosRoute
   '/transacoes': typeof appTransacoesRoute
@@ -399,11 +430,14 @@ export interface FileRoutesByFullPath {
   '/perfil-publico': typeof publicPerfilPublicoRoute
   '/cadastro': typeof siteCadastroRoute
   '/contato': typeof siteContatoRoute
+  '/dsar': typeof siteDsarRoute
   '/login': typeof siteLoginRoute
   '/precos': typeof sitePrecosRoute
+  '/privacidade': typeof sitePrivacidadeRoute
   '/recursos': typeof siteRecursosRoute
   '/redefinir-senha': typeof siteRedefinirSenhaRoute
   '/reset-password': typeof siteResetPasswordRoute
+  '/termos': typeof siteTermosRoute
   '/trocar-senha': typeof siteTrocarSenhaRoute
   '/api/health': typeof ApiHealthRoute
   '/api/upload': typeof ApiUploadRoute
@@ -417,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/super/session': typeof ApiSuperSessionRoute
   '/super/acessos': typeof adminSuperAppAcessosRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
   '/super/cobrancas': typeof adminSuperAppCobrancasRoute
@@ -453,6 +488,7 @@ export interface FileRoutesByTo {
   '/personalizacao': typeof appPersonalizacaoRoute
   '/plano': typeof appPlanoRoute
   '/portfolio': typeof appPortfolioRoute
+  '/privacidade-dados': typeof appPrivacidadeDadosRoute
   '/saudacao': typeof appSaudacaoRoute
   '/servicos': typeof appServicosRoute
   '/transacoes': typeof appTransacoesRoute
@@ -461,11 +497,14 @@ export interface FileRoutesByTo {
   '/perfil-publico': typeof publicPerfilPublicoRoute
   '/cadastro': typeof siteCadastroRoute
   '/contato': typeof siteContatoRoute
+  '/dsar': typeof siteDsarRoute
   '/login': typeof siteLoginRoute
   '/precos': typeof sitePrecosRoute
+  '/privacidade': typeof sitePrivacidadeRoute
   '/recursos': typeof siteRecursosRoute
   '/redefinir-senha': typeof siteRedefinirSenhaRoute
   '/reset-password': typeof siteResetPasswordRoute
+  '/termos': typeof siteTermosRoute
   '/trocar-senha': typeof siteTrocarSenhaRoute
   '/api/health': typeof ApiHealthRoute
   '/api/upload': typeof ApiUploadRoute
@@ -478,6 +517,7 @@ export interface FileRoutesByTo {
   '/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/super/session': typeof ApiSuperSessionRoute
   '/super/acessos': typeof adminSuperAppAcessosRoute
   '/super/auditoria': typeof adminSuperAppAuditoriaRoute
   '/super/cobrancas': typeof adminSuperAppCobrancasRoute
@@ -515,6 +555,7 @@ export interface FileRoutesById {
   '/(app)/personalizacao': typeof appPersonalizacaoRoute
   '/(app)/plano': typeof appPlanoRoute
   '/(app)/portfolio': typeof appPortfolioRoute
+  '/(app)/privacidade-dados': typeof appPrivacidadeDadosRoute
   '/(app)/saudacao': typeof appSaudacaoRoute
   '/(app)/servicos': typeof appServicosRoute
   '/(app)/transacoes': typeof appTransacoesRoute
@@ -523,11 +564,14 @@ export interface FileRoutesById {
   '/(public)/perfil-publico': typeof publicPerfilPublicoRoute
   '/(site)/cadastro': typeof siteCadastroRoute
   '/(site)/contato': typeof siteContatoRoute
+  '/(site)/dsar': typeof siteDsarRoute
   '/(site)/login': typeof siteLoginRoute
   '/(site)/precos': typeof sitePrecosRoute
+  '/(site)/privacidade': typeof sitePrivacidadeRoute
   '/(site)/recursos': typeof siteRecursosRoute
   '/(site)/redefinir-senha': typeof siteRedefinirSenhaRoute
   '/(site)/reset-password': typeof siteResetPasswordRoute
+  '/(site)/termos': typeof siteTermosRoute
   '/(site)/trocar-senha': typeof siteTrocarSenhaRoute
   '/api/health': typeof ApiHealthRoute
   '/api/upload': typeof ApiUploadRoute
@@ -541,6 +585,7 @@ export interface FileRoutesById {
   '/(public)/avaliar/$token': typeof publicAvaliarTokenRoute
   '/api/faq/search': typeof ApiFaqSearchRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/super/session': typeof ApiSuperSessionRoute
   '/(admin)/super/_app/acessos': typeof adminSuperAppAcessosRoute
   '/(admin)/super/_app/auditoria': typeof adminSuperAppAuditoriaRoute
   '/(admin)/super/_app/cobrancas': typeof adminSuperAppCobrancasRoute
@@ -579,6 +624,7 @@ export interface FileRouteTypes {
     | '/personalizacao'
     | '/plano'
     | '/portfolio'
+    | '/privacidade-dados'
     | '/saudacao'
     | '/servicos'
     | '/transacoes'
@@ -587,11 +633,14 @@ export interface FileRouteTypes {
     | '/perfil-publico'
     | '/cadastro'
     | '/contato'
+    | '/dsar'
     | '/login'
     | '/precos'
+    | '/privacidade'
     | '/recursos'
     | '/redefinir-senha'
     | '/reset-password'
+    | '/termos'
     | '/trocar-senha'
     | '/api/health'
     | '/api/upload'
@@ -605,6 +654,7 @@ export interface FileRouteTypes {
     | '/avaliar/$token'
     | '/api/faq/search'
     | '/api/public/mp-webhook'
+    | '/api/super/session'
     | '/super/acessos'
     | '/super/auditoria'
     | '/super/cobrancas'
@@ -641,6 +691,7 @@ export interface FileRouteTypes {
     | '/personalizacao'
     | '/plano'
     | '/portfolio'
+    | '/privacidade-dados'
     | '/saudacao'
     | '/servicos'
     | '/transacoes'
@@ -649,11 +700,14 @@ export interface FileRouteTypes {
     | '/perfil-publico'
     | '/cadastro'
     | '/contato'
+    | '/dsar'
     | '/login'
     | '/precos'
+    | '/privacidade'
     | '/recursos'
     | '/redefinir-senha'
     | '/reset-password'
+    | '/termos'
     | '/trocar-senha'
     | '/api/health'
     | '/api/upload'
@@ -666,6 +720,7 @@ export interface FileRouteTypes {
     | '/avaliar/$token'
     | '/api/faq/search'
     | '/api/public/mp-webhook'
+    | '/api/super/session'
     | '/super/acessos'
     | '/super/auditoria'
     | '/super/cobrancas'
@@ -702,6 +757,7 @@ export interface FileRouteTypes {
     | '/(app)/personalizacao'
     | '/(app)/plano'
     | '/(app)/portfolio'
+    | '/(app)/privacidade-dados'
     | '/(app)/saudacao'
     | '/(app)/servicos'
     | '/(app)/transacoes'
@@ -710,11 +766,14 @@ export interface FileRouteTypes {
     | '/(public)/perfil-publico'
     | '/(site)/cadastro'
     | '/(site)/contato'
+    | '/(site)/dsar'
     | '/(site)/login'
     | '/(site)/precos'
+    | '/(site)/privacidade'
     | '/(site)/recursos'
     | '/(site)/redefinir-senha'
     | '/(site)/reset-password'
+    | '/(site)/termos'
     | '/(site)/trocar-senha'
     | '/api/health'
     | '/api/upload'
@@ -728,6 +787,7 @@ export interface FileRouteTypes {
     | '/(public)/avaliar/$token'
     | '/api/faq/search'
     | '/api/public/mp-webhook'
+    | '/api/super/session'
     | '/(admin)/super/_app/acessos'
     | '/(admin)/super/_app/auditoria'
     | '/(admin)/super/_app/cobrancas'
@@ -765,6 +825,7 @@ export interface RootRouteChildren {
   appPersonalizacaoRoute: typeof appPersonalizacaoRoute
   appPlanoRoute: typeof appPlanoRoute
   appPortfolioRoute: typeof appPortfolioRoute
+  appPrivacidadeDadosRoute: typeof appPrivacidadeDadosRoute
   appSaudacaoRoute: typeof appSaudacaoRoute
   appServicosRoute: typeof appServicosRoute
   appTransacoesRoute: typeof appTransacoesRoute
@@ -773,11 +834,14 @@ export interface RootRouteChildren {
   publicPerfilPublicoRoute: typeof publicPerfilPublicoRoute
   siteCadastroRoute: typeof siteCadastroRoute
   siteContatoRoute: typeof siteContatoRoute
+  siteDsarRoute: typeof siteDsarRoute
   siteLoginRoute: typeof siteLoginRoute
   sitePrecosRoute: typeof sitePrecosRoute
+  sitePrivacidadeRoute: typeof sitePrivacidadeRoute
   siteRecursosRoute: typeof siteRecursosRoute
   siteRedefinirSenhaRoute: typeof siteRedefinirSenhaRoute
   siteResetPasswordRoute: typeof siteResetPasswordRoute
+  siteTermosRoute: typeof siteTermosRoute
   siteTrocarSenhaRoute: typeof siteTrocarSenhaRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiUploadRoute: typeof ApiUploadRoute
@@ -791,6 +855,7 @@ export interface RootRouteChildren {
   publicAvaliarTokenRoute: typeof publicAvaliarTokenRoute
   ApiFaqSearchRoute: typeof ApiFaqSearchRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
+  ApiSuperSessionRoute: typeof ApiSuperSessionRoute
   ApiPublicGoogleCalendarCallbackRoute: typeof ApiPublicGoogleCalendarCallbackRoute
   ApiPublicMercadoPagoCallbackRoute: typeof ApiPublicMercadoPagoCallbackRoute
 }
@@ -832,6 +897,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof siteTrocarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(site)/termos': {
+      id: '/(site)/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof siteTermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(site)/reset-password': {
       id: '/(site)/reset-password'
       path: '/reset-password'
@@ -853,6 +925,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof siteRecursosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(site)/privacidade': {
+      id: '/(site)/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof sitePrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(site)/precos': {
       id: '/(site)/precos'
       path: '/precos'
@@ -865,6 +944,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof siteLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(site)/dsar': {
+      id: '/(site)/dsar'
+      path: '/dsar'
+      fullPath: '/dsar'
+      preLoaderRoute: typeof siteDsarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(site)/contato': {
@@ -921,6 +1007,13 @@ declare module '@tanstack/react-router' {
       path: '/saudacao'
       fullPath: '/saudacao'
       preLoaderRoute: typeof appSaudacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/privacidade-dados': {
+      id: '/(app)/privacidade-dados'
+      path: '/privacidade-dados'
+      fullPath: '/privacidade-dados'
+      preLoaderRoute: typeof appPrivacidadeDadosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(app)/portfolio': {
@@ -1026,6 +1119,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof appAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/super/session': {
+      id: '/api/super/session'
+      path: '/api/super/session'
+      fullPath: '/api/super/session'
+      preLoaderRoute: typeof ApiSuperSessionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/mp-webhook': {
@@ -1279,6 +1379,7 @@ const rootRouteChildren: RootRouteChildren = {
   appPersonalizacaoRoute: appPersonalizacaoRoute,
   appPlanoRoute: appPlanoRoute,
   appPortfolioRoute: appPortfolioRoute,
+  appPrivacidadeDadosRoute: appPrivacidadeDadosRoute,
   appSaudacaoRoute: appSaudacaoRoute,
   appServicosRoute: appServicosRoute,
   appTransacoesRoute: appTransacoesRoute,
@@ -1287,11 +1388,14 @@ const rootRouteChildren: RootRouteChildren = {
   publicPerfilPublicoRoute: publicPerfilPublicoRoute,
   siteCadastroRoute: siteCadastroRoute,
   siteContatoRoute: siteContatoRoute,
+  siteDsarRoute: siteDsarRoute,
   siteLoginRoute: siteLoginRoute,
   sitePrecosRoute: sitePrecosRoute,
+  sitePrivacidadeRoute: sitePrivacidadeRoute,
   siteRecursosRoute: siteRecursosRoute,
   siteRedefinirSenhaRoute: siteRedefinirSenhaRoute,
   siteResetPasswordRoute: siteResetPasswordRoute,
+  siteTermosRoute: siteTermosRoute,
   siteTrocarSenhaRoute: siteTrocarSenhaRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiUploadRoute: ApiUploadRoute,
@@ -1305,6 +1409,7 @@ const rootRouteChildren: RootRouteChildren = {
   publicAvaliarTokenRoute: publicAvaliarTokenRoute,
   ApiFaqSearchRoute: ApiFaqSearchRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
+  ApiSuperSessionRoute: ApiSuperSessionRoute,
   ApiPublicGoogleCalendarCallbackRoute: ApiPublicGoogleCalendarCallbackRoute,
   ApiPublicMercadoPagoCallbackRoute: ApiPublicMercadoPagoCallbackRoute,
 }

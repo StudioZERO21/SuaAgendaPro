@@ -67,84 +67,89 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-          // Find which user owns this payment by querying stored secrets
-          const { data: secrets } = await supabaseAdmin
-            .from("mercado_pago_account_secrets")
-            .select("user_id, access_token");
+          // Lookup direto via external_reference quando possível
+          let appointmentId: string | null = null;
 
-          if (!secrets?.length) return new Response("OK", { status: 200 });
+          // Primeiro: buscar transação existente pelo payment id
+          const { data: existingTx } = await supabaseAdmin
+            .from("payment_transactions")
+            .select("user_id, appointment_id, mercado_pago_payment_id")
+            .eq("mercado_pago_payment_id", paymentId)
+            .maybeSingle();
 
-          for (const secret of secrets) {
-            const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-              headers: { Authorization: `Bearer ${secret.access_token}` },
-            });
-            if (!res.ok) continue;
+          let secretUserId = existingTx?.user_id ?? null;
+          appointmentId = existingTx?.appointment_id ?? null;
 
-            const payment = (await res.json()) as {
-              status?: string;
-              transaction_amount?: number;
-              description?: string;
-              date_approved?: string;
-              payer?: { email?: string; first_name?: string; last_name?: string };
-              external_reference?: string;
-            };
+          if (!secretUserId) {
+            // Buscar agendamento pelo external_reference (appointment id)
+            const { data: secrets } = await supabaseAdmin
+              .from("mercado_pago_account_secrets")
+              .select("user_id, access_token");
 
-            const status =
-              payment.status === "approved"
-                ? "paid"
-                : payment.status === "cancelled"
-                  ? "cancelled"
-                  : payment.status === "refunded" || payment.status === "charged_back"
-                    ? "refunded"
-                    : payment.status === "rejected"
-                      ? "failed"
-                      : "pending";
+            if (!secrets?.length) return new Response("OK", { status: 200 });
 
-            const amountCents = Math.round((payment.transaction_amount ?? 0) * 100);
-            const clientName =
-              [payment.payer?.first_name, payment.payer?.last_name].filter(Boolean).join(" ") ||
-              payment.payer?.email ||
-              "Cliente Mercado Pago";
+            for (const secret of secrets) {
+              const res = await fetch(
+                `https://api.mercadopago.com/v1/payments/${paymentId}`,
+                { headers: { Authorization: `Bearer ${secret.access_token}` } },
+              );
+              if (!res.ok) continue;
 
-            // Upsert into payment_transactions
-            const { data: tx } = await supabaseAdmin
-              .from("payment_transactions")
-              .upsert(
-                {
-                  user_id: secret.user_id,
-                  client_name: clientName,
-                  service_name: payment.description || "Pagamento Mercado Pago",
-                  amount_cents: amountCents,
-                  method: "mercado_pago",
-                  status,
-                  external_reference: payment.external_reference || null,
-                  mercado_pago_payment_id: paymentId,
-                  paid_at: payment.date_approved || null,
-                },
-                { onConflict: "user_id,mercado_pago_payment_id" },
-              )
-              .select("appointment_id")
+              const payment = (await res.json()) as {
+                status?: string;
+                transaction_amount?: number;
+                description?: string;
+                date_approved?: string;
+                payer?: { email?: string; first_name?: string; last_name?: string };
+                external_reference?: string;
+              };
+
+              if (payment.external_reference) {
+                appointmentId = payment.external_reference;
+                const { data: appt } = await supabaseAdmin
+                  .from("appointments")
+                  .select("professional_id")
+                  .eq("id", payment.external_reference)
+                  .maybeSingle();
+                if (appt?.professional_id === secret.user_id) {
+                  secretUserId = secret.user_id;
+                  await processMpPayment(
+                    supabaseAdmin,
+                    secret.user_id,
+                    paymentId,
+                    payment,
+                    appointmentId,
+                  );
+                  break;
+                }
+              }
+            }
+          } else {
+            const { data: secret } = await supabaseAdmin
+              .from("mercado_pago_account_secrets")
+              .select("access_token")
+              .eq("user_id", secretUserId)
               .maybeSingle();
 
-            // If linked to an appointment and payment is approved, update appointment deposit
-            if (tx?.appointment_id && status === "paid") {
-              await supabaseAdmin
-                .from("appointments")
-                .update({ deposit_paid: true, status: "confirmed" })
-                .eq("id", tx.appointment_id)
-                .eq("professional_id", secret.user_id);
-
-              // Sync to Google Calendar (best-effort)
-              try {
-                const { pushAppointmentToGoogle } = await import("@/lib/google-calendar.functions");
-                await pushAppointmentToGoogle(secret.user_id, tx.appointment_id, "create");
-              } catch {}
+            if (secret?.access_token) {
+              const res = await fetch(
+                `https://api.mercadopago.com/v1/payments/${paymentId}`,
+                { headers: { Authorization: `Bearer ${secret.access_token}` } },
+              );
+              if (res.ok) {
+                const payment = await res.json();
+                await processMpPayment(
+                  supabaseAdmin,
+                  secretUserId,
+                  paymentId,
+                  payment,
+                  appointmentId,
+                );
+              }
             }
-
-            break; // found the owner
           }
-        } catch {
-          // Don't expose errors to MP — always return 200
+        } catch (err) {
+          console.error("[mp-webhook] processing error:", err);
         }
 
         return new Response("OK", { status: 200 });
@@ -152,3 +157,71 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
     },
   },
 });
+
+async function processMpPayment(
+  supabaseAdmin: Awaited<
+    ReturnType<typeof import("@/integrations/supabase/client.server")>
+  >["supabaseAdmin"],
+  userId: string,
+  paymentId: string,
+  payment: {
+    status?: string;
+    transaction_amount?: number;
+    description?: string;
+    date_approved?: string;
+    payer?: { email?: string; first_name?: string; last_name?: string };
+    external_reference?: string;
+  },
+  appointmentId: string | null,
+) {
+  const status =
+    payment.status === "approved"
+      ? "paid"
+      : payment.status === "cancelled"
+        ? "cancelled"
+        : payment.status === "refunded" || payment.status === "charged_back"
+          ? "refunded"
+          : payment.status === "rejected"
+            ? "failed"
+            : "pending";
+
+  const amountCents = Math.round((payment.transaction_amount ?? 0) * 100);
+  const clientName =
+    [payment.payer?.first_name, payment.payer?.last_name].filter(Boolean).join(" ") ||
+    payment.payer?.email ||
+    "Cliente Mercado Pago";
+
+  const { data: tx } = await supabaseAdmin
+    .from("payment_transactions")
+    .upsert(
+      {
+        user_id: userId,
+        client_name: clientName,
+        service_name: payment.description || "Pagamento Mercado Pago",
+        amount_cents: amountCents,
+        method: "mercado_pago",
+        status,
+        external_reference: payment.external_reference || null,
+        mercado_pago_payment_id: paymentId,
+        paid_at: payment.date_approved || null,
+        appointment_id: appointmentId,
+      },
+      { onConflict: "user_id,mercado_pago_payment_id" },
+    )
+    .select("appointment_id")
+    .maybeSingle();
+
+  const apptId = tx?.appointment_id ?? appointmentId;
+  if (apptId && status === "paid") {
+    await supabaseAdmin
+      .from("appointments")
+      .update({ deposit_paid: true, status: "confirmed" })
+      .eq("id", apptId)
+      .eq("professional_id", userId);
+
+    try {
+      const { pushAppointmentToGoogle } = await import("@/lib/google-calendar.functions");
+      await pushAppointmentToGoogle(userId, apptId, "create");
+    } catch {}
+  }
+}

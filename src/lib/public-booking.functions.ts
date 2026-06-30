@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // ── Página pública — busca com cache Redis (server function) ──────────────────
 
@@ -75,8 +76,21 @@ export const getPublicProfile = createServerFn({ method: "GET" })
 // Server function para hooks client-side invalidarem o cache após salvar
 // serviços, horários, portfólio ou perfil — requer auth do usuário logado
 export const invalidatePublicProfileCache = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((input: unknown) => z.object({ slug: z.string() }).parse(input))
-  .handler(async ({ data }): Promise<void> => {
+  .handler(async ({ data, context }): Promise<void> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("slug", data.slug)
+      .eq("id", context.userId)
+      .maybeSingle();
+
+    if (!profile) {
+      throw new Error("Não autorizado a invalidar este cache.");
+    }
+
     const { cacheDel } = await import("@/lib/redis.server");
     await cacheDel(`public:profile:${data.slug}`);
   });
@@ -204,7 +218,118 @@ export type CreateBookingInput = {
   clientPhone: string;
   clientEmail: string;
   notes: string;
+  marketingConsent?: boolean;
 };
+
+async function findOrCreateClient(
+  supabaseAdmin: Awaited<ReturnType<typeof import("@/integrations/supabase/client.server")>>["supabaseAdmin"],
+  professionalId: string,
+  clientName: string,
+  phone: string,
+  clientEmail: string,
+  marketingConsent?: boolean,
+): Promise<string> {
+  const { data: existing } = await supabaseAdmin
+    .from("clients")
+    .select("id")
+    .eq("professional_id", professionalId)
+    .eq("phone", phone)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  const { data: newClient, error: cErr } = await supabaseAdmin
+    .from("clients")
+    .insert({
+      professional_id: professionalId,
+      name: clientName.trim(),
+      phone,
+      email: clientEmail || null,
+      notes: null,
+      ...(marketingConsent
+        ? { marketing_consent_at: new Date().toISOString() }
+        : {}),
+    })
+    .select("id")
+    .single();
+
+  if (cErr || !newClient) throw new Error("Erro ao registrar cliente");
+  return newClient.id;
+}
+
+async function afterBookingCreated(
+  supabaseAdmin: Awaited<ReturnType<typeof import("@/integrations/supabase/client.server")>>["supabaseAdmin"],
+  data: CreateBookingInput,
+  appt: { id: string },
+  phone: string,
+) {
+  try {
+    const dt = new Date(data.scheduledAt);
+    const datePt = dt.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+    const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    await supabaseAdmin.from("notifications").insert({
+      user_id:        data.professionalId,
+      type:           "new_appointment",
+      title:          "Novo agendamento! 🎉",
+      body:           `${data.clientName} agendou para ${datePt} às ${timePt}.`,
+      appointment_id: appt.id,
+    });
+    const { sendPushToUser } = await import("@/lib/push.server");
+    await sendPushToUser(data.professionalId, {
+      title: "Novo agendamento! 🎉",
+      body:  `${data.clientName} agendou para ${datePt} às ${timePt}.`,
+      url:   "/app",
+    });
+  } catch {}
+
+  try {
+    const { pushAppointmentToGoogle } = await import("@/lib/google-calendar.functions");
+    await pushAppointmentToGoogle(data.professionalId, appt.id, "create");
+  } catch {}
+
+  try {
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("whatsapp_enabled, whatsapp_msg_confirmation, display_name")
+      .eq("id", data.professionalId)
+      .maybeSingle();
+
+    if (prof?.whatsapp_enabled) {
+      const { interpolate } = await import("@/lib/whatsapp.functions");
+      const template =
+        prof.whatsapp_msg_confirmation ||
+        "Olá {{cliente_nome}}! ✅ Agendamento confirmado em {{data}} às {{hora}}. Serviço: {{servico}}.";
+
+      const dt = new Date(data.scheduledAt);
+      const datePt = dt.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+      const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+      const { data: svc } = await supabaseAdmin
+        .from("services")
+        .select("name")
+        .eq("id", data.serviceId)
+        .maybeSingle();
+
+      const text = interpolate(template, {
+        cliente_nome: data.clientName,
+        data: datePt,
+        hora: timePt,
+        servico: svc?.name ?? "Serviço",
+        profissional: prof.display_name || "Profissional",
+      });
+
+      await supabaseAdmin.from("whatsapp_messages").insert({
+        professional_id: data.professionalId,
+        appointment_id: appt.id,
+        client_phone: phone,
+        client_name: data.clientName,
+        message_type: "confirmation",
+        message_text: text,
+        status: "pending",
+      });
+    }
+  } catch {}
+}
 
 // ── Server Functions ──────────────────────────────────────────
 
@@ -223,47 +348,38 @@ export const createPublicBooking = createServerFn({ method: "POST" })
     return input as CreateBookingInput;
   })
   .handler(async ({ data }): Promise<{ appointmentId: string }> => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { enforceRateLimit, clientIpFromRequest } = await import(
+      "@/lib/rate-limit.server",
+    );
+    const req = getRequest();
+    await enforceRateLimit(`booking:${clientIpFromRequest(req)}`, 10, 3600);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { validatePublicBooking } = await import(
+      "@/lib/public-booking-validation.server",
+    );
 
+    const validated = await validatePublicBooking(supabaseAdmin, data);
     const phone = data.clientPhone.replace(/\D/g, "");
+    const clientId = await findOrCreateClient(
+      supabaseAdmin,
+      validated.professionalId,
+      data.clientName,
+      phone,
+      data.clientEmail,
+      data.marketingConsent,
+    );
 
-    // Find or create client by professional_id + phone
-    const { data: existing } = await supabaseAdmin
-      .from("clients")
-      .select("id")
-      .eq("professional_id", data.professionalId)
-      .eq("phone", phone)
-      .maybeSingle();
-
-    let clientId: string;
-    if (existing) {
-      clientId = existing.id;
-    } else {
-      const { data: newClient, error: cErr } = await supabaseAdmin
-        .from("clients")
-        .insert({
-          professional_id: data.professionalId,
-          name: data.clientName.trim(),
-          phone,
-          email: data.clientEmail || null,
-          notes: null,
-        })
-        .select("id")
-        .single();
-      if (cErr || !newClient) throw new Error("Erro ao registrar cliente");
-      clientId = newClient.id;
-    }
-
-    // Create appointment
     const { data: appt, error: aErr } = await supabaseAdmin
       .from("appointments")
       .insert({
-        professional_id: data.professionalId,
+        professional_id: validated.professionalId,
         client_id: clientId,
-        service_id: data.serviceId,
-        scheduled_at: data.scheduledAt,
-        duration_minutes: data.durationMinutes,
-        price_cents: data.priceCents,
+        service_id: validated.serviceId,
+        scheduled_at: validated.scheduledAt,
+        duration_minutes: validated.durationMinutes,
+        price_cents: validated.priceCents,
         deposit_cents: 0,
         status: "pending",
         notes: data.notes || null,
@@ -273,82 +389,14 @@ export const createPublicBooking = createServerFn({ method: "POST" })
 
     if (aErr || !appt) throw new Error("Erro ao criar agendamento");
 
-    // Create in-app notification for the professional (best-effort)
-    try {
-      const dt = new Date(data.scheduledAt);
-      const datePt = dt.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
-      const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-      await supabaseAdmin.from("notifications").insert({
-        user_id:        data.professionalId,
-        type:           "new_appointment",
-        title:          "Novo agendamento! 🎉",
-        body:           `${data.clientName} agendou para ${datePt} às ${timePt}.`,
-        appointment_id: appt.id,
-      });
-      const { sendPushToUser } = await import("@/lib/push.server");
-      await sendPushToUser(data.professionalId, {
-        title: "Novo agendamento! 🎉",
-        body:  `${data.clientName} agendou para ${datePt} às ${timePt}.`,
-        url:   "/app",
-      });
-    } catch {}
-
-    // Sync to Google Calendar (best-effort — never fail booking)
-    try {
-      const { pushAppointmentToGoogle } = await import("@/lib/google-calendar.functions");
-      await pushAppointmentToGoogle(data.professionalId, appt.id, "create");
-    } catch {}
-
-    // Log WhatsApp confirmation message (best-effort — never fail booking)
-    try {
-      const { data: prof } = await supabaseAdmin
-        .from("profiles")
-        .select("whatsapp_enabled, whatsapp_msg_confirmation, display_name")
-        .eq("id", data.professionalId)
-        .maybeSingle();
-
-      if (prof?.whatsapp_enabled) {
-        const { interpolate } = await import("@/lib/whatsapp.functions");
-        const template =
-          prof.whatsapp_msg_confirmation ||
-          "Olá {{cliente_nome}}! ✅ Agendamento confirmado em {{data}} às {{hora}}. Serviço: {{servico}}.";
-
-        const dt = new Date(data.scheduledAt);
-        const datePt = dt.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
-        const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
-        const { data: svc } = await supabaseAdmin
-          .from("services")
-          .select("name")
-          .eq("id", data.serviceId)
-          .maybeSingle();
-
-        const text = interpolate(template, {
-          cliente_nome: data.clientName,
-          data: datePt,
-          hora: timePt,
-          servico: svc?.name ?? "Serviço",
-          profissional: prof.display_name || "Profissional",
-        });
-
-        await supabaseAdmin.from("whatsapp_messages").insert({
-          professional_id: data.professionalId,
-          appointment_id: appt.id,
-          client_phone: phone,
-          client_name: data.clientName,
-          message_type: "confirmation",
-          message_text: text,
-          status: "pending",
-        });
-      }
-    } catch {}
+    await afterBookingCreated(supabaseAdmin, { ...data, ...validated }, appt, phone);
 
     return { appointmentId: appt.id };
   });
 
 // ── Lookup de cliente por telefone (página pública) ──────────
 
-export type ClientLookupResult = { name: string; email: string | null } | null;
+export type ClientLookupResult = { found: boolean; nameHint: string | null };
 
 export const lookupClientByPhone = createServerFn({ method: "POST" })
   .inputValidator((input: unknown): { professionalId: string; phone: string } => {
@@ -357,26 +405,43 @@ export const lookupClientByPhone = createServerFn({ method: "POST" })
     return input as { professionalId: string; phone: string };
   })
   .handler(async ({ data }): Promise<ClientLookupResult> => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { enforceRateLimit, clientIpFromRequest } = await import(
+      "@/lib/rate-limit.server",
+    );
+    const req = getRequest();
+    await enforceRateLimit(
+      `lookup-phone:${clientIpFromRequest(req)}`,
+      20,
+      3600,
+    );
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const digits = data.phone.replace(/\D/g, "");
-    if (digits.length < 10) return null;
+    if (digits.length < 10) return { found: false, nameHint: null };
 
-    // Gera os dois formatos possíveis: dígitos puros e o formato BR (XX) XXXXX-XXXX
-    // pois o admin pode salvar de qualquer jeito e o agendamento público salva só dígitos
     const formatted = digits.length === 11
       ? `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
       : `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
 
     const { data: clients } = await supabaseAdmin
       .from("clients")
-      .select("name, email")
+      .select("name")
       .eq("professional_id", data.professionalId)
       .in("phone", [digits, formatted])
       .limit(1);
 
     const client = clients?.[0] ?? null;
-    if (!client) return null;
-    return { name: client.name, email: (client as any).email ?? null };
+    if (!client) return { found: false, nameHint: null };
+
+    // LGPD: retorna apenas primeira palavra do nome (sem email)
+    const firstName = client.name.trim().split(/\s+/)[0] ?? "";
+    const hint =
+      firstName.length > 1
+        ? `${firstName.charAt(0)}${"*".repeat(Math.min(firstName.length - 1, 4))}`
+        : null;
+
+    return { found: true, nameHint: hint };
   });
 
 // ── Mercado Pago: cria agendamento + preferência de pagamento ──
@@ -396,41 +461,39 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
     return input as CreateMpBookingInput;
   })
   .handler(async ({ data }): Promise<{ appointmentId: string; initPoint: string }> => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { enforceRateLimit, clientIpFromRequest } = await import(
+      "@/lib/rate-limit.server",
+    );
+    const req = getRequest();
+    await enforceRateLimit(`booking-mp:${clientIpFromRequest(req)}`, 10, 3600);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { validatePublicBooking } = await import(
+      "@/lib/public-booking-validation.server",
+    );
 
-    // 1. Garantir cliente
+    const validated = await validatePublicBooking(supabaseAdmin, data);
     const phone = data.clientPhone.replace(/\D/g, "");
-    const { data: existing } = await supabaseAdmin
-      .from("clients")
-      .select("id")
-      .eq("professional_id", data.professionalId)
-      .eq("phone", phone)
-      .maybeSingle();
+    const clientId = await findOrCreateClient(
+      supabaseAdmin,
+      validated.professionalId,
+      data.clientName,
+      phone,
+      data.clientEmail,
+      data.marketingConsent,
+    );
 
-    let clientId: string;
-    if (existing) {
-      clientId = existing.id;
-    } else {
-      const { data: newClient, error: cErr } = await supabaseAdmin
-        .from("clients")
-        .insert({ professional_id: data.professionalId, name: data.clientName.trim(), phone, email: data.clientEmail || null })
-        .select("id")
-        .single();
-      if (cErr || !newClient) throw new Error("Erro ao registrar cliente");
-      clientId = newClient.id;
-    }
-
-    // 2. Criar agendamento (status pending — confirmado pelo webhook MP)
     const { data: appt, error: aErr } = await supabaseAdmin
       .from("appointments")
       .insert({
-        professional_id: data.professionalId,
+        professional_id: validated.professionalId,
         client_id: clientId,
-        service_id: data.serviceId,
-        scheduled_at: data.scheduledAt,
-        duration_minutes: data.durationMinutes,
-        price_cents: data.priceCents,
-        deposit_cents: data.depositCents,
+        service_id: validated.serviceId,
+        scheduled_at: validated.scheduledAt,
+        duration_minutes: validated.durationMinutes,
+        price_cents: validated.priceCents,
+        deposit_cents: validated.depositCents,
         status: "pending",
         notes: data.notes || null,
       })
@@ -438,31 +501,27 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
       .single();
     if (aErr || !appt) throw new Error("Erro ao criar agendamento");
 
-    // 3. Buscar access_token do profissional
     const { data: secret } = await supabaseAdmin
       .from("mercado_pago_account_secrets")
       .select("access_token")
-      .eq("user_id", data.professionalId)
+      .eq("user_id", validated.professionalId)
       .maybeSingle();
     if (!secret?.access_token) throw new Error("Mercado Pago não conectado");
 
-    // 4. Criar preferência de checkout
     const isSandbox = secret.access_token.startsWith("TEST");
     const backUrl = `${data.origin}/agendar/${data.slug}?mp=done&appointment_id=${appt.id}`;
-    const { data: svcRow } = await supabaseAdmin
-      .from("services")
-      .select("name")
-      .eq("id", data.serviceId)
-      .maybeSingle();
 
     const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret.access_token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${secret.access_token}`,
+      },
       body: JSON.stringify({
         items: [{
-          title: `Sinal — ${svcRow?.name ?? "Serviço"}`,
+          title: `Sinal — ${validated.serviceName}`,
           quantity: 1,
-          unit_price: Math.round(data.depositCents) / 100,
+          unit_price: validated.depositCents / 100,
           currency_id: "BRL",
         }],
         external_reference: appt.id,
@@ -472,21 +531,30 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
     });
 
     if (!prefRes.ok) {
-      // Limpar agendamento criado em caso de falha
       await supabaseAdmin.from("appointments").delete().eq("id", appt.id);
       throw new Error(`Falha ao criar preferência MP: ${prefRes.status}`);
     }
 
-    const pref = (await prefRes.json()) as { id: string; init_point: string; sandbox_init_point: string };
+    const pref = (await prefRes.json()) as {
+      id: string;
+      init_point: string;
+      sandbox_init_point: string;
+    };
     const initPoint = isSandbox ? pref.sandbox_init_point : pref.init_point;
 
-    // 5. Notificação para o profissional
     try {
-      const dt = new Date(data.scheduledAt);
-      const datePt = dt.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
-      const timePt = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      const dt = new Date(validated.scheduledAt);
+      const datePt = dt.toLocaleDateString("pt-BR", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      });
+      const timePt = dt.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
       await supabaseAdmin.from("notifications").insert({
-        user_id: data.professionalId,
+        user_id: validated.professionalId,
         type: "new_appointment",
         title: "Novo agendamento aguardando pagamento 🎉",
         body: `${data.clientName} agendou para ${datePt} às ${timePt}. Aguardando pagamento via Mercado Pago.`,
@@ -495,4 +563,105 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
     } catch {}
 
     return { appointmentId: appt.id, initPoint };
+  });
+
+/** PIX: cria agendamento pendente — confirmação só via profissional após comprovante. */
+export const createPublicPixBooking = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown): CreateBookingInput => {
+    const i = input as Record<string, unknown>;
+    if (
+      !i?.professionalId ||
+      !i?.serviceId ||
+      !i?.scheduledAt ||
+      !i?.clientName ||
+      !i?.clientPhone
+    ) {
+      throw new Error("Dados incompletos");
+    }
+    return input as CreateBookingInput;
+  })
+  .handler(async ({ data }): Promise<{ appointmentId: string }> => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { enforceRateLimit, clientIpFromRequest } = await import(
+      "@/lib/rate-limit.server",
+    );
+    const req = getRequest();
+    await enforceRateLimit(`booking-pix:${clientIpFromRequest(req)}`, 10, 3600);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { validatePublicBooking } = await import(
+      "@/lib/public-booking-validation.server",
+    );
+
+    const validated = await validatePublicBooking(supabaseAdmin, data);
+    const phone = data.clientPhone.replace(/\D/g, "");
+    const clientId = await findOrCreateClient(
+      supabaseAdmin,
+      validated.professionalId,
+      data.clientName,
+      phone,
+      data.clientEmail,
+      data.marketingConsent,
+    );
+
+    const { data: appt, error: aErr } = await supabaseAdmin
+      .from("appointments")
+      .insert({
+        professional_id: validated.professionalId,
+        client_id: clientId,
+        service_id: validated.serviceId,
+        scheduled_at: validated.scheduledAt,
+        duration_minutes: validated.durationMinutes,
+        price_cents: validated.priceCents,
+        deposit_cents: validated.depositCents,
+        deposit_paid: false,
+        status: "pending",
+        notes: data.notes || null,
+      })
+      .select("id")
+      .single();
+
+    if (aErr || !appt) throw new Error("Erro ao reservar horário");
+
+    try {
+      const dt = new Date(validated.scheduledAt);
+      const datePt = dt.toLocaleDateString("pt-BR", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      });
+      const timePt = dt.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      await supabaseAdmin.from("notifications").insert({
+        user_id: validated.professionalId,
+        type: "new_appointment",
+        title: "Agendamento aguardando PIX 📱",
+        body: `${data.clientName} reservou ${datePt} às ${timePt}. Aguardando comprovante PIX.`,
+        appointment_id: appt.id,
+      });
+    } catch {}
+
+    return { appointmentId: appt.id };
+  });
+
+/** Cancela agendamento pendente quando cliente desiste do pagamento PIX. */
+export const cancelPendingPublicBooking = createServerFn({ method: "POST" })
+  .validator((input: unknown) =>
+    z.object({ appointmentId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("appointments")
+      .update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: "Pagamento PIX não concluído",
+      })
+      .eq("id", data.appointmentId)
+      .eq("status", "pending")
+      .eq("deposit_paid", false);
+    return { ok: true };
   });

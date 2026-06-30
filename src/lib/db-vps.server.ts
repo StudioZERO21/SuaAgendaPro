@@ -7,10 +7,10 @@ function buildVpsUrl(): string {
   const user     = process.env.POSTGRES_USER;
   const password = process.env.POSTGRES_PASSWORD;
   const db       = process.env.POSTGRES_DB;
-  const host     = process.env.POSTGRES_HOST ?? "187.77.244.198";
-  const port     = process.env.POSTGRES_PORT ?? "32774";
+  const host     = process.env.POSTGRES_HOST;
+  const port     = process.env.POSTGRES_PORT ?? "5432";
 
-  if (user && password && db) {
+  if (user && password && db && host) {
     return `postgresql://${user}:${encodeURIComponent(password)}@${host}:${port}/${db}`;
   }
 
@@ -22,10 +22,11 @@ function buildVpsUrl(): string {
 // Sem singleton — lê process.env sempre que chamado
 // (evita conectar com credenciais desatualizadas se o .env mudar em dev)
 export function getVpsDb(): postgres.Sql {
+  const sslEnabled = process.env.POSTGRES_SSL === "true";
   return postgres(buildVpsUrl(), {
     max: 5,
     idle_timeout: 30,
     connect_timeout: 10,
-    ssl: false,
+    ssl: sslEnabled ? { rejectUnauthorized: true } : false,
   });
 }

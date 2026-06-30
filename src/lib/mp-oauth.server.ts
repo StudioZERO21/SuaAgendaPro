@@ -2,10 +2,10 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 const STATE_TTL_MS = 10 * 60 * 1000; // 10 min
 
+import { getAppHmacSecret } from "@/lib/hmac-secret.server";
+
 function getStateSecret() {
-  const s = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!s) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY for OAuth state signing");
-  return s;
+  return getAppHmacSecret();
 }
 
 function b64url(input: Buffer | string) {

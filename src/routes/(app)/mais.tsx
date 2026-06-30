@@ -3,7 +3,7 @@ import {
   Bell, CalendarDays, CreditCard, Globe, History,
   Link as LinkIcon, LogOut, Palette, Share2, Sparkles,
   Star, User, ChevronRight, Crown, MessageCircle, Loader2, Info, Copy, Check, X,
-  HeadphonesIcon, ImagePlus, Clock, CheckCircle2, Trash2,
+  HeadphonesIcon, ImagePlus, Clock, CheckCircle2, Trash2, Shield,
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
@@ -50,6 +50,7 @@ const groups = [
   {
     title: "Conta",
     items: [
+      { id: "privacidade", label: "Privacidade e dados", icon: Shield, to: "/privacidade-dados" as const },
       { id: "notif",      label: "Notificações",             icon: Bell,        to: "/notificacoes" as const },
       { id: "gcal",       label: "Google Calendar",          icon: CalendarDays,to: "/google-calendar" as const },
       { id: "whatsapp",   label: "WhatsApp",                 icon: MessageCircle, to: "/whatsapp" as const },

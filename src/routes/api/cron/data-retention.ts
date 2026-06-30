@@ -8,10 +8,10 @@ function safeTokenEqual(a: string, b: string): boolean {
   return timingSafeEqual(ba, bb);
 }
 
-export const ServerRoute = createServerFileRoute("/api/cron/ai-sync").methods({
+export const ServerRoute = createServerFileRoute("/api/cron/data-retention").methods({
   POST: async ({ request }) => {
-    const auth     = request.headers.get("authorization") ?? "";
-    const token    = auth.replace(/^Bearer\s+/i, "");
+    const auth = request.headers.get("authorization") ?? "";
+    const token = auth.replace(/^Bearer\s+/i, "");
     const expected = process.env.AI_SYNC_TOKEN ?? "";
 
     if (!expected || !safeTokenEqual(token, expected)) {
@@ -22,14 +22,15 @@ export const ServerRoute = createServerFileRoute("/api/cron/ai-sync").methods({
     }
 
     try {
-      const { runAiSync } = await import("@/lib/ai-sync.server");
-      const stats = await runAiSync();
+      const { runDataRetention } = await import("@/lib/data-retention.server");
+      const stats = await runDataRetention();
       return new Response(JSON.stringify({ ok: true, stats }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
-    } catch (e: any) {
-      return new Response(JSON.stringify({ ok: false, error: e.message }), {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      return new Response(JSON.stringify({ ok: false, error: msg }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });

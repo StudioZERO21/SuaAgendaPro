@@ -2,6 +2,7 @@
 // Recebe eventos de pagamento e atualiza status da assinatura automaticamente
 
 import { createServerFileRoute } from "@tanstack/react-start/server";
+import { timingSafeEqual } from "node:crypto";
 
 type AsaasWebhookPayload = {
   event: string;
@@ -31,16 +32,22 @@ const EVENT_TO_STATUS: Record<string, "active" | "suspended" | "cancelled" | nul
   SUBSCRIPTION_INACTIVATED:  "suspended",
 };
 
+function safeTokenEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
 export const ServerRoute = createServerFileRoute("/api/webhooks/asaas").methods({
   POST: async ({ request }) => {
-    // 1. Validar token de autenticação — fail-closed
     const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
     if (!expectedToken) {
       console.error("[asaas-webhook] ASAAS_WEBHOOK_TOKEN não configurado — rejeitando requisição");
       return new Response("Internal Server Error", { status: 500 });
     }
-    const token = request.headers.get("asaas-access-token");
-    if (token !== expectedToken) {
+    const token = request.headers.get("asaas-access-token") ?? "";
+    if (!safeTokenEqual(token, expectedToken)) {
       console.warn("[asaas-webhook] token inválido");
       return new Response("Unauthorized", { status: 401 });
     }

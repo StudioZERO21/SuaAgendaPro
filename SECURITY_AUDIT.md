@@ -49,7 +49,7 @@
 
 - **Arquivo:** `src/routes/api/public/mp-webhook.ts` (linhas 38-49)
 - **Categoria:** Broken Authentication / Webhook Spoofing
-- **Status:** [ ] Corrigido
+- **Status:** [x] Corrigido (fail-closed implementado)
 
 **Problema:**  
 O webhook só valida a assinatura HMAC quando `MP_WEBHOOK_SECRET` está configurado. Se a variável de ambiente estiver ausente, **qualquer pessoa pode enviar POST com payload forjado** e confirmar pagamentos, manipular o fluxo financeiro, e confirmar agendamentos indevidamente.
@@ -81,7 +81,7 @@ if (!webhookSecret) {
 
 - **Arquivo:** `src/routes/api/webhooks/asaas.ts` (linhas 36-44)
 - **Categoria:** Broken Authentication / Webhook Spoofing
-- **Status:** [ ] Corrigido
+- **Status:** [x] Corrigido (fail-closed + timing-safe)
 
 **Problema:**  
 Mesmo padrão do C1. A verificação de `ASAAS_WEBHOOK_TOKEN` só ocorre quando a variável está presente. Sem ela, qualquer POST pode acionar mudanças de status de assinatura (`active`, `suspended`, `cancelled`).

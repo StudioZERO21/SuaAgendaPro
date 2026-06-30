@@ -27,13 +27,16 @@ import { useDeviceGuard } from "@/lib/device-guard";
 import type { AccentId, FontId, ThemeId } from "@/lib/personalization";
 import { SystemModeProvider, useSystemConfig } from "@/components/system-mode-provider";
 import { TestModeBanner } from "@/components/test-mode-banner";
-import { MaintenanceOverlay } from "@/components/maintenance-overlay";
+import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 
 const PUBLIC_PATHS = [
   "/",
   "/login",
   "/cadastro",
   "/contato",
+  "/privacidade",
+  "/termos",
+  "/dsar",
   "/recursos",
   "/precos",
   "/reset-password",
@@ -530,6 +533,7 @@ function RootComponent() {
           </AuthGuard>
         </SystemModeProvider>
         <Toaster position="top-center" richColors />
+        <CookieConsentBanner />
       </AuthContext.Provider>
     </QueryClientProvider>
   );

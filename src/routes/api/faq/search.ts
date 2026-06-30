@@ -18,30 +18,40 @@ export const Route = createFileRoute("/api/faq/search")({
         const query  = url.searchParams.get("q") ?? "";
         const limit  = Math.min(parseInt(url.searchParams.get("limit") ?? "5"), 20);
         const source = url.searchParams.get("source") ?? "ai";
-        return handleSearch(query, limit, source);
+        return handleSearch(query, limit, source, request);
       },
       POST: async ({ request }) => {
         const body   = await request.json().catch(() => ({}));
         const query  = String(body.query ?? "");
         const limit  = Math.min(Number(body.limit ?? 5), 20);
         const source = String(body.source ?? "ai");
-        return handleSearch(query, limit, source);
+        return handleSearch(query, limit, source, request);
       },
     },
   },
 });
 
-async function handleSearch(query: string, limit: number, source: string): Promise<Response> {
+async function handleSearch(query: string, limit: number, source: string, request: Request): Promise<Response> {
   if (!query.trim()) {
     return Response.json({ error: "Parâmetro 'query' ou 'q' é obrigatório." }, { status: 400 });
   }
+
+  const { enforceRateLimit, clientIpFromRequest } = await import("@/lib/rate-limit.server");
+  try {
+    await enforceRateLimit(`faq:${clientIpFromRequest(request)}`, 60, 3600);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Rate limit exceeded";
+    return Response.json({ error: msg }, { status: 429 });
+  }
+
+  const safeQuery = query.trim().replace(/[%_,\\]/g, " ");
 
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
 
     // Busca full-text
-    const tsQuery = query.trim().split(/\s+/).filter(Boolean).join(" & ");
+    const tsQuery = safeQuery.split(/\s+/).filter(Boolean).join(" & ");
     const { data: ftsRows } = await db
       .from("faq_items")
       .select("id, question, answer, keywords, faq_categories(name), faq_subcategories(name)")
@@ -57,7 +67,7 @@ async function handleSearch(query: string, limit: number, source: string): Promi
         .from("faq_items")
         .select("id, question, answer, keywords, faq_categories(name), faq_subcategories(name)")
         .eq("enabled", true)
-        .or(`question.ilike.%${query}%,answer.ilike.%${query}%`)
+        .or(`question.ilike.%${safeQuery}%,answer.ilike.%${safeQuery}%`)
         .limit(limit);
       rows = likeRows ?? [];
     }

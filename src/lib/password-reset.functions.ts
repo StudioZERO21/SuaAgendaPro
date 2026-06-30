@@ -23,7 +23,16 @@ export const validatePasswordResetToken = createServerFn({ method: "GET" })
 
 export const resetPasswordWithToken = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
-    z.object({ token: z.string().uuid(), newPassword: z.string().min(6) }).parse(input),
+    z
+      .object({
+        token: z.string().uuid(),
+        newPassword: z
+          .string()
+          .min(8, "Mínimo de 8 caracteres")
+          .regex(/[A-Z]/, "Deve ter ao menos 1 letra maiúscula")
+          .regex(/[0-9]/, "Deve ter ao menos 1 número"),
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

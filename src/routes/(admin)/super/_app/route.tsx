@@ -1,6 +1,7 @@
 import {
   createFileRoute,
   Outlet,
+  redirect,
   useNavigate,
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -9,6 +10,13 @@ import { SuperSidebar } from "@/components/super/super-sidebar";
 import { clearSuperAuth, isSuperTokenValid } from "@/lib/super-auth";
 
 export const Route = createFileRoute("/(admin)/super/_app")({
+  beforeLoad: async () => {
+    const { verifySuperSessionFn } = await import("@/lib/super-session.functions");
+    const { ok } = await verifySuperSessionFn();
+    if (!ok) {
+      throw redirect({ to: "/super/login" });
+    }
+  },
   loader: async () => ({}),
   component: SuperLayout,
 });

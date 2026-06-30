@@ -4,7 +4,7 @@ import { Instagram, Sparkles } from "lucide-react";
 export function SiteFooter() {
   return (
     <footer className="border-t border-border/60 bg-gradient-to-b from-background to-secondary/40">
-      <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 md:grid-cols-4">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 md:grid-cols-5">
         <div className="md:col-span-2">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary text-white shadow-glow">
@@ -31,6 +31,15 @@ export function SiteFooter() {
         </div>
 
         <div>
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Legal</h4>
+          <ul className="mt-4 space-y-2 text-sm">
+            <li><Link to="/privacidade" className="hover:text-primary">Privacidade</Link></li>
+            <li><Link to="/termos" className="hover:text-primary">Termos de uso</Link></li>
+            <li><Link to="/dsar" className="hover:text-primary">Seus dados (LGPD)</Link></li>
+          </ul>
+        </div>
+
+        <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Contato</h4>
           <ul className="mt-4 space-y-2 text-sm">
             <li><Link to="/contato" className="hover:text-primary">Fale com a gente</Link></li>
@@ -44,8 +53,13 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-border/60">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-5 py-5 text-xs text-muted-foreground md:flex-row">
-          <span>© {new Date().getFullYear()} SuaAgenda.Pro — Feito com carinho 🌸</span>
-          <span>CNPJ 00.000.000/0001-00</span>
+          <span>© {new Date().getFullYear()} SuaAgenda.Pro</span>
+          <span>
+            DPO:{" "}
+            <a href="mailto:privacidade@suaagenda.pro" className="hover:text-primary">
+              privacidade@suaagenda.pro
+            </a>
+          </span>
         </div>
       </div>
     </footer>

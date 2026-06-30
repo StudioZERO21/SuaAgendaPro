@@ -156,3 +156,14 @@ export function useUpdateCliente() {
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
+
+export function useDeleteCliente() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (clientId: string) => {
+      const { deleteClient } = await import("@/lib/privacy.functions");
+      await deleteClient({ data: { clientId } });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}

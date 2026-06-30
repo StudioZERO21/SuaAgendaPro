@@ -5,10 +5,10 @@ const TOKEN_TTL_MS    = 8 * 60 * 60 * 1000;
 const MFA_PENDING_TTL = 5 * 60 * 1000;
 const PWD_PENDING_TTL = 10 * 60 * 1000;
 
+import { getAppHmacSecret } from "@/lib/hmac-secret.server";
+
 function getSecret(): string {
-  const s = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!s) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-  return s;
+  return getAppHmacSecret();
 }
 
 async function hmacSign(payload: string, secret: string): Promise<string> {
@@ -48,7 +48,13 @@ export async function verifySuperToken(token: string | null | undefined): Promis
 }
 
 export async function requireSuperAuth(token: string | null | undefined): Promise<void> {
-  if (!await verifySuperToken(token)) throw new Error("Unauthorized");
+  let resolved = token;
+  if (!resolved) {
+    const { getSuperTokenFromRequest } = await import("./super-auth-cookie.server");
+    const { getRequest } = await import("@tanstack/react-start/server");
+    resolved = getSuperTokenFromRequest(getRequest());
+  }
+  if (!await verifySuperToken(resolved)) throw new Error("Unauthorized");
 }
 
 export async function getSuperAuthEmail(token: string | null | undefined): Promise<string | null> {
@@ -141,6 +147,14 @@ export const superAdminLogin = createServerFn({ method: "POST" })
     z.object({ email: z.string().email(), password: z.string().min(1) }).parse(input),
   )
   .handler(async ({ data }): Promise<LoginResult> => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { enforceRateLimit, clientIpFromRequest } = await import("@/lib/rate-limit.server");
+    await enforceRateLimit(
+      `super-login:${clientIpFromRequest(getRequest())}`,
+      10,
+      900,
+    );
+
     const { timingSafeEqual } = await import("node:crypto");
     const {
       getSuperAdmins, getDbSuperAdmin, upsertDbSuperAdmin,

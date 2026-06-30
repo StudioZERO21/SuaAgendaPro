@@ -4,8 +4,7 @@ import { requireSuperAuth } from "@/lib/super-auth.server";
 
 const EVENTS = ["login_success", "login_failed", "session_kicked", "logout"] as const;
 
-// Registra um evento de atividade. Público (login_failed acontece deslogado).
-// Captura IP/user-agent no servidor; nunca confia em PII vinda do client além do email.
+// Registra evento de atividade. Rate-limited; não armazena IP (LGPD).
 export const recordActivity = createServerFn({ method: "POST" })
   .validator((input: unknown) =>
     z.object({
@@ -18,7 +17,16 @@ export const recordActivity = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { getRequest } = await import("@tanstack/react-start/server");
+      const { enforceRateLimit, clientIpFromRequest } = await import(
+        "@/lib/rate-limit.server",
+      );
       const req = getRequest();
+      await enforceRateLimit(
+        `activity:${clientIpFromRequest(req)}`,
+        30,
+        3600,
+      );
+
       const ua = req?.headers.get("user-agent") ?? "";
 
       const { recordActivityVps, parseUserAgent } = await import("@/lib/activity-log.server");

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SiteShell } from "@/components/site-shell";
 
 export const Route = createFileRoute("/(site)/contato")({
@@ -29,9 +30,14 @@ const channels = [
 
 function ContatoPage() {
   const [sending, setSending] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!consent) {
+      toast.error("Aceite a Política de Privacidade para enviar.");
+      return;
+    }
     setSending(true);
     const form = e.target as HTMLFormElement;
     const fd   = new FormData(form);
@@ -40,7 +46,7 @@ function ContatoPage() {
       const { error } = await supabase.from("contact_messages").insert({
         name:    fd.get("name") as string,
         email:   fd.get("email") as string,
-        message: fd.get("message") as string,
+        message: fd.get("msg") as string,
       });
       if (error) throw error;
       form.reset();
@@ -111,7 +117,21 @@ function ContatoPage() {
             <Label htmlFor="msg">Mensagem</Label>
             <Textarea id="msg" name="msg" rows={5} placeholder="Conta pra gente como podemos te ajudar..." required className="rounded-xl" />
           </div>
-          <Button type="submit" disabled={sending} size="lg" className="h-12 w-full rounded-2xl gradient-primary text-white shadow-glow">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="consent"
+              checked={consent}
+              onCheckedChange={(v) => setConsent(v === true)}
+            />
+            <label htmlFor="consent" className="text-xs text-muted-foreground">
+              Autorizo o tratamento dos meus dados conforme a{" "}
+              <a href="/privacidade" className="font-medium text-primary underline-offset-2 hover:underline">
+                Política de Privacidade
+              </a>
+              .
+            </label>
+          </div>
+          <Button type="submit" disabled={sending || !consent} size="lg" className="h-12 w-full rounded-2xl gradient-primary text-white shadow-glow">
             {sending ? "Enviando..." : (<>Enviar mensagem <Send className="ml-2 h-4 w-4" /></>)}
           </Button>
         </form>

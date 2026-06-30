@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { getSuperAuth, setSuperToken } from "@/lib/super-auth";
+import { getSuperAuth, setSuperToken, persistSuperSession } from "@/lib/super-auth";
 import {
   superAdminLogin,
   superAdminVerifyMfa,
@@ -67,6 +67,7 @@ function SuperLoginPage() {
         setStep("mfa");
       } else if (result.token) {
         setSuperToken(result.token);
+        await persistSuperSession(result.token);
         toast.success("Bem-vindo ao painel Super Admin");
         window.location.href = "/super";
       }
@@ -87,6 +88,7 @@ function SuperLoginPage() {
         data: { pendingToken, newPassword },
       });
       setSuperToken(token);
+      await persistSuperSession(token);
       toast.success("Senha alterada com sucesso! Bem-vindo ao painel.");
       window.location.href = "/super";
     } catch (err: any) {
@@ -109,6 +111,7 @@ function SuperLoginPage() {
         data: { pendingToken, totpCode: code },
       });
       setSuperToken(token);
+      await persistSuperSession(token);
       toast.success("Bem-vindo ao painel Super Admin");
       window.location.href = "/super";
     } catch (err: any) {

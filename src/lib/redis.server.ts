@@ -3,21 +3,24 @@ import Redis from "ioredis";
 let _redis: Redis | undefined;
 
 function buildRedisUrl(): string {
-  // Formato 1 — URL completa (dev local / Coolify / Railway)
   const url = process.env.REDIS_URL;
   if (url) return url;
 
-  // Formato 2 — variáveis separadas (já existentes no container da VPS)
   const password = process.env.REDIS_PASSWORD;
-  const host     = process.env.REDIS_HOST ?? "187.77.244.198";
-  const port     = process.env.REDIS_PORT ?? "32773";
+  const host     = process.env.REDIS_HOST;
+  const port     = process.env.REDIS_PORT ?? "6379";
 
-  if (password) return `redis://:${password}@${host}:${port}`;
+  if (host && password) {
+    return `redis://:${password}@${host}:${port}`;
+  }
 
-  throw new Error("Redis não configurado. Defina REDIS_URL ou REDIS_PASSWORD no .env");
+  throw new Error(
+    "Redis não configurado. Defina REDIS_URL ou REDIS_HOST + REDIS_PASSWORD no .env",
+  );
 }
 
-function getRedis(): Redis {
+/** Expõe cliente Redis para rate limiting e cache. */
+export function getRedis(): Redis {
   if (!_redis) {
     _redis = new Redis(buildRedisUrl(), {
       lazyConnect: true,

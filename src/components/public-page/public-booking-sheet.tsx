@@ -42,6 +42,8 @@ import {
   getPublicSlots,
   createPublicBooking,
   createMpPreferenceAndBooking,
+  createPublicPixBooking,
+  cancelPendingPublicBooking,
   lookupClientByPhone,
   type PublicPixSettings,
 } from "@/lib/public-booking.functions";
@@ -569,6 +571,14 @@ export function BookingSheet({
         mpConnected={mpConnected}
         onConfirmed={handlePaymentConfirmed}
         onExpired={handlePaymentExpired}
+        onPixReserved={() => {
+          setPaymentOpen(false);
+          setDone(true);
+          toast.success("Horário reservado!", {
+            description: "Envie o comprovante PIX pelo WhatsApp. O profissional confirmará em breve.",
+            duration: 8000,
+          });
+        }}
       />
     )}
     </>
@@ -822,9 +832,7 @@ function StepDetails({
     const timer = setTimeout(async () => {
       try {
         const result = await lookupClientByPhone({ data: { professionalId, phone: phoneDigits } });
-        if (result) {
-          onName(result.name);
-          onEmail(result.email ?? "");
+        if (result.found) {
           setLookupStatus("found");
         } else {
           setLookupStatus("notfound");
@@ -839,7 +847,7 @@ function StepDetails({
 
   const isFound = lookupStatus === "found";
   const isLoading = lookupStatus === "loading";
-  const otherFieldsDisabled = !phoneReady || isLoading || isFound;
+  const otherFieldsDisabled = !phoneReady || isLoading;
 
   return (
     <div>
@@ -1264,6 +1272,7 @@ function PaymentDialog({
   mpConnected,
   onConfirmed,
   onExpired,
+  onPixReserved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -1282,6 +1291,7 @@ function PaymentDialog({
   mpConnected: boolean;
   onConfirmed: () => void;
   onExpired: () => void;
+  onPixReserved?: () => void;
 }) {
   const hasPix = pix?.enabled && !!pix?.key;
   const defaultMethod: "mp" | "pix" = mpConnected ? "mp" : hasPix ? "pix" : "mp";
@@ -1293,6 +1303,8 @@ function PaymentDialog({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [payMethod, setPayMethod] = useState<"mp" | "pix">(defaultMethod);
+  const [pixAppointmentId, setPixAppointmentId] = useState<string | null>(null);
+  const pixReservedRef = useRef(false);
 
   // valor em reais (consistente com o resto da UI)
   const depositValue = Math.round(service.price_cents * 0.3) / 100;
@@ -1317,8 +1329,34 @@ function PaymentDialog({
       setMpLoading(false);
       setCopied(false);
       setPayMethod(defaultMethod);
+      setPixAppointmentId(null);
+      pixReservedRef.current = false;
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // PIX: reserva slot no servidor ao abrir (sem confirmação client-side)
+  useEffect(() => {
+    if (!open || payMethod !== "pix" || !hasPix || pixReservedRef.current) return;
+    pixReservedRef.current = true;
+    createPublicPixBooking({
+      data: {
+        professionalId,
+        serviceId: service.id,
+        scheduledAt: `${date}T${time}:00${localTzSuffix()}`,
+        durationMinutes: service.duration,
+        priceCents: service.price_cents,
+        clientName,
+        clientPhone,
+        clientEmail,
+        notes: clientNotes,
+      },
+    })
+      .then(({ appointmentId }) => setPixAppointmentId(appointmentId))
+      .catch(() => {
+        toast.error("Não foi possível reservar o horário.");
+        onOpenChange(false);
+      });
+  }, [open, payMethod, hasPix, professionalId, service.id, date, time, clientName, clientPhone, clientEmail, clientNotes, service.duration, service.price_cents, onOpenChange]);
 
   async function handleMpPay() {
     setMpLoading(true);
@@ -1361,12 +1399,19 @@ function PaymentDialog({
     if (!open) return;
     const id = window.setInterval(() => {
       setRemaining((r) => {
-        if (r <= 1) { window.clearInterval(id); onExpired(); return 0; }
+        if (r <= 1) {
+          window.clearInterval(id);
+          if (pixAppointmentId) {
+            cancelPendingPublicBooking({ data: { appointmentId: pixAppointmentId } }).catch(() => {});
+          }
+          onExpired();
+          return 0;
+        }
         return r - 1;
       });
     }, 1000);
     return () => window.clearInterval(id);
-  }, [open, onExpired]);
+  }, [open, onExpired, pixAppointmentId]);
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
@@ -1395,10 +1440,12 @@ function PaymentDialog({
     }
   }
 
-  function handleConfirm() {
+  function handleFreeConfirm() {
     setProcessing(true);
-    setTimeout(() => onConfirmed(), 600);
+    onConfirmed();
   }
+
+  const isFreeBooking = !mpConnected && !hasPix;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1552,14 +1599,14 @@ function PaymentDialog({
                 )}
 
                 <p className="mt-4 text-center text-xs text-muted-foreground">
-                  {firstName}, após enviar o comprovante seu agendamento será confirmado manualmente.
+                  {firstName}, após enviar o comprovante pelo WhatsApp, o profissional confirmará seu agendamento manualmente.
                   Se o tempo expirar, o slot será liberado.
                 </p>
 
-                {hasPix && (
-                  <Button onClick={handleConfirm} disabled={processing || remaining === 0} size="lg"
+                {isFreeBooking && (
+                  <Button onClick={handleFreeConfirm} disabled={processing || remaining === 0} size="lg"
                     className="mt-5 h-14 w-full rounded-2xl gradient-primary text-base font-semibold text-white shadow-glow disabled:opacity-60">
-                    {processing ? "Registrando…" : <><Check className="mr-2 h-5 w-5" /> Já enviei o comprovante</>}
+                    {processing ? "Registrando…" : <><Check className="mr-2 h-5 w-5" /> Confirmar agendamento</>}
                   </Button>
                 )}
               </>
@@ -1567,10 +1614,18 @@ function PaymentDialog({
 
             <button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                if (payMethod === "pix" && pixAppointmentId) {
+                  onPixReserved?.();
+                } else {
+                  onOpenChange(false);
+                }
+              }}
               className="mt-3 w-full rounded-xl py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
-              Cancelar e liberar o horário
+              {payMethod === "pix" && pixAppointmentId
+                ? "Concluir — enviarei o comprovante"
+                : "Cancelar e liberar o horário"}
             </button>
           </div>
         </div>

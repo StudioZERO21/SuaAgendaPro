@@ -17,6 +17,17 @@ export function clearSuperAuth() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(SUPER_AUTH_KEY);
   document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+  fetch("/api/super/session", { method: "DELETE", credentials: "include" }).catch(() => {});
+}
+
+/** Persiste token em cookie HttpOnly via API. */
+export async function persistSuperSession(token: string): Promise<void> {
+  await fetch("/api/super/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+    credentials: "include",
+  });
 }
 
 /** Verifica localmente se o token existe E não está expirado (sem chamada ao servidor). */
