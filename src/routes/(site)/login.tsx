@@ -10,6 +10,7 @@ import { BrandLogo } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getOnboardingStatus } from "@/lib/auth";
+import { recordActivity } from "@/lib/activity.functions";
 
 export const Route = createFileRoute("/(site)/login")({
   head: () => ({
@@ -44,9 +45,11 @@ function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
+      recordActivity({ data: { event: "login_failed", email } }).catch(() => {});
       toast.error("Não foi possível entrar. Confira email e senha.");
       return;
     }
+    recordActivity({ data: { event: "login_success", email, professionalId: data.user.id } }).catch(() => {});
 
     // Register this as the only active session — other devices will be kicked out within 30s
     const nonce = crypto.randomUUID();

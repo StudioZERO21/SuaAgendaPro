@@ -434,9 +434,12 @@ function RootComponent() {
 
   useEffect(() => {
     if (!wasKickedOut) return;
+    import("@/lib/activity.functions").then(({ recordActivity }) =>
+      recordActivity({ data: { event: "session_kicked", email: user?.email ?? undefined, professionalId: user?.id } }).catch(() => {}),
+    );
     toast.error("Sua sessão foi encerrada porque você entrou em outro dispositivo.", { duration: 8000 });
     navigate({ to: "/login" });
-  }, [wasKickedOut, navigate]);
+  }, [wasKickedOut, navigate, user]);
 
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 

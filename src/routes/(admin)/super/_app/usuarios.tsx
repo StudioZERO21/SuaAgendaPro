@@ -65,6 +65,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { User360 } from "@/components/super/user-360";
+import { ProfessionalActivity } from "@/components/super/professional-activity";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -790,9 +791,10 @@ function UsuariosPage() {
               </DialogHeader>
 
               <Tabs defaultValue="info" className="mt-2">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="info">Informações</TabsTrigger>
                   <TabsTrigger value="metricas">Visão 360</TabsTrigger>
+                  <TabsTrigger value="acessos">Acessos</TabsTrigger>
                   <TabsTrigger value="auditoria">
                     Auditoria
                     {auditForViewing.length > 0 && (
@@ -823,6 +825,10 @@ function UsuariosPage() {
 
                 <TabsContent value="metricas" className="space-y-3 pt-4">
                   <User360 userId={viewing.id} />
+                </TabsContent>
+
+                <TabsContent value="acessos" className="pt-4">
+                  <ProfessionalActivity email={viewing.email} />
                 </TabsContent>
 
                 <TabsContent value="auditoria" className="pt-4">

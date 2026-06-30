@@ -65,3 +65,19 @@ CREATE TABLE IF NOT EXISTS ai_reviews_anonymized (
 
 CREATE INDEX IF NOT EXISTS idx_ai_reviews_prof
   ON ai_reviews_anonymized (professional_id, rating);
+
+-- Logs de atividade do profissional (login, falha de senha, sessão derrubada, logout).
+-- Criada automaticamente pelo app (recordActivityVps) — aqui só para referência.
+CREATE TABLE IF NOT EXISTS professional_activity_log (
+  id              BIGSERIAL    PRIMARY KEY,
+  professional_id UUID,
+  email           TEXT,
+  event           TEXT         NOT NULL,  -- login_success | login_failed | session_kicked | logout
+  ip              TEXT,
+  user_agent      TEXT,
+  meta            JSONB,
+  created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_pal_prof  ON professional_activity_log (professional_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pal_email ON professional_activity_log (email, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pal_event ON professional_activity_log (event, created_at DESC);

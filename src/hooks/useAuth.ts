@@ -37,6 +37,13 @@ export function createAuthActions(
       return { error: error?.message ?? null };
     },
     async signOut() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { recordActivity } = await import("@/lib/activity.functions");
+          recordActivity({ data: { event: "logout", email: user.email ?? undefined, professionalId: user.id } }).catch(() => {});
+        }
+      } catch { /* noop */ }
       localStorage.removeItem("session_nonce");
       await supabase.auth.signOut();
       setSession(null);
