@@ -15,7 +15,7 @@ export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-xl">
+    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex max-w-md items-end justify-around px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)]">
         {items.map((it) => {
           const Icon = it.icon;
@@ -34,24 +34,29 @@ export function BottomNav() {
               <div
                 className={cn(
                   "relative flex items-center justify-center",
-                  isCenter ? "h-12 w-12 -mt-5" : "h-9 w-9",
+                  isCenter ? "h-11 w-11 -mt-4" : "h-9 w-9",
                 )}
               >
-                {active && (
+                {active && !isCenter && (
                   <motion.span
                     layoutId="bottom-nav-pill"
-                    className={cn(
-                      "absolute inset-0 gradient-primary shadow-glow",
-                      isCenter ? "rounded-2xl ring-4 ring-background" : "rounded-xl",
-                    )}
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    className="absolute inset-0 rounded-xl bg-primary/12"
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                  />
+                )}
+                {active && isCenter && (
+                  <motion.span
+                    layoutId="bottom-nav-fab"
+                    className="absolute inset-0 rounded-2xl bg-primary shadow-soft"
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
                   />
                 )}
                 <Icon
                   className={cn(
                     "relative z-10 transition-colors",
-                    isCenter ? "h-6 w-6" : "h-[18px] w-[18px]",
-                    active ? "text-white" : "",
+                    isCenter ? "h-5 w-5" : "h-[18px] w-[18px]",
+                    active && isCenter && "text-primary-foreground",
+                    active && !isCenter && "text-primary",
                   )}
                 />
               </div>

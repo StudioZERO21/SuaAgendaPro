@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
+import { AppPageHeader, AppSectionLabel } from "@/components/app-page-chrome";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/usePerfil";
 import { useAuth } from "@/hooks/useAuth";
@@ -161,19 +162,13 @@ function MaisPage() {
 
   return (
     <MobileShell withNav>
-      <header className="px-5 pt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Configurações</p>
-        <h1 className="font-display text-3xl font-bold leading-tight">Mais</h1>
-      </header>
+      <AppPageHeader eyebrow="Configurações" title="Mais" />
 
       {/* Profile card */}
       <section className="mt-5 px-5">
-        <div className="relative overflow-hidden rounded-2xl gradient-primary p-6 text-white shadow-glow">
-          <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-12 -left-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
-
+        <div className="studio-surface studio-accent-top relative overflow-hidden rounded-2xl p-6">
           <div className="relative flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-white/15 font-display text-2xl font-bold backdrop-blur-md ring-1 ring-white/20">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-secondary font-display text-2xl font-semibold text-primary ring-1 ring-border">
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin opacity-60" />
               ) : avatarUrl ? (
@@ -183,17 +178,17 @@ function MaisPage() {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-display text-xl font-bold leading-tight truncate">
+              <p className="font-display text-xl font-semibold leading-tight truncate">
                 {isLoading ? "Carregando..." : displayName}
               </p>
-              <p className="text-sm text-white/70 truncate">{email}</p>
-              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ring-1 ring-white/20">
-                <Crown className="h-3 w-3" /> {planLabel}
+              <p className="text-sm text-muted-foreground truncate">{email}</p>
+              <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-3 py-1 text-[10px] font-semibold text-foreground">
+                <Crown className="h-3 w-3 text-primary" /> {planLabel}
               </span>
             </div>
           </div>
 
-          <div className="relative mt-6 grid grid-cols-3 gap-4 border-t border-white/15 pt-6 text-center">
+          <div className="relative mt-6 grid grid-cols-3 gap-4 border-t border-border pt-6 text-center">
             <Stat label="Agend."   value={String(apptCount)}   />
             <Stat label="Clientes" value={String(clientCount)} />
             <Stat label="Avaliação" value={String(avgRating)}    />
@@ -203,10 +198,9 @@ function MaisPage() {
 
       {/* Referral banner */}
       <section className="mt-5 px-5">
-        <div className="overflow-hidden rounded-2xl border border-primary/20 gradient-soft">
-          {/* Header */}
+        <div className="studio-surface overflow-hidden rounded-2xl">
           <div className="flex items-center gap-3 p-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl gradient-primary text-white shadow-glow">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Sparkles className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
@@ -217,14 +211,14 @@ function MaisPage() {
               <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: "2s" }} />
               <Info className="relative h-4 w-4" />
             </button>
-            <button onClick={handleShare} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full gradient-primary text-white shadow-glow" aria-label="Compartilhar">
+            <button onClick={handleShare} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft" aria-label="Compartilhar">
               {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
             </button>
           </div>
 
           {/* Stats row */}
           {referralStats && (
-            <div className="grid grid-cols-3 border-t border-primary/10 divide-x divide-primary/10">
+            <div className="grid grid-cols-3 border-t border-border divide-x divide-border">
               <button onClick={() => setReferralOpen(true)} className="flex flex-col items-center py-3 hover:bg-primary/5 transition">
                 <span className="text-xl font-bold text-primary">{referralStats.totalClicks}</span>
                 <span className="text-[10px] font-semibold text-muted-foreground">Cliques</span>
@@ -241,7 +235,7 @@ function MaisPage() {
           )}
 
           {/* Link copiável */}
-          <div className="flex items-center gap-2 border-t border-primary/10 px-4 py-3">
+          <div className="flex items-center gap-2 border-t border-border px-4 py-3">
             <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">{referralLink}</p>
             <button onClick={handleCopy} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground hover:bg-secondary/70">
               {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
@@ -267,12 +261,12 @@ function MaisPage() {
               { n: "5", text: "O link de indicação é exclusivo e intransferível — não pode ser repassado para uso comercial." },
             ].map(({ n, text }) => (
               <div key={n} className="flex gap-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full gradient-primary text-[10px] font-bold text-white shadow-glow">{n}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft">{n}</span>
                 <p className="leading-snug">{text}</p>
               </div>
             ))}
           </div>
-          <Button onClick={() => setRegraOpen(false)} className="mt-2 h-10 w-full rounded-2xl gradient-primary text-sm font-semibold shadow-glow">
+          <Button onClick={() => setRegraOpen(false)} className="mt-2 h-10 w-full rounded-2xl bg-primary text-primary-foreground shadow-soft">
             Entendido
           </Button>
         </DialogContent>
@@ -336,7 +330,7 @@ function MaisPage() {
           ) : (
             <p className="py-4 text-center text-sm text-muted-foreground">Carregando…</p>
           )}
-          <Button onClick={() => setReferralOpen(false)} className="h-10 w-full rounded-2xl gradient-primary text-sm font-semibold shadow-glow">
+          <Button onClick={() => setReferralOpen(false)} className="h-10 w-full rounded-2xl bg-primary text-primary-foreground shadow-soft">
             Fechar
           </Button>
         </DialogContent>
@@ -346,7 +340,7 @@ function MaisPage() {
       <main className="mt-6 flex-1 space-y-6 px-5 pb-6">
         {groups.map((g) => (
           <section key={g.title}>
-            <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{g.title}</h2>
+            <h2 className="mb-2 px-1"><AppSectionLabel>{g.title}</AppSectionLabel></h2>
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
               {g.items.map((it, i) => {
                 const Icon = it.icon;
@@ -357,7 +351,7 @@ function MaisPage() {
                 if (it.id === "support") {
                   return (
                     <button key={it.id} onClick={() => setSupportOpen(true)} className={cls}>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -374,7 +368,7 @@ function MaisPage() {
                   return (
                     <div key={it.id} className={`${cls} justify-between`}>
                       <button onClick={handleShare} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                           <Icon className="h-4 w-4" />
                         </span>
                         <p className="text-sm font-semibold">{it.label}</p>
@@ -398,7 +392,7 @@ function MaisPage() {
                 if (it.id === "review") {
                   return (
                     <button key={it.id} onClick={() => setRatingOpen(true)} className={cls}>
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -424,7 +418,7 @@ function MaisPage() {
                       rel="noopener noreferrer"
                       className={cls}
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                         <Icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -440,7 +434,7 @@ function MaisPage() {
 
                 const inner = (
                   <>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-soft text-primary">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                       <Icon className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -601,7 +595,7 @@ function SupportTicketModal({
 
         {done ? (
           <div className="space-y-4 py-2 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full gradient-primary shadow-glow">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft">
               <CheckCircle2 className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-1">
@@ -614,7 +608,7 @@ function SupportTicketModal({
               <Clock className="h-4 w-4 shrink-0 text-primary" />
               <p>Acompanhe sua caixa de entrada de e-mail para atualizações.</p>
             </div>
-            <Button onClick={handleClose} className="h-11 w-full rounded-2xl gradient-primary font-semibold shadow-glow">
+            <Button onClick={handleClose} className="h-11 w-full rounded-2xl bg-primary text-primary-foreground shadow-soft">
               Entendido
             </Button>
           </div>
@@ -635,7 +629,7 @@ function SupportTicketModal({
                     key={c.value}
                     onClick={() => setCategory(c.value)}
                     className={cn("rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                      category === c.value ? "gradient-primary text-white shadow-glow" : "bg-secondary text-muted-foreground hover:bg-secondary/70",
+                      category === c.value ? "bg-primary text-primary-foreground shadow-soft" : "bg-secondary text-muted-foreground hover:bg-secondary/70",
                     )}
                   >
                     {c.label}
@@ -708,7 +702,7 @@ function SupportTicketModal({
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1 rounded-2xl" onClick={handleClose} disabled={sending}>Cancelar</Button>
               <Button
-                className="flex-1 rounded-2xl gradient-primary font-semibold shadow-glow"
+                className="flex-1 rounded-2xl bg-primary text-primary-foreground shadow-soft"
                 onClick={handleSubmit}
                 disabled={sending || !subject.trim() || desc.trim().length < 30 || !occurredAt || (category === "bug" && files.length === 0)}
               >
@@ -725,8 +719,8 @@ function SupportTicketModal({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="font-display text-2xl font-bold leading-none tracking-tight">{value}</p>
-      <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-white/70">{label}</p>
+      <p className="font-display text-2xl font-semibold leading-none tracking-tight tabular-nums">{value}</p>
+      <p className="mt-2 text-xs font-medium text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -834,7 +828,7 @@ function AppRatingModal({
             Cancelar
           </Button>
           <Button
-            className="flex-1 rounded-2xl gradient-primary font-semibold shadow-glow"
+            className="flex-1 rounded-2xl bg-primary text-primary-foreground shadow-soft"
             onClick={handleSave}
             disabled={saving || stars === 0}
           >

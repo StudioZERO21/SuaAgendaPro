@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { MobileShell } from "@/components/mobile-shell";
+import { AppSectionLabel } from "@/components/app-page-chrome";
 import { BottomNav } from "@/components/bottom-nav";
 import { NotificationsModal } from "@/components/notifications-modal";
 import { useNotifications } from "@/lib/notifications-store";
@@ -143,10 +144,12 @@ function AgendaPage() {
         <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-xl">
           <div className="flex items-center justify-between px-6 pb-5 pt-8">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              <AppSectionLabel>
                 {today.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-              </p>
-              <h1 className="font-display mt-1 text-4xl font-bold leading-tight text-gradient">Agenda</h1>
+              </AppSectionLabel>
+              <h1 className="font-display mt-1 text-[1.75rem] font-semibold leading-tight tracking-tight">
+                Agenda
+              </h1>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -158,7 +161,7 @@ function AgendaPage() {
                 {unreadCount > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-glow">
+                    <span className="relative inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-soft">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   </span>
@@ -168,10 +171,10 @@ function AgendaPage() {
                 <img
                   src={profile.avatar_url}
                   alt={profile.display_name}
-                  className="h-11 w-11 rounded-full object-cover shadow-glow ring-2 ring-primary/30"
+                  className="h-11 w-11 rounded-full object-cover shadow-soft ring-2 ring-primary/30"
                 />
               ) : (
-                <div className="flex h-11 w-11 items-center justify-center rounded-full gradient-primary text-sm font-bold text-white shadow-glow">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-soft">
                   {profile?.display_name
                     ? profile.display_name.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join("")
                     : "?"}
@@ -244,7 +247,7 @@ function AgendaPage() {
                       onClick={() => setNavMode(m)}
                       className={cn(
                         "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition",
-                        navMode === m ? "gradient-primary text-white" : "text-muted-foreground hover:text-foreground",
+                        navMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
                       )}
                     >
                       {m === "semana" ? "Sem." : "Mês"}
@@ -261,7 +264,7 @@ function AgendaPage() {
             </div>
             <Button
               onClick={() => setSheetOpen(true)}
-              className="h-12 rounded-2xl gradient-primary px-5 text-sm font-bold shadow-glow"
+              className="h-12 rounded-2xl bg-primary text-primary-foreground px-5 text-sm font-bold shadow-soft"
             >
               <Plus className="mr-1.5 h-[18px] w-[18px]" /> Novo
             </Button>
@@ -281,7 +284,7 @@ function AgendaPage() {
                   className={cn(
                     "relative flex aspect-square flex-col items-center justify-center rounded-full text-center transition-all",
                     active
-                      ? "gradient-primary text-white shadow-glow"
+                      ? "bg-primary text-primary-foreground shadow-soft"
                       : block
                       ? "border border-amber-200 bg-amber-50"
                       : "border border-border bg-card/60 backdrop-blur-sm shadow-card",
@@ -325,7 +328,7 @@ function AgendaPage() {
                   {period === p && (
                     <motion.div
                       layoutId="period-pill"
-                      className="absolute inset-0 rounded-full gradient-primary shadow-glow"
+                      className="absolute inset-0 rounded-full bg-primary text-primary-foreground shadow-soft"
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
                     />
                   )}
@@ -365,7 +368,7 @@ function AgendaPage() {
                         className={cn(
                           "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold transition-all",
                           active
-                            ? "gradient-primary border-transparent text-white shadow-glow"
+                            ? "bg-primary text-primary-foreground border-transparent shadow-soft"
                             : "border-border bg-card text-foreground hover:border-primary/30",
                         )}
                       >
@@ -398,12 +401,12 @@ function AgendaPage() {
 
           {!loadingAppts && sorted.length === 0 && (
             <div className="mt-12 flex flex-col items-center gap-4 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl gradient-soft text-primary">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-secondary/60 text-primary">
                 <Sparkles className="h-8 w-8" />
               </div>
               <p className="font-display text-xl font-semibold">Nenhum agendamento</p>
               <p className="text-sm text-muted-foreground">Ajuste os filtros ou crie um novo.</p>
-              <Button onClick={() => setSheetOpen(true)} className="mt-1 h-11 rounded-2xl gradient-primary px-5 shadow-glow">
+              <Button onClick={() => setSheetOpen(true)} className="mt-1 h-11 rounded-2xl bg-primary text-primary-foreground px-5 shadow-soft">
                 <Plus className="mr-1 h-4 w-4" /> Novo agendamento
               </Button>
             </div>
@@ -411,7 +414,7 @@ function AgendaPage() {
 
           {!loadingAppts && sorted.length > 0 && (
             <div className="mb-5 flex items-center justify-between">
-              <p className="font-display text-lg font-bold text-gradient">
+              <p className="font-display text-lg font-semibold text-foreground">
                 {period === "dia" ? "Agendamentos do dia" : period === "semana" ? "Esta semana" : "Este mês"}
               </p>
               <span className="text-xs font-bold text-muted-foreground">{sorted.length} agendamento{sorted.length !== 1 ? "s" : ""}</span>
@@ -508,7 +511,7 @@ function AppointmentCard({
       className={cn("flex gap-3", isDone && "opacity-55 saturate-50")}
     >
       <div className="flex w-8 flex-col items-center shrink-0">
-        <div className={cn("relative flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-glow ring-2 ring-background shrink-0", isDone ? "bg-zinc-400" : "gradient-primary")}>
+        <div className={cn("relative flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-soft ring-2 ring-background shrink-0", isDone ? "bg-zinc-400" : "bg-primary text-primary-foreground")}>
           <Clock className="h-3.5 w-3.5" />
         </div>
         {!isLast && <div className="mt-1 w-px flex-1 bg-gradient-to-b from-primary/30 via-border to-transparent min-h-[12px]" />}
@@ -536,7 +539,7 @@ function AppointmentCard({
           </div>
           <button
             onClick={() => setOpen((o) => !o)}
-            className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all", open ? "gradient-primary border-transparent text-white shadow-glow rotate-45" : isDone ? "border-border bg-muted text-muted-foreground" : "border-border bg-secondary text-foreground")}
+            className={cn("relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all", open ? "bg-primary text-primary-foreground border-transparent shadow-soft rotate-45" : isDone ? "border-border bg-muted text-muted-foreground" : "border-border bg-secondary text-foreground")}
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -575,7 +578,7 @@ function Detail({ label, value, highlight }: { label: string; value: string; hig
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 font-display text-sm font-bold", highlight ? "text-gradient text-base" : "text-foreground")}>{value}</p>
+      <p className={cn("mt-1 font-display text-sm font-semibold", highlight ? "text-base text-foreground" : "text-foreground")}>{value}</p>
     </div>
   );
 }
@@ -707,7 +710,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
             <p className="text-left text-sm text-muted-foreground">{stepTitles[step]}</p>
             <div className="mt-3 flex gap-1.5">
               {Array.from({ length: STEPS }).map((_, i) => (
-                <div key={i} className={cn("h-1.5 flex-1 rounded-full transition-all", i <= step ? "gradient-primary" : "bg-secondary")} />
+                <div key={i} className={cn("h-1.5 flex-1 rounded-full transition-all", i <= step ? "bg-primary text-primary-foreground" : "bg-secondary")} />
               ))}
             </div>
           </SheetHeader>
@@ -728,16 +731,16 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                         const active = draft.client?.id === c.id && !draft.isNewClient;
                         return (
                           <button key={c.id} onClick={() => setDraft({ ...draft, client: c, isNewClient: false })}
-                            className={cn("flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all", active ? "border-primary bg-secondary shadow-glow" : "border-border bg-card")}
+                            className={cn("flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all", active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card")}
                           >
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold text-white shadow-soft" style={{ background: `linear-gradient(135deg, ${c.color}, var(--primary))` }}>
+                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold text-primary-foreground shadow-soft" style={{ backgroundColor: c.color }}>
                               {c.initials}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-display text-sm font-bold truncate">{c.name}</p>
                               <p className="text-[11px] text-muted-foreground">{c.phone} · {c.totalAppointments} visita{c.totalAppointments !== 1 ? "s" : ""}</p>
                             </div>
-                            {active && <span className="flex h-6 w-6 items-center justify-center rounded-full gradient-primary text-white"><Check className="h-3.5 w-3.5" /></span>}
+                            {active && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-3.5 w-3.5" /></span>}
                           </button>
                         );
                       })}
@@ -747,7 +750,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                       <button onClick={() => { setShowNewForm(true); setDraft({ ...draft, client: null, isNewClient: true, newClientName: clientSearch }); }}
                         className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/50 bg-primary/5 p-3 text-left text-primary transition hover:bg-primary/10"
                       >
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl gradient-primary text-white">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
                           <User className="h-5 w-5" />
                         </div>
                         <div>
@@ -790,7 +793,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                     const active = draft.service?.id === s.id;
                     return (
                       <button key={s.id} onClick={() => setDraft({ ...draft, service: s, time: null })}
-                        className={cn("flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all", active ? "border-primary bg-secondary shadow-glow" : "border-border bg-card")}
+                        className={cn("flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all", active ? "border-primary bg-secondary shadow-soft" : "border-border bg-card")}
                       >
                         <div className="min-w-0 flex-1">
                           <p className="font-display text-base font-bold truncate">{s.name}</p>
@@ -801,7 +804,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                             </p>
                           )}
                         </div>
-                        <span className={cn("font-display text-lg font-bold shrink-0 ml-3", active && "text-gradient")}>{formatPrice(s.price_cents)}</span>
+                        <span className={cn("font-display text-lg font-semibold shrink-0 ml-3 tabular-nums", active && "text-primary")}>{formatPrice(s.price_cents)}</span>
                       </button>
                     );
                   })}
@@ -836,7 +839,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
                         <div className="grid grid-cols-4 gap-2">
                           {slots.map((t) => (
                             <button key={t} onClick={() => setDraft({ ...draft, time: t })}
-                              className={cn("rounded-xl border py-3 font-display text-sm font-bold transition-all", draft.time === t ? "gradient-primary border-transparent text-white shadow-glow" : "border-border bg-card text-foreground")}
+                              className={cn("rounded-xl border py-3 font-display text-sm font-semibold transition-all", draft.time === t ? "bg-primary text-primary-foreground border-transparent shadow-soft" : "border-border bg-card text-foreground")}
                             >
                               {t}
                             </button>
@@ -851,7 +854,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
               {/* Step 3 — Confirmação */}
               {step === 3 && (
                 <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                  <div className="rounded-2xl gradient-soft p-4 space-y-3">
+                  <div className="rounded-2xl bg-secondary/60 p-4 space-y-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resumo</p>
                     <div className="grid grid-cols-2 gap-3">
                       <SummaryItem label="Cliente"  value={clientForDisplay ?? "—"} />
@@ -888,7 +891,7 @@ function NewAppointmentSheet({ open, onOpenChange }: { open: boolean; onOpenChan
               <Button
                 onClick={step === STEPS - 1 ? handleConfirm : () => setStep((s) => s + 1)}
                 disabled={!canNext || isSaving}
-                className="h-14 flex-[2] rounded-2xl gradient-primary text-base font-semibold shadow-glow disabled:opacity-50"
+                className="h-14 flex-[2] rounded-2xl bg-primary text-primary-foreground text-base font-semibold shadow-soft disabled:opacity-50"
               >
                 {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : step === STEPS - 1 ? "Confirmar agendamento" : "Continuar"}
               </Button>
@@ -904,7 +907,7 @@ function SummaryItem({ label, value, highlight }: { label: string; value: string
   return (
     <div>
       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn("mt-0.5 font-display text-sm font-bold", highlight ? "text-gradient" : "text-foreground")}>{value}</p>
+      <p className={cn("mt-0.5 font-display text-sm font-semibold", highlight ? "text-foreground" : "text-foreground")}>{value}</p>
     </div>
   );
 }
@@ -981,7 +984,7 @@ function MiniCalendar({
               disabled={disabled}
               className={cn(
                 "flex aspect-square w-full flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all",
-                isSelected && "gradient-primary text-white shadow-glow",
+                isSelected && "bg-primary text-primary-foreground shadow-soft",
                 !isSelected && isToday && "ring-2 ring-primary ring-offset-1",
                 !isSelected && block && "cursor-not-allowed bg-amber-50 text-amber-600",
                 !isSelected && !block && !disabled && "hover:bg-secondary",
@@ -1055,11 +1058,11 @@ function AppointmentDetailSheet({
             <div className="px-6 pb-8 pt-6">
               <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-border" />
               <SheetHeader className="text-left">
-                <SheetTitle className="font-display text-2xl font-bold text-gradient">Detalhes do agendamento</SheetTitle>
+                <SheetTitle className="font-display text-2xl font-semibold tracking-tight">Detalhes do agendamento</SheetTitle>
               </SheetHeader>
 
               <div className="mt-5 flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-soft" style={{ background: `linear-gradient(135deg, ${client.color}, var(--primary))` }}>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-primary-foreground shadow-soft" style={{ backgroundColor: client.color }}>
                   {client.initials}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -1094,7 +1097,7 @@ function AppointmentDetailSheet({
 
                 {appointment.status === "pendente" && (
                   <button onClick={() => changeStatus("confirmado")} disabled={updateStatus.isPending}
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary text-white shadow-glow disabled:opacity-50"
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft disabled:opacity-50"
                     title="Confirmar"
                   >
                     {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}

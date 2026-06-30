@@ -4,6 +4,7 @@ import { Plus, Clock, Scissors, Search, ToggleLeft, ToggleRight, Loader2 } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MobileShell } from "@/components/mobile-shell";
+import { AppSectionLabel } from "@/components/app-page-chrome";
 import { BottomNav } from "@/components/bottom-nav";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -52,40 +53,36 @@ function ServicosPage() {
   return (
     <MobileShell withNav>
       <header className="px-5 pt-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Catálogo
-            </p>
-            <h1 className="font-display text-3xl font-bold leading-tight">Serviços</h1>
+            <AppSectionLabel>Catálogo</AppSectionLabel>
+            <h1 className="mt-1 font-display text-[1.75rem] font-semibold leading-tight tracking-tight">
+              Serviços
+            </h1>
           </div>
           <Button
             onClick={() => navigate({ to: "/servico/novo" })}
-            className="h-11 rounded-2xl gradient-primary px-4 text-sm font-semibold text-white shadow-glow"
+            className="h-11 shrink-0 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-soft"
           >
             <Plus className="mr-1 h-4 w-4" /> Novo
           </Button>
         </div>
 
         {/* Hero stats */}
-        <div className="relative mt-5 overflow-hidden rounded-3xl gradient-primary p-5 text-white shadow-glow">
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-          <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-          <div className="relative">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">
-              Ticket médio
-            </p>
-            <p className="mt-1 font-display text-3xl font-bold">
+        <div className="studio-surface studio-accent-top mt-5 rounded-2xl p-5">
+          <div>
+            <AppSectionLabel>Ticket médio</AppSectionLabel>
+            <p className="mt-1 font-display text-3xl font-semibold tabular-nums tracking-tight">
               {isLoading ? "—" : formatPrice(Math.round(avgPrice))}
             </p>
             <div className="mt-4 flex items-center justify-between text-xs">
               <div>
-                <p className="text-white/75">Serviços ativos</p>
-                <p className="font-display text-lg font-bold">{activeServices.length}</p>
+                <p className="text-muted-foreground">Serviços ativos</p>
+                <p className="font-display text-lg font-semibold tabular-nums">{activeServices.length}</p>
               </div>
               <div className="text-right">
-                <p className="text-white/75">Total no catálogo</p>
-                <p className="font-display text-lg font-bold">{services.length}</p>
+                <p className="text-muted-foreground">Total no catálogo</p>
+                <p className="font-display text-lg font-semibold tabular-nums">{services.length}</p>
               </div>
             </div>
           </div>
@@ -115,7 +112,7 @@ function ServicosPage() {
               className={cn(
                 "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all",
                 filter === f.id
-                  ? "gradient-primary border-transparent text-white shadow-glow"
+                  ? "bg-primary text-primary-foreground border-transparent shadow-soft"
                   : "border-border bg-card text-foreground",
               )}
             >
@@ -138,7 +135,7 @@ function ServicosPage() {
         {/* Empty state */}
         {!isLoading && services.length === 0 && (
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl gradient-soft text-primary">
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary text-primary">
               <Scissors className="h-6 w-6" />
             </div>
             <p className="font-display text-lg font-semibold">Nenhum serviço ainda</p>
@@ -147,7 +144,7 @@ function ServicosPage() {
             </p>
             <Button
               onClick={() => navigate({ to: "/servico/novo" })}
-              className="mt-2 h-11 rounded-2xl gradient-primary px-5 text-sm font-semibold text-white shadow-glow"
+              className="mt-2 h-11 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-soft"
             >
               <Plus className="mr-1 h-4 w-4" /> Criar serviço
             </Button>
@@ -173,7 +170,7 @@ function ServicosPage() {
               onClick={() => navigate({ to: "/servico/$id", params: { id: s.id } })}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl gradient-soft text-2xl">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-secondary text-2xl">
                   <Scissors className="h-6 w-6 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">

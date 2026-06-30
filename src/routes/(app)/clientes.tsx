@@ -11,6 +11,7 @@ import { downloadCSV } from "@/lib/csv";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { MobileShell } from "@/components/mobile-shell";
+import { AppSectionLabel } from "@/components/app-page-chrome";
 import { BottomNav } from "@/components/bottom-nav";
 import { useClientes, useCreateCliente, useUpdateCliente, type UIClient } from "@/hooks/useClientes";
 import { formatPrice } from "@/hooks/useServicos";
@@ -48,7 +49,7 @@ type EnrichedClient = UIClient & {
 function vipBadgeCls(type: VipType, size: "sm" | "lg" = "sm") {
   const base = size === "sm" ? "h-4 w-4" : "h-6 w-6";
   if (type === "manual" || type === "both")
-    return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full gradient-primary text-white shadow-glow`;
+    return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft`;
   if (type === "auto")
     return `${base} absolute -right-1 -top-1 flex items-center justify-center rounded-full bg-amber-400 text-amber-900`;
   return "";
@@ -67,7 +68,7 @@ function VipBlock({
   const isAny    = vipType !== null;
 
   const iconCls = isManual
-    ? "gradient-primary text-white shadow-glow"
+    ? "bg-primary text-primary-foreground shadow-soft"
     : isAuto
     ? "bg-amber-400 text-amber-900"
     : "bg-secondary text-muted-foreground";
@@ -192,8 +193,10 @@ function ClientesPage() {
       <header className="px-5 pt-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Sua base</p>
-            <h1 className="font-display text-3xl font-bold leading-tight">Clientes</h1>
+            <AppSectionLabel>Sua base</AppSectionLabel>
+            <h1 className="mt-1 font-display text-[1.75rem] font-semibold leading-tight tracking-tight">
+              Clientes
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -211,7 +214,7 @@ function ClientesPage() {
             </Button>
             <Button
               onClick={() => setCreateOpen(true)}
-              className="h-11 rounded-2xl gradient-primary px-4 text-sm font-semibold shadow-glow"
+              className="h-11 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-soft"
             >
               <Plus className="mr-1 h-4 w-4" /> Nova
             </Button>
@@ -243,7 +246,7 @@ function ClientesPage() {
                 onClick={() => { setTab(t); setPage(1); }}
                 className={cn(
                   "flex-1 rounded-xl px-3 py-2 text-xs font-semibold capitalize transition-all",
-                  active ? "gradient-primary text-white shadow-glow" : "text-muted-foreground",
+                  active ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground",
                 )}
               >
                 {t === "todas" ? "Todas" : t === "vip" ? "VIP" : "Novas"}
@@ -260,12 +263,12 @@ function ClientesPage() {
 
         {!isLoading && filtered.length === 0 && (
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl gradient-soft text-primary">
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary text-primary">
               <WomanIcon className="h-6 w-6" />
             </div>
             <p className="font-display text-lg font-semibold">Nenhuma cliente</p>
             <p className="text-sm text-muted-foreground">Tente outro filtro ou cadastre uma nova.</p>
-            <Button onClick={() => setCreateOpen(true)} className="mt-1 h-10 rounded-2xl gradient-primary px-4 shadow-glow">
+            <Button onClick={() => setCreateOpen(true)} className="mt-1 h-10 rounded-2xl bg-primary text-primary-foreground shadow-soft">
               <Plus className="mr-1 h-4 w-4" /> Nova cliente
             </Button>
           </div>
@@ -312,7 +315,7 @@ function ClientesPage() {
                   <span className="text-right text-xs font-semibold text-muted-foreground">{c.totalAppointments}</span>
                   <span className="flex w-16 items-center justify-center">
                     {c.hasApptThisMonth ? (
-                      <span title="Tem agendamento no mês" className="flex h-7 w-7 items-center justify-center rounded-full gradient-primary text-white shadow-glow">
+                      <span title="Tem agendamento no mês" className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft">
                         <CalendarCheck className="h-3.5 w-3.5" />
                       </span>
                     ) : (
@@ -336,7 +339,7 @@ function ClientesPage() {
                     const active = n === safePage;
                     return (
                       <button key={n} onClick={() => setPage(n)}
-                        className={cn("h-8 min-w-8 rounded-lg px-2 text-xs font-bold transition", active ? "gradient-primary text-white shadow-glow" : "bg-card text-muted-foreground border border-border")}
+                        className={cn("h-8 min-w-8 rounded-lg px-2 text-xs font-bold transition", active ? "bg-primary text-primary-foreground shadow-soft" : "bg-card text-muted-foreground border border-border")}
                       >
                         {n}
                       </button>
@@ -394,12 +397,15 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={cn("relative flex flex-col justify-between overflow-hidden rounded-lg border px-3 pt-2 pb-1 shadow-card h-[88px]", highlight ? "gradient-primary border-transparent text-white shadow-glow" : "border-border bg-card")}>
-      <Icon className={cn("pointer-events-none absolute -bottom-4 -right-4 h-20 w-20", highlight ? "text-white/25" : "text-primary/15")} strokeWidth={1.5} />
+    <div className={cn(
+      "studio-surface relative flex h-[88px] flex-col justify-between overflow-hidden rounded-2xl px-3 pb-1 pt-2",
+      highlight && "studio-accent-top ring-1 ring-primary/15",
+    )}>
+      <Icon className={cn("pointer-events-none absolute -bottom-4 -right-4 h-20 w-20 text-primary/10")} strokeWidth={1.5} />
       <div className="relative flex items-start justify-center pt-1">
-        <p className={cn("text-center font-display text-5xl font-extrabold leading-none", highlight ? "text-white" : "text-foreground")}>{value}</p>
+        <p className="text-center font-display text-4xl font-semibold leading-none tabular-nums text-foreground">{value}</p>
       </div>
-      <p className={cn("relative text-center text-[9px] font-semibold uppercase tracking-wider", highlight ? "text-white/90" : "text-muted-foreground")}>{label}</p>
+      <p className="relative text-center text-xs font-medium text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -498,7 +504,7 @@ function ClientModal({
                   "absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full",
                   client.vipType === "auto"
                     ? "bg-amber-400 text-amber-900"
-                    : "gradient-primary text-white shadow-glow",
+                    : "bg-primary text-primary-foreground shadow-soft",
                 )}>
                   <Crown className="h-3.5 w-3.5" />
                 </span>
@@ -543,7 +549,7 @@ function ClientModal({
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </a>
             <button onClick={onToggleDetails}
-              className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all", showFullDetails ? "gradient-primary border-transparent text-white shadow-glow rotate-45" : "border-border bg-secondary text-foreground")}
+              className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all", showFullDetails ? "bg-primary text-primary-foreground shadow-soft rotate-45" : "border-border bg-secondary text-foreground")}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -565,7 +571,7 @@ function ClientModal({
                 />
                 {editing && (
                   <button type="button" onClick={() => setShowAddress((s) => { const next = !s; if (!next) update("address", ""); return next; })}
-                    className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "gradient-primary border-transparent text-white shadow-glow" : "border-border bg-secondary/40 text-foreground")}
+                    className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "bg-primary text-primary-foreground shadow-soft" : "border-border bg-secondary/40 text-foreground")}
                   >
                     <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", showAddress ? "bg-white/20 text-white" : "bg-secondary text-primary")}><MapPin className="h-4 w-4" /></div>
                     <div className="flex-1">
@@ -601,12 +607,12 @@ function ClientModal({
                 {editing ? (
                   <>
                     <Button variant="ghost" onClick={onCancelEdit} className="h-10 rounded-xl px-4 text-sm font-semibold">Cancelar</Button>
-                    <Button onClick={handleSave} disabled={updateCliente.isPending} className="h-10 rounded-xl gradient-primary px-4 text-sm font-bold shadow-glow">
+                    <Button onClick={handleSave} disabled={updateCliente.isPending} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-soft">
                       {updateCliente.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="mr-1 h-4 w-4" /> Salvar</>}
                     </Button>
                   </>
                 ) : (
-                  <Button onClick={onEdit} className="h-10 rounded-xl gradient-primary px-4 text-sm font-bold shadow-glow">
+                  <Button onClick={onEdit} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-soft">
                     <Pencil className="mr-1 h-4 w-4" /> Editar
                   </Button>
                 )}
@@ -737,7 +743,7 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
           />
 
           <button type="button" onClick={() => { setShowAddress((s) => { const next = !s; if (!next) update("address", ""); return next; }); }}
-            className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "gradient-primary border-transparent text-white shadow-glow" : "border-border bg-secondary/40 text-foreground")}
+            className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition", showAddress ? "bg-primary text-primary-foreground shadow-soft" : "border-border bg-secondary/40 text-foreground")}
           >
             <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", showAddress ? "bg-white/20 text-white" : "bg-secondary text-primary")}><MapPin className="h-4 w-4" /></div>
             <div className="flex-1">
@@ -775,7 +781,7 @@ function CreateClientModal({ onClose, onCreated }: { onClose: () => void; onCrea
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border bg-card px-5 py-3">
           <Button variant="ghost" onClick={onClose} className="h-10 rounded-xl px-4 text-sm font-semibold">Cancelar</Button>
-          <Button onClick={submit} disabled={createCliente.isPending} className="h-10 rounded-xl gradient-primary px-4 text-sm font-bold shadow-glow disabled:opacity-50">
+          <Button onClick={submit} disabled={createCliente.isPending} className="h-10 rounded-xl bg-primary text-primary-foreground shadow-soft disabled:opacity-50">
             {createCliente.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="mr-1 h-4 w-4" /> Cadastrar</>}
           </Button>
         </div>

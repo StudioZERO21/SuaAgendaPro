@@ -185,7 +185,7 @@ function WeekGrid({ appointments, week, activeDateIdx, maps, scheduleBlocks, onS
             )}
           >
             <button onClick={() => onSelectDay(i)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
-              <div className={cn("flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl", isToday ? "gradient-primary text-white shadow-glow" : block ? "bg-amber-100 text-amber-700" : "bg-secondary text-foreground")}>
+              <div className={cn("flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl", isToday ? "bg-primary text-primary-foreground shadow-soft" : block ? "bg-amber-100 text-amber-700" : "bg-secondary text-foreground")}>
                 <span className={cn("text-[9px] font-bold uppercase tracking-wider leading-none", isToday ? "text-white/85" : block ? "text-amber-500" : "text-muted-foreground")}>{weekdayLabels[i]}</span>
                 <span className="font-display text-base font-bold leading-none mt-0.5">{d.getDate()}</span>
               </div>
@@ -268,7 +268,7 @@ function MonthGrid({ appointments, scheduleBlocks, viewDate, onPickDay }: {
   const statusOrder: UIStatus[] = ["confirmado", "pendente", "concluido", "cancelado"];
 
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-gradient-to-br from-card via-rose-cloud to-card shadow-card backdrop-blur-md">
+    <div className="studio-surface overflow-hidden rounded-2xl">
       <div className="grid grid-cols-7 border-b border-border bg-primary text-primary-foreground">
         {weekdayLabels.map((w) => (
           <div key={w} className="border-r border-primary-foreground/15 px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-primary-foreground/90 last:border-r-0">{w}</div>
@@ -289,7 +289,7 @@ function MonthGrid({ appointments, scheduleBlocks, viewDate, onPickDay }: {
               className={cn("relative flex h-16 flex-col justify-between p-1 text-left transition-all active:scale-[0.98]",
                 !isLastCol && "border-r border-border/60",
                 !isLastRow && "border-b border-border/60",
-                isToday ? "bg-gradient-to-br from-primary via-primary-glow to-accent text-primary-foreground" :
+                isToday ? "bg-primary text-primary-foreground" :
                 block ? "bg-amber-50/80 hover:bg-amber-100/80" :
                 dayAppts.length > 0 ? "bg-white/60 hover:bg-white/90" :
                 "bg-white/30 hover:bg-white/50"

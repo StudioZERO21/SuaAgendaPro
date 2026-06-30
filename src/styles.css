@@ -191,7 +191,30 @@
 }
 
 @utility animate-sa-scale-in {
-  animation: sa-scale-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: sa-scale-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Studio product UI — superfícies limpas, accent só onde importa */
+@utility studio-surface {
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+@layer components {
+  .studio-accent-top {
+    position: relative;
+    overflow: hidden;
+  }
+  .studio-accent-top::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 3px;
+    background: var(--primary);
+  }
 }
 
 @utility hover-lift {
