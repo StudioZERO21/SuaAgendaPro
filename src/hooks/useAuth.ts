@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { getEmailConfirmRedirectUrl } from "@/lib/app-url";
 
 type AuthContextValue = {
   session: Session | null;
@@ -32,7 +33,10 @@ export function createAuthActions(
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: name } },
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: getEmailConfirmRedirectUrl(),
+        },
       });
       return { error: error?.message ?? null };
     },

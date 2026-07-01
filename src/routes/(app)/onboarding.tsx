@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Sparkles, Scissors, Store, Check,
   Eye, Heart, Flame, Flower2, Star, Brush,
-  User, Link2, DollarSign, Clock, AlertCircle,
+  User, Link2, DollarSign, Clock, AlertCircle, Mail,
   Plus, X, Share2, MapPin, Loader2, Home,
   Camera, PawPrint, Stethoscope, SmilePlus, UserRound, PenTool,
 } from "lucide-react";
@@ -18,15 +18,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { MobileShell } from "@/components/mobile-shell";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PhoneInputBR } from "@/components/ui/phone-input";
 import { supabase } from "@/integrations/supabase/client";
 import { generateSlug, isSlugAvailable } from "@/lib/auth";
+import { getEmailConfirmRedirectUrl } from "@/lib/app-url";
 import { ACCENTS, applyPersonalization, loadPersonalization, savePersonalization, type AccentId } from "@/lib/personalization";
 
 export const Route = createFileRoute("/(app)/onboarding")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    verify_email: search.verify_email === "1" || search.verify_email === true,
+  }),
   head: () => ({
     meta: [
       { title: "Boas-vindas — SuaAgenda.Pro" },
@@ -111,6 +123,7 @@ const INITIAL: Form = {
 
 function OnboardingPage() {
   const navigate = useNavigate();
+  const { verify_email: verifyEmailFromSignup } = Route.useSearch();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Form>(INITIAL);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -121,10 +134,35 @@ function OnboardingPage() {
   const [cepError, setCepError] = useState("");
   const [saving, setSaving] = useState(false);
   const [accent, setAccent] = useState<AccentId>("rose");
+  const [emailPending, setEmailPending] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [resendingEmail, setResendingEmail] = useState(false);
   const totalSteps = 4;
+
+  /** Sincroniza confirmação de e-mail e controla o pop-up. */
+  const syncEmailVerification = useCallback(async (openDialogIfPending = false) => {
+    const { data } = await supabase.auth.getUser();
+    const u = data.user;
+    const pending = !!(u && !u.email_confirmed_at);
+    setEmailPending(pending);
+    setUserEmail(u?.email ?? "");
+    if (pending && (openDialogIfPending || verifyEmailFromSignup)) {
+      setEmailDialogOpen(true);
+    }
+    if (!pending) setEmailDialogOpen(false);
+  }, [verifyEmailFromSignup]);
 
   // Reflete a cor já salva (caso o usuário volte ao onboarding)
   useEffect(() => { setAccent(loadPersonalization().accent); }, []);
+
+  useEffect(() => {
+    void syncEmailVerification(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      void syncEmailVerification(false);
+    });
+    return () => subscription.unsubscribe();
+  }, [syncEmailVerification]);
 
   // Escolhe a cor do tema: aplica na hora e salva — tudo daqui pra frente segue a cor
   function chooseAccent(id: AccentId) {
@@ -132,6 +170,28 @@ function OnboardingPage() {
     const next = { ...loadPersonalization(), accent: id };
     savePersonalization(next);
     applyPersonalization(next);
+  }
+
+  async function resendConfirmEmail() {
+    setResendingEmail(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error("E-mail não encontrado na sessão.");
+        return;
+      }
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: user.email,
+        options: { emailRedirectTo: getEmailConfirmRedirectUrl() },
+      });
+      if (error) throw error;
+      toast.success("Novo link enviado! Confira sua caixa de entrada e spam.");
+    } catch {
+      toast.error("Não foi possível reenviar. Tente em alguns minutos.");
+    } finally {
+      setResendingEmail(false);
+    }
   }
 
   // Pre-fill display_name from user metadata
@@ -261,6 +321,14 @@ function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Sem sessão");
 
+      if (!user.email_confirmed_at) {
+        setEmailPending(true);
+        setEmailDialogOpen(true);
+        toast.error("Valide seu e-mail antes de finalizar o cadastro.");
+        setSaving(false);
+        return;
+      }
+
       // Validate slug one more time
       const available = await isSlugAvailable(form.slug, user.id);
       if (!available) {
@@ -353,6 +421,10 @@ function OnboardingPage() {
     }
   }
 
+  function openEmailDialog() {
+    setEmailDialogOpen(true);
+  }
+
   function back() {
     if (step === 0) navigate({ to: "/cadastro" });
     else setStep((s) => s - 1);
@@ -360,6 +432,67 @@ function OnboardingPage() {
 
   return (
     <MobileShell>
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="max-w-sm rounded-2xl border-border sm:max-w-md">
+          <DialogHeader className="items-center text-center sm:items-center sm:text-center">
+            <div className="mb-1 flex h-14 w-14 items-center justify-center rounded-2xl gradient-soft text-primary">
+              <Mail className="h-7 w-7" />
+            </div>
+            <DialogTitle className="font-display text-xl">
+              Valide seu e-mail para finalizar
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed">
+              Enviamos um link de confirmação para{" "}
+              {userEmail ? (
+                <strong className="text-foreground">{userEmail}</strong>
+              ) : (
+                "seu e-mail"
+              )}
+              . Abra-o para ativar sua conta e concluir o cadastro.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2 text-left text-xs text-muted-foreground">
+            <li className="flex gap-2">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              Verifique também a pasta de spam ou promoções
+            </li>
+            <li className="flex gap-2">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              Você pode preencher o onboarding enquanto aguarda
+            </li>
+            <li className="flex gap-2">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              Só será possível concluir após confirmar o e-mail
+            </li>
+          </ul>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button
+              type="button"
+              className="h-12 w-full rounded-2xl gradient-primary font-semibold shadow-glow"
+              disabled={resendingEmail}
+              onClick={resendConfirmEmail}
+            >
+              {resendingEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando…
+                </>
+              ) : (
+                "Reenviar e-mail de confirmação"
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full rounded-2xl"
+              onClick={() => setEmailDialogOpen(false)}
+            >
+              Entendi, continuar depois
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="relative flex flex-1 flex-col px-6 pt-6">
         <div className="pointer-events-none absolute -top-24 right-0 h-56 w-56 rounded-full gradient-hero opacity-70 blur-3xl" />
 
@@ -376,6 +509,22 @@ function OnboardingPage() {
           </span>
           <div className="w-10" />
         </div>
+
+        {emailPending && !emailDialogOpen && (
+          <button
+            type="button"
+            onClick={openEmailDialog}
+            className="relative mt-4 flex w-full items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950 transition hover:bg-amber-100/80"
+          >
+            <Mail className="h-4 w-4 shrink-0 text-amber-700" />
+            <span>
+              <span className="font-medium">E-mail pendente</span>
+              <span className="mt-0.5 block text-xs text-amber-900/80">
+                Toque para ver como confirmar e finalizar o cadastro
+              </span>
+            </span>
+          </button>
+        )}
 
         {/* Progress bar */}
         <div className="relative mt-3 flex gap-2">

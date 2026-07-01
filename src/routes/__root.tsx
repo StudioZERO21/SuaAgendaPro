@@ -58,6 +58,7 @@ const PUBLIC_PATHS = [
   "/",
   "/login",
   "/cadastro",
+  "/auth/callback",
   "/contato",
   "/privacidade",
   "/termos",

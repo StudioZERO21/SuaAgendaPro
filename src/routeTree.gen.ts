@@ -53,6 +53,7 @@ import { Route as publicAvaliarTokenRouteImport } from './routes/(public)/avalia
 import { Route as publicAgendarSlugRouteImport } from './routes/(public)/agendar.$slug'
 import { Route as appServicoNovoRouteImport } from './routes/(app)/servico.novo'
 import { Route as appServicoIdRouteImport } from './routes/(app)/servico.$id'
+import { Route as appAuthCallbackRouteImport } from './routes/(app)/auth.callback'
 import { Route as adminSuperLoginRouteImport } from './routes/(admin)/super/login'
 import { Route as adminSuperAppRouteRouteImport } from './routes/(admin)/super/_app/route'
 import { Route as adminSuperAppIndexRouteImport } from './routes/(admin)/super/_app/index'
@@ -295,6 +296,11 @@ const appServicoIdRoute = appServicoIdRouteImport.update({
   path: '/servico/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const appAuthCallbackRoute = appAuthCallbackRouteImport.update({
+  id: '/(app)/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const adminSuperLoginRoute = adminSuperLoginRouteImport.update({
   id: '/(admin)/super/login',
   path: '/super/login',
@@ -445,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/': typeof siteIndexRoute
   '/super': typeof adminSuperAppRouteRouteWithChildren
   '/super/login': typeof adminSuperLoginRoute
+  '/auth/callback': typeof appAuthCallbackRoute
   '/servico/$id': typeof appServicoIdRoute
   '/servico/novo': typeof appServicoNovoRoute
   '/agendar/$slug': typeof publicAgendarSlugRoute
@@ -511,6 +518,7 @@ export interface FileRoutesByTo {
   '/uploads/$': typeof UploadsSplatRoute
   '/': typeof siteIndexRoute
   '/super/login': typeof adminSuperLoginRoute
+  '/auth/callback': typeof appAuthCallbackRoute
   '/servico/$id': typeof appServicoIdRoute
   '/servico/novo': typeof appServicoNovoRoute
   '/agendar/$slug': typeof publicAgendarSlugRoute
@@ -579,6 +587,7 @@ export interface FileRoutesById {
   '/(site)/': typeof siteIndexRoute
   '/(admin)/super/_app': typeof adminSuperAppRouteRouteWithChildren
   '/(admin)/super/login': typeof adminSuperLoginRoute
+  '/(app)/auth/callback': typeof appAuthCallbackRoute
   '/(app)/servico/$id': typeof appServicoIdRoute
   '/(app)/servico/novo': typeof appServicoNovoRoute
   '/(public)/agendar/$slug': typeof publicAgendarSlugRoute
@@ -648,6 +657,7 @@ export interface FileRouteTypes {
     | '/'
     | '/super'
     | '/super/login'
+    | '/auth/callback'
     | '/servico/$id'
     | '/servico/novo'
     | '/agendar/$slug'
@@ -714,6 +724,7 @@ export interface FileRouteTypes {
     | '/uploads/$'
     | '/'
     | '/super/login'
+    | '/auth/callback'
     | '/servico/$id'
     | '/servico/novo'
     | '/agendar/$slug'
@@ -781,6 +792,7 @@ export interface FileRouteTypes {
     | '/(site)/'
     | '/(admin)/super/_app'
     | '/(admin)/super/login'
+    | '/(app)/auth/callback'
     | '/(app)/servico/$id'
     | '/(app)/servico/novo'
     | '/(public)/agendar/$slug'
@@ -849,6 +861,7 @@ export interface RootRouteChildren {
   siteIndexRoute: typeof siteIndexRoute
   adminSuperAppRouteRoute: typeof adminSuperAppRouteRouteWithChildren
   adminSuperLoginRoute: typeof adminSuperLoginRoute
+  appAuthCallbackRoute: typeof appAuthCallbackRoute
   appServicoIdRoute: typeof appServicoIdRoute
   appServicoNovoRoute: typeof appServicoNovoRoute
   publicAgendarSlugRoute: typeof publicAgendarSlugRoute
@@ -1170,6 +1183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appServicoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(app)/auth/callback': {
+      id: '/(app)/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof appAuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(admin)/super/login': {
       id: '/(admin)/super/login'
       path: '/super/login'
@@ -1403,6 +1423,7 @@ const rootRouteChildren: RootRouteChildren = {
   siteIndexRoute: siteIndexRoute,
   adminSuperAppRouteRoute: adminSuperAppRouteRouteWithChildren,
   adminSuperLoginRoute: adminSuperLoginRoute,
+  appAuthCallbackRoute: appAuthCallbackRoute,
   appServicoIdRoute: appServicoIdRoute,
   appServicoNovoRoute: appServicoNovoRoute,
   publicAgendarSlugRoute: publicAgendarSlugRoute,

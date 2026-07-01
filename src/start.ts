@@ -45,6 +45,7 @@ const SITE_ONLY_PREFIXES = [
 const AUTH_PREFIXES = [
   "/login",
   "/cadastro",
+  "/auth/callback",
   "/reset-password",
   "/redefinir-senha",
   "/trocar-senha",

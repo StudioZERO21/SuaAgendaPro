@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { recordReferralVisit, linkReferralToUser } from "@/lib/referral.functions";
 import { recordTermsAcceptance } from "@/lib/privacy.functions";
+import { getEmailConfirmRedirectUrl } from "@/lib/app-url";
 
 export const Route = createFileRoute("/(site)/cadastro")({
   head: () => ({
@@ -97,6 +98,7 @@ function SignupPage() {
       password: values.senha,
       options: {
         data: { full_name: values.nome, phone: values.telefone },
+        emailRedirectTo: getEmailConfirmRedirectUrl(),
       },
     });
 
@@ -119,8 +121,8 @@ function SignupPage() {
 
     recordTermsAcceptance({}).catch(() => {});
 
-    toast.success("Conta criada! Vamos personalizar seu studio ✨");
-    navigate({ to: "/onboarding" });
+    toast.success("Conta criada! Confirme seu e-mail para finalizar ✨");
+    navigate({ to: "/onboarding", search: { verify_email: "1" } });
   }
 
   return (
