@@ -1,15 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
 
+/**
+ * Valida assinatura HMAC do webhook Mercado Pago.
+ *
+ * Manifest oficial (sem body):
+ * id:{data.id};request-id:{x-request-id};ts:{ts};
+ *
+ * @see https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+ */
 function verifyMpSignature(
   secret: string,
-  body: string,
   xSignature: string,
   xRequestId: string,
-  ts: string,
+  dataId: string | null,
 ): boolean {
   try {
-    // MP signature format: "ts=...,v1=..."
     const parts = Object.fromEntries(
       xSignature.split(",").map((p) => {
         const [k, ...v] = p.split("=");
@@ -17,10 +23,15 @@ function verifyMpSignature(
       }),
     );
     const v1 = parts["v1"];
-    if (!v1) return false;
+    const ts = parts["ts"];
+    if (!v1 || !ts) return false;
 
-    // Signed template: "id:{x-request-id};ts:{ts};body:{body}"
-    const template = `id:${xRequestId};ts:${ts};body:${body}`;
+    const segments: string[] = [];
+    if (dataId) segments.push(`id:${dataId.toLowerCase()}`);
+    if (xRequestId) segments.push(`request-id:${xRequestId}`);
+    segments.push(`ts:${ts}`);
+    const template = `${segments.join(";")};`;
+
     const expected = createHmac("sha256", secret).update(template).digest("hex");
 
     const a = Buffer.from(v1);
@@ -41,12 +52,14 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
           return new Response("Internal Server Error", { status: 500 });
         }
 
+        const url = new URL(request.url);
+        const dataId = url.searchParams.get("data.id");
+
         const body = await request.text();
 
         const xSignature = request.headers.get("x-signature") ?? "";
         const xRequestId = request.headers.get("x-request-id") ?? "";
-        const ts = xSignature.match(/ts=([^,]+)/)?.[1] ?? "";
-        if (!verifyMpSignature(webhookSecret, body, xSignature, xRequestId, ts)) {
+        if (!verifyMpSignature(webhookSecret, xSignature, xRequestId, dataId)) {
           return new Response("Unauthorized", { status: 401 });
         }
 

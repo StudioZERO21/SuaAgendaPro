@@ -70,7 +70,7 @@ export function useDashboard() {
   const data = useMemo<DashboardData>(() => {
     const now       = new Date();
     const thisYear  = now.getFullYear();
-    const thisMonth = now.getMonth();         // 0-indexed
+    const thisMonth = now.getMonth();
     const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1;
     const prevYear  = thisMonth === 0 ? thisYear - 1 : thisYear;
     const todayStr  = dateStr(now);
@@ -78,32 +78,48 @@ export function useDashboard() {
     const serviceMap = new Map<string, Service>(services.map((s) => [s.id, s]));
     const clientMap  = new Map<string, UIClient>(clients.map((c) => [c.id, c]));
 
-    // ── Split by month ────────────────────────────────────────
-    const thisMonthAppts = appts.filter((a) => {
-      const d = new Date(a.date + "T00:00:00");
-      return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
-    });
-    const lastMonthAppts = appts.filter((a) => {
-      const d = new Date(a.date + "T00:00:00");
-      return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
-    });
+    const thisMonthAppts: typeof appts = [];
+    const lastMonthAppts: typeof appts = [];
+    const revenueByDate = new Map<string, number>();
+    const raw: number[][] = Array.from({ length: 6 }, () => Array(6).fill(0));
 
-    // ── KPIs ─────────────────────────────────────────────────
+    for (const a of appts) {
+      const d = new Date(a.date + "T00:00:00");
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      if (y === thisYear && m === thisMonth) thisMonthAppts.push(a);
+      else if (y === prevYear && m === prevMonth) lastMonthAppts.push(a);
+
+      if (a.status === "concluido") {
+        revenueByDate.set(a.date, (revenueByDate.get(a.date) ?? 0) + a.priceCents);
+      }
+
+      if (a.status !== "cancelado") {
+        const colIdx = DOW_TO_COL[d.getDay()];
+        if (colIdx !== undefined) {
+          const h = parseInt(a.start.split(":")[0], 10);
+          const rowIdx = SLOT_HOURS.reduce<number>(
+            (best, sh, ri) => (Math.abs(h - sh) < Math.abs(h - SLOT_HOURS[best]) ? ri : best),
+            0,
+          );
+          raw[rowIdx][colIdx]++;
+        }
+      }
+    }
+
     const nonCancelled = (arr: typeof appts) => arr.filter((a) => a.status !== "cancelado");
     const completed    = (arr: typeof appts) => arr.filter((a) => a.status === "concluido");
 
-    // Faturamento = apenas serviços concluídos (efetivamente pagos)
     const revenueCents     = completed(thisMonthAppts).reduce((s, a) => s + a.priceCents, 0);
     const lastRevenueCents = completed(lastMonthAppts).reduce((s, a) => s + a.priceCents, 0);
     const apptCount        = nonCancelled(thisMonthAppts).length;
     const lastApptCount    = nonCancelled(lastMonthAppts).length;
 
     const newClients = clients.filter((c) => {
-      const d = new Date(c.createdAt);
-      return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
+      const cd = new Date(c.createdAt);
+      return cd.getFullYear() === thisYear && cd.getMonth() === thisMonth;
     }).length;
 
-    // Occupancy: rough estimate — booked slots / (working days × avg 8 slots/day)
     const workDaysThisMonth = thisMonthAppts.length > 0
       ? new Set(thisMonthAppts.map((a) => a.date)).size
       : 0;
@@ -111,7 +127,6 @@ export function useDashboard() {
       ? Math.min(100, Math.round((apptCount / (workDaysThisMonth * 8)) * 100))
       : 0;
 
-    // ── Upcoming today ────────────────────────────────────────
     const upcoming: UpcomingItem[] = appts
       .filter((a) => a.date === todayStr && (a.status === "pendente" || a.status === "confirmado"))
       .sort((a, b) => a.start.localeCompare(b.start))
@@ -123,7 +138,6 @@ export function useDashboard() {
         service: serviceMap.get(a.serviceId)?.name ?? "—",
       }));
 
-    // ── Chart data ────────────────────────────────────────────
     function getChartData(days: number): ChartPoint[] {
       return Array.from({ length: days }, (_, i) => {
         const d  = new Date(now);
@@ -132,44 +146,25 @@ export function useDashboard() {
         const label = i === days - 1
           ? "Hoje"
           : d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "").slice(0, 3);
-        const revenue = appts
-          .filter((a) => a.date === ds && a.status === "concluido")
-          .reduce((s, a) => s + a.priceCents, 0);
-        return { day: label, value: revenue };
+        return { day: label, value: revenueByDate.get(ds) ?? 0 };
       });
     }
 
-    // ── Top services (this month) ─────────────────────────────
     const svcAgg: Record<string, { count: number; revenueCents: number }> = {};
-    nonCancelled(thisMonthAppts).forEach((a) => {
+    for (const a of nonCancelled(thisMonthAppts)) {
       if (!svcAgg[a.serviceId]) svcAgg[a.serviceId] = { count: 0, revenueCents: 0 };
       svcAgg[a.serviceId].count++;
       if (a.status === "concluido") svcAgg[a.serviceId].revenueCents += a.priceCents;
-    });
+    }
     const topServices: TopService[] = Object.entries(svcAgg)
       .map(([id, v]) => ({ name: serviceMap.get(id)?.name ?? "—", ...v }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 4);
 
-    // ── Top clients (all time) ────────────────────────────────
     const topClients: UIClient[] = [...clients]
       .sort((a, b) => b.totalSpentCents - a.totalSpentCents)
       .slice(0, 4);
 
-    // ── Heatmap (all time) ────────────────────────────────────
-    const raw: number[][] = Array.from({ length: 6 }, () => Array(6).fill(0));
-    appts.forEach((a) => {
-      if (a.status === "cancelado") return;
-      const dow    = new Date(a.date + "T00:00:00").getDay();
-      const colIdx = DOW_TO_COL[dow];
-      if (colIdx === undefined) return;
-      const h      = parseInt(a.start.split(":")[0], 10);
-      const rowIdx = SLOT_HOURS.reduce<number>(
-        (best, sh, ri) => Math.abs(h - sh) < Math.abs(h - SLOT_HOURS[best]) ? ri : best,
-        0,
-      );
-      raw[rowIdx][colIdx]++;
-    });
     const maxCell = Math.max(1, ...raw.flat());
     const peakMatrix = raw.map((row) => row.map((v) => Math.round((v / maxCell) * 10)));
 
@@ -179,13 +174,15 @@ export function useDashboard() {
     }));
     const peakTop = [...peakCells].sort((a, b) => b.count - a.count).slice(0, 3);
 
+    const doneCount = completed(thisMonthAppts).length;
+
     return {
       revenueCents, lastRevenueCents, apptCount, lastApptCount,
       newClients, occupancyPct,
       chart7:  getChartData(7),
       chart14: getChartData(14),
       chart30: getChartData(30),
-      ticketMedioCents: completed(thisMonthAppts).length > 0 ? Math.round(revenueCents / completed(thisMonthAppts).length) : 0,
+      ticketMedioCents: doneCount > 0 ? Math.round(revenueCents / doneCount) : 0,
       upcoming, topServices, topClients,
       peakMatrix, peakTop,
     };

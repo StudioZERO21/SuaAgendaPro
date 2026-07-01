@@ -63,6 +63,12 @@ if [ ! -f ".env.production" ]; then
 fi
 ok ".env.production encontrado"
 
+if command -v node >/dev/null 2>&1 && [ -f "scripts/validate-env-production.mjs" ]; then
+  node scripts/validate-env-production.mjs .env.production || \
+    err "Corrija o .env.production acima e rode deploy.sh novamente"
+  ok ".env.production validado"
+fi
+
 # ─── 3. Parar container antigo se existir ─────────────────────────────────────
 if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "suaagendapro-app"; then
   warn "Container antigo encontrado — removendo..."

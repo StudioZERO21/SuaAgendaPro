@@ -157,9 +157,10 @@ function InfraPage() {
   const envVars = infra ? [
     { key: "ASAAS_API_KEY",       ok: infra.envConfigured.ASAAS_API_KEY       },
     { key: "RESEND_API_KEY",      ok: infra.envConfigured.RESEND_API_KEY      },
-    { key: "EVOLUTION_API_URL",   ok: infra.envConfigured.EVOLUTION_API_URL   },
-    { key: "EVOLUTION_API_KEY",   ok: infra.envConfigured.EVOLUTION_API_KEY   },
-    { key: "HOSTINGER_API_TOKEN", ok: infra.envConfigured.HOSTINGER_API_TOKEN },
+    { key: "EVOLUTION_API_URL",         ok: infra.envConfigured.EVOLUTION_API_URL         },
+    { key: "EVOLUTION_API_KEY",         ok: infra.envConfigured.EVOLUTION_API_KEY         },
+    { key: "EVOLUTION_GLOBAL_API_KEY",  ok: infra.envConfigured.EVOLUTION_GLOBAL_API_KEY  },
+    { key: "HOSTINGER_API_TOKEN",       ok: infra.envConfigured.HOSTINGER_API_TOKEN       },
   ] : [];
 
   return (
@@ -336,11 +337,14 @@ function InfraPage() {
             <AlertCircle className="h-8 w-8 opacity-30" />
             <p>Configure <code className="rounded bg-muted px-1 font-mono text-xs">EVOLUTION_API_URL</code> e <code className="rounded bg-muted px-1 font-mono text-xs">EVOLUTION_API_KEY</code> no <code className="rounded bg-muted px-1 font-mono text-xs">.env.production</code> da VPS (não o <code className="rounded bg-muted px-1 font-mono text-xs">.env</code> local).</p>
           </div>
-        ) : evolution.error ? (
+        ) : evolution.error && evolution.instances.length === 0 ? (
           <div className="flex flex-col items-center gap-2 p-8 text-center">
             <XCircle className="h-8 w-8 text-rose-400 opacity-60" />
-            <p className="text-sm font-medium text-rose-600">{evolution.error}</p>
-            <p className="text-xs text-muted-foreground">Verifique a URL e a chave da Evolution API no .env</p>
+            <p className="max-w-lg text-sm font-medium text-rose-600">{evolution.error}</p>
+            <p className="text-xs text-muted-foreground">
+              Na VPS: <code className="rounded bg-muted px-1 font-mono">nano /opt/suaagendapro/.env.production</code>
+              {" "}→ depois <code className="rounded bg-muted px-1 font-mono">docker compose up -d --force-recreate</code>
+            </p>
           </div>
         ) : evolution.instances.length === 0 ? (
           <div className="flex flex-col items-center gap-2 p-8 text-muted-foreground">
@@ -348,6 +352,12 @@ function InfraPage() {
             <p className="text-sm">Nenhuma instância criada ainda.</p>
           </div>
         ) : (
+          <>
+            {evolution.warning && (
+              <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                {evolution.warning}
+              </div>
+            )}
           <ul className="divide-y divide-border">
             {evolution.instances.map((inst) => (
               <li key={inst.name} className="flex items-center gap-4 px-4 py-3">
@@ -406,6 +416,7 @@ function InfraPage() {
               </li>
             ))}
           </ul>
+          </>
         )}
       </motion.section>
 

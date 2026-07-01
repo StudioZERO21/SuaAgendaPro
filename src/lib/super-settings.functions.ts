@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSuperAuth } from "@/lib/super-auth.server";
 import { getServerEnv, getServerEnvStatus } from "@/lib/server-env";
-import { evolutionFetch, getEvolutionConfig } from "@/lib/evolution-api.server";
+import { evolutionFetch, formatEvolutionAdminError, getEvolutionConfig, probeEvolutionMessaging } from "@/lib/evolution-api.server";
 
 const _st = z.string().optional();
 
@@ -74,18 +74,36 @@ export const testApiConnection = createServerFn({ method: "POST" })
         return {
           ok: false,
           message:
-            "Evolution não configurado. Na VPS use .env.production (não .env) e recrie o container: docker compose up -d --force-recreate",
+            "Evolution não configurado. Na VPS use .env.production (não .env) e recrie: docker compose up -d --force-recreate",
         };
       }
-      const probe = await evolutionFetch("/instance/all");
-      if (probe.ok) {
-        const json = probe.data as any;
-        const count = Array.isArray(json) ? json.length : (json?.data?.length ?? "?");
-        return { ok: true, message: `Evolution conectado — ${count} instância(s)` };
+
+      if (cfg.adminConfigured) {
+        const admin = await evolutionFetch("/instance/all", { keyKind: "global" });
+        if (admin.ok) {
+          const json = admin.data as any;
+          const count = Array.isArray(json) ? json.length : (json?.data?.length ?? "?");
+          return { ok: true, message: `Evolution admin OK — ${count} instância(s)` };
+        }
       }
+
+      const messaging = await probeEvolutionMessaging();
+      if (messaging.ok) {
+        return {
+          ok: true,
+          message: cfg.adminConfigured
+            ? "WhatsApp envio OK (token instância). Listagem admin falhou — veja Infra."
+            : "WhatsApp envio OK — configure EVOLUTION_GLOBAL_API_KEY para listar instâncias",
+        };
+      }
+
+      const adminFail = cfg.adminConfigured
+        ? await evolutionFetch("/instance/all", { keyKind: "global" })
+        : { ok: false as const, status: 0, error: "EVOLUTION_GLOBAL_API_KEY ausente" };
+
       return {
         ok: false,
-        message: `Evolution HTTP ${probe.status || "—"}: ${probe.error}`,
+        message: formatEvolutionAdminError(adminFail.status, adminFail.error),
       };
     }
 

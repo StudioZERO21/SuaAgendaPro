@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   Area,
   AreaChart,
@@ -16,7 +17,7 @@ type Props = {
 };
 
 /** Gráfico de receita — chunk separado para lazy-load do recharts no dashboard. */
-export function RevenueChart({ data }: Props) {
+export const RevenueChart = memo(function RevenueChart({ data }: Props) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
@@ -50,6 +51,7 @@ export function RevenueChart({ data }: Props) {
             border: "1px solid var(--border)",
             background: "var(--card)",
           }}
+          animationDuration={150}
         />
         <Area
           type="monotone"
@@ -58,9 +60,10 @@ export function RevenueChart({ data }: Props) {
           strokeWidth={2}
           fill="url(#revenueGrad)"
           dot={false}
+          isAnimationActive={false}
           activeDot={{ r: 4, fill: "var(--primary)" }}
         />
       </AreaChart>
     </ResponsiveContainer>
   );
-}
+});

@@ -510,6 +510,8 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
 
     const isSandbox = secret.access_token.startsWith("TEST");
     const backUrl = `${data.origin}/agendar/${data.slug}?mp=done&appointment_id=${appt.id}`;
+    const notificationUrl =
+      `${data.origin}/api/public/mp-webhook?source_news=webhooks`;
 
     const prefRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
@@ -527,6 +529,7 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
         external_reference: appt.id,
         back_urls: { success: backUrl, failure: backUrl, pending: backUrl },
         auto_return: "approved",
+        notification_url: notificationUrl,
       }),
     });
 

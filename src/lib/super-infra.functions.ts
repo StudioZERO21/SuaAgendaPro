@@ -4,7 +4,9 @@ import { requireSuperAuth } from "@/lib/super-auth.server";
 import { getServerEnv } from "@/lib/server-env";
 import {
   evolutionFetch,
+  formatEvolutionAdminError,
   getEvolutionConfig,
+  probeEvolutionMessaging,
 } from "@/lib/evolution-api.server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -19,6 +21,7 @@ export type InfraStats = {
     RESEND_API_KEY: boolean;
     EVOLUTION_API_URL: boolean;
     EVOLUTION_API_KEY: boolean;
+    EVOLUTION_GLOBAL_API_KEY: boolean;
     HOSTINGER_API_TOKEN: boolean;
   };
 };
@@ -89,6 +92,8 @@ export type EvolutionStats = {
   instances: EvolutionInstance[];
   version: string;
   error?: string;
+  /** Envio OK via token da instância, mas listagem admin falhou. */
+  warning?: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -118,11 +123,12 @@ export const getInfraStats = createServerFn({ method: "GET" })
     const evolutionCfg = getEvolutionConfig();
 
     const envConfigured = {
-      ASAAS_API_KEY:        !!asaasKey,
-      RESEND_API_KEY:       !!resendKey,
-      EVOLUTION_API_URL:    !!evolutionCfg.url,
-      EVOLUTION_API_KEY:    !!evolutionCfg.instanceApiKey || !!evolutionCfg.globalApiKey,
-      HOSTINGER_API_TOKEN:  !!hostingerKey,
+      ASAAS_API_KEY:              !!asaasKey,
+      RESEND_API_KEY:             !!resendKey,
+      EVOLUTION_API_URL:          !!evolutionCfg.url,
+      EVOLUTION_API_KEY:          !!evolutionCfg.instanceApiKey,
+      EVOLUTION_GLOBAL_API_KEY:   !!evolutionCfg.globalApiKey,
+      HOSTINGER_API_TOKEN:        !!hostingerKey,
     };
 
     // Probe APIs in parallel
@@ -137,8 +143,12 @@ export const getInfraStats = createServerFn({ method: "GET" })
       })(),
       (async (): Promise<ApiStatus> => {
         if (!evolutionCfg.configured) return "unconfigured";
-        const probe = await evolutionFetch("/instance/all");
-        return probe.ok ? "ok" : "error";
+        if (evolutionCfg.adminConfigured) {
+          const admin = await evolutionFetch("/instance/all", { keyKind: "global" });
+          if (admin.ok) return "ok";
+        }
+        const msg = await probeEvolutionMessaging();
+        return msg.ok ? "ok" : "error";
       })(),
     ]);
 
@@ -282,8 +292,12 @@ export const getEvolutionStats = createServerFn({ method: "GET" })
     let instances: EvolutionInstance[] = [];
     let version = "";
     let error: string | undefined;
+    let warning: string | undefined;
 
-    const listRes = await evolutionFetch("/instance/all");
+    const listRes = evolutionCfg.adminConfigured
+      ? await evolutionFetch("/instance/all", { keyKind: "global" })
+      : { ok: false as const, status: 0, error: "EVOLUTION_GLOBAL_API_KEY não definida" };
+
     if (listRes.ok) {
       const raw = listRes.data as any;
       const list: any[] = Array.isArray(raw) ? raw : (raw?.data ?? raw?.instances ?? []);
@@ -303,20 +317,40 @@ export const getEvolutionStats = createServerFn({ method: "GET" })
         };
       });
     } else {
-      const hint =
-        listRes.status === 401 || listRes.status === 403
-          ? " — verifique EVOLUTION_GLOBAL_API_KEY (chave global do painel), não só o token da instância"
-          : "";
-      error = `Evolution ${listRes.status || "erro"}: ${listRes.error}${hint}`;
+      const messaging = await probeEvolutionMessaging();
+      if (messaging.ok) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: row } = await (supabaseAdmin as any)
+          .from("system_settings")
+          .select("value")
+          .eq("key", "evolution_instance")
+          .maybeSingle();
+        const instanceName = row?.value ?? "suaagendapro";
+
+        instances = [{
+          name:           instanceName,
+          state:          "open",
+          profileName:    "WhatsApp operacional (envio)",
+          profilePicture: null,
+          number:         null,
+        }];
+        warning =
+          "Listagem admin indisponível — " +
+          formatEvolutionAdminError(listRes.status, listRes.error);
+      } else {
+        error = formatEvolutionAdminError(listRes.status, listRes.error);
+      }
     }
 
-    const versionRes = await evolutionFetch("/");
+    const versionRes = await evolutionFetch("/", evolutionCfg.globalApiKey
+      ? { keyKind: "global" }
+      : { apiKey: evolutionCfg.instanceApiKey });
     if (versionRes.ok) {
       const v = versionRes.data as any;
       version = v?.version ?? v?.EvolutionAPI?.VERSION ?? "";
     }
 
-    return { configured: true, instances, version, error };
+    return { configured: true, instances, version, error, warning };
   });
 
 export const getSupabaseStats = createServerFn({ method: "GET" })
@@ -383,31 +417,24 @@ export const sendEvolutionMessage = createServerFn({ method: "POST" })
     await requireSuperAuth(data._st ?? null);
 
     const cfg = getEvolutionConfig();
-    if (!cfg.configured) return { ok: false, message: "Evolution não configurado" };
-
-    const allRes = await evolutionFetch("/instance/all");
-    if (!allRes.ok) {
-      return {
-        ok: false,
-        message: `Erro ao buscar instâncias (${allRes.status || "rede"}): ${allRes.error}`,
-      };
-    }
-
-    const allData = allRes.data as any;
-    const list: any[] = Array.isArray(allData) ? allData : (allData?.data ?? allData?.instances ?? []);
-    const inst = list.find((i: any) => (i.name ?? i.instanceName) === data.instanceName);
-    if (!inst?.token) {
-      return { ok: false, message: `Instância "${data.instanceName}" não encontrada ou sem token` };
+    if (!cfg.messagingConfigured) {
+      return { ok: false, message: "Evolution não configurado (URL, token e instanceId)" };
     }
 
     const r = await fetch(`${cfg.url}/send/text`, {
       method: "POST",
-      headers: { apikey: inst.token, "Content-Type": "application/json" },
-      body: JSON.stringify({ number: data.to, text: data.text }),
+      headers: { apikey: cfg.instanceApiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        instanceId: cfg.instanceId,
+        number: data.to,
+        text: data.text,
+      }),
     });
 
     const body = await r.json().catch(() => ({})) as any;
-    if (r.ok) return { ok: true, message: `Mensagem enviada! ID: ${body?.key?.id ?? "—"}` };
+    if (r.ok) {
+      return { ok: true, message: `Mensagem enviada! ID: ${body?.key?.id ?? body?.data?.Info?.ID ?? "—"}` };
+    }
     return { ok: false, message: `Erro ${r.status}: ${body?.error ?? JSON.stringify(body)}` };
   });
 

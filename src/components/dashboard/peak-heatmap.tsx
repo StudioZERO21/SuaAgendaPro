@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PEAK_DAYS, PEAK_SLOTS, type PeakCell } from "@/hooks/useDashboard";
@@ -8,6 +9,11 @@ import {
   primaryRgba,
   useThemeBrand,
 } from "@/lib/theme-color";
+import {
+  listContainerVariants,
+  listItemVariants,
+  useDashboardMotion,
+} from "@/lib/dashboard-motion";
 
 type Props = {
   peakTop: PeakCell[];
@@ -15,8 +21,9 @@ type Props = {
 };
 
 /** Heatmap de pico de atendimento — cores sempre seguem o accent ativo. */
-export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
+export const PeakHeatmap = memo(function PeakHeatmap({ peakTop, peakMatrix }: Props) {
   const brand = useThemeBrand();
+  const { reduced } = useDashboardMotion();
 
   const cellColor = useCallback(
     (intensity: number) => primaryRgba(peakIntensityAlpha(intensity), brand.primary),
@@ -35,15 +42,21 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 shadow-card">
-      <div className="grid grid-cols-3 gap-2">
+      <motion.div
+        className="grid grid-cols-3 gap-2"
+        variants={listContainerVariants(reduced)}
+        initial="hidden"
+        animate="show"
+      >
         {peakTop.map((p, i) => {
           const isLead = i === 0;
           return (
-            <div
+            <motion.div
               key={`${p.day}-${p.slot}`}
-              style={{ animationDelay: `${i * 80}ms`, ...peakTopCardStyle(i, brand) }}
+              variants={listItemVariants(reduced)}
+              style={peakTopCardStyle(i, brand)}
               className={cn(
-                "rounded-md p-3 animate-sa-fade-in-up",
+                "rounded-md p-3",
                 isLead ? "text-white shadow-glow" : "text-foreground",
               )}
             >
@@ -71,10 +84,10 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
               >
                 {p.count} atend.
               </p>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       <div className="mt-4">
         <div className="flex items-center gap-2">
@@ -103,11 +116,10 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
                     <div
                       key={`${ri}-${ci}`}
                       style={{
-                        animationDelay: `${(ri * 6 + ci) * 12}ms`,
                         backgroundColor: cellColor(v),
                         boxShadow: isMax ? `0 0 0 2px ${brand.primary}` : undefined,
                       }}
-                      className="relative aspect-square rounded-sm animate-sa-scale-in"
+                      className="relative aspect-square rounded-sm transition-colors duration-150"
                       title={`${PEAK_DAYS[ci]} ${PEAK_SLOTS[ri]} — ${v}/10`}
                     />
                   );
@@ -134,7 +146,7 @@ export function PeakHeatmap({ peakTop, peakMatrix }: Props) {
       </div>
     </div>
   );
-}
+});
 
 export function PeakHeatmapSection({ peakTop, peakMatrix }: Props) {
   const brand = useThemeBrand();
