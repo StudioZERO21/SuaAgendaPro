@@ -150,9 +150,16 @@ export const approveResetRequest = createServerFn({ method: "POST" })
     if (fetchErr || !req) throw new Error("Solicitação não encontrada ou já processada.");
 
     // Gera link de reset via Supabase Admin
+    const appUrl =
+      (process.env.VITE_APP_URL || process.env.APP_URL || "https://app.suaagenda.pro")
+        .replace(/\/+$/, "");
+
     const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
-      type:  "recovery",
+      type: "recovery",
       email: req.user_email,
+      options: {
+        redirectTo: `${appUrl}/reset-password`,
+      },
     });
     if (linkErr || !linkData.properties?.action_link) {
       throw new Error("Falha ao gerar link de reset: " + (linkErr?.message ?? "sem link"));

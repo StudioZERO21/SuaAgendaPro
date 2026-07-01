@@ -530,6 +530,14 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
         back_urls: { success: backUrl, failure: backUrl, pending: backUrl },
         auto_return: "approved",
         notification_url: notificationUrl,
+        // Checkout só para cartão — PIX fica na tela do app (Payments API)
+        payment_methods: {
+          excluded_payment_types: [
+            { id: "ticket" },
+            { id: "atm" },
+            { id: "bank_transfer" },
+          ],
+        },
       }),
     });
 
@@ -568,7 +576,164 @@ export const createMpPreferenceAndBooking = createServerFn({ method: "POST" })
     return { appointmentId: appt.id, initPoint };
   });
 
-/** PIX: cria agendamento pendente — confirmação só via profissional após comprovante. */
+export type MpPixPaymentResult = {
+  appointmentId: string;
+  paymentId: string;
+  qrCode: string;
+  qrCodeBase64: string | null;
+};
+
+/** Mercado Pago PIX — QR Code na tela (sem redirecionar ao checkout). */
+export const createMpPixPaymentAndBooking = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown): CreateMpBookingInput => {
+    const i = input as Record<string, unknown>;
+    if (!i?.professionalId || !i?.serviceId || !i?.scheduledAt || !i?.clientName || !i?.clientPhone) {
+      throw new Error("Dados incompletos");
+    }
+    return input as CreateMpBookingInput;
+  })
+  .handler(async ({ data }): Promise<MpPixPaymentResult> => {
+    const { randomUUID } = await import("node:crypto");
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { enforceRateLimit, clientIpFromRequest } = await import(
+      "@/lib/rate-limit.server",
+    );
+    const req = getRequest();
+    await enforceRateLimit(`booking-mp-pix:${clientIpFromRequest(req)}`, 10, 3600);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { validatePublicBooking } = await import(
+      "@/lib/public-booking-validation.server",
+    );
+
+    const validated = await validatePublicBooking(supabaseAdmin, data);
+    const phone = data.clientPhone.replace(/\D/g, "");
+    const clientId = await findOrCreateClient(
+      supabaseAdmin,
+      validated.professionalId,
+      data.clientName,
+      phone,
+      data.clientEmail,
+      data.marketingConsent,
+    );
+
+    const { data: appt, error: aErr } = await supabaseAdmin
+      .from("appointments")
+      .insert({
+        professional_id: validated.professionalId,
+        client_id: clientId,
+        service_id: validated.serviceId,
+        scheduled_at: validated.scheduledAt,
+        duration_minutes: validated.durationMinutes,
+        price_cents: validated.priceCents,
+        deposit_cents: validated.depositCents,
+        status: "pending",
+        notes: data.notes || null,
+      })
+      .select("id")
+      .single();
+    if (aErr || !appt) throw new Error("Erro ao criar agendamento");
+
+    const { data: secret } = await supabaseAdmin
+      .from("mercado_pago_account_secrets")
+      .select("access_token")
+      .eq("user_id", validated.professionalId)
+      .maybeSingle();
+    if (!secret?.access_token) throw new Error("Mercado Pago não conectado");
+
+    const nameParts = data.clientName.trim().split(/\s+/);
+    const firstName = nameParts[0] || "Cliente";
+    const lastName = nameParts.slice(1).join(" ") || firstName;
+    const payerEmail =
+      data.clientEmail?.trim() ||
+      `${phone.slice(-11) || "cliente"}@pagamento.suaagenda.pro`;
+
+    const notificationUrl =
+      `${data.origin}/api/public/mp-webhook?source_news=webhooks`;
+
+    const payRes = await fetch("https://api.mercadopago.com/v1/payments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${secret.access_token}`,
+        "X-Idempotency-Key": randomUUID(),
+      },
+      body: JSON.stringify({
+        transaction_amount: validated.depositCents / 100,
+        description: `Sinal — ${validated.serviceName}`.slice(0, 120),
+        payment_method_id: "pix",
+        external_reference: appt.id,
+        notification_url: notificationUrl,
+        payer: {
+          email: payerEmail,
+          first_name: firstName.slice(0, 80),
+          last_name: lastName.slice(0, 80),
+        },
+      }),
+    });
+
+    if (!payRes.ok) {
+      await supabaseAdmin.from("appointments").delete().eq("id", appt.id);
+      const errBody = await payRes.text().catch(() => "");
+      throw new Error(`Falha ao gerar PIX MP: ${payRes.status} ${errBody.slice(0, 120)}`);
+    }
+
+    const payment = (await payRes.json()) as {
+      id: number | string;
+      point_of_interaction?: {
+        transaction_data?: {
+          qr_code?: string;
+          qr_code_base64?: string;
+        };
+      };
+    };
+
+    const qrCode = payment.point_of_interaction?.transaction_data?.qr_code ?? "";
+    const qrCodeBase64 =
+      payment.point_of_interaction?.transaction_data?.qr_code_base64 ?? null;
+
+    if (!qrCode) {
+      await supabaseAdmin.from("appointments").delete().eq("id", appt.id);
+      throw new Error("Mercado Pago não retornou QR Code PIX");
+    }
+
+    const paymentId = String(payment.id);
+
+    await supabaseAdmin.from("payment_transactions").upsert(
+      {
+        user_id: validated.professionalId,
+        client_name: data.clientName,
+        service_name: validated.serviceName,
+        amount_cents: validated.depositCents,
+        method: "mercado_pago",
+        status: "pending",
+        external_reference: appt.id,
+        mercado_pago_payment_id: paymentId,
+        appointment_id: appt.id,
+      },
+      { onConflict: "user_id,mercado_pago_payment_id" },
+    );
+
+    try {
+      const dt = new Date(validated.scheduledAt);
+      await supabaseAdmin.from("notifications").insert({
+        user_id: validated.professionalId,
+        type: "new_appointment",
+        title: "Aguardando PIX Mercado Pago 📱",
+        body: `${data.clientName} reservou ${dt.toLocaleDateString("pt-BR")} — aguardando PIX.`,
+        appointment_id: appt.id,
+      });
+    } catch {}
+
+    return {
+      appointmentId: appt.id,
+      paymentId,
+      qrCode,
+      qrCodeBase64,
+    };
+  });
+
+/** PIX manual: cria agendamento pendente — confirmação só via profissional após comprovante. */
 export const createPublicPixBooking = createServerFn({ method: "POST" })
   .inputValidator((input: unknown): CreateBookingInput => {
     const i = input as Record<string, unknown>;

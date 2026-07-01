@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,15 @@ import { MobileShell } from "@/components/mobile-shell";
 import { BrandLogo } from "@/components/brand-logo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getPasswordResetRedirectUrl } from "@/lib/app-url";
 import { getOnboardingStatus } from "@/lib/auth";
 import { recordActivity } from "@/lib/activity.functions";
 
 export const Route = createFileRoute("/(site)/login")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    email_confirmed:
+      search.email_confirmed === "1" || search.email_confirmed === true,
+  }),
   head: () => ({
     meta: [
       { title: "Entrar — SuaAgenda.Pro" },
@@ -24,11 +29,18 @@ export const Route = createFileRoute("/(site)/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { email_confirmed: emailConfirmed } = Route.useSearch();
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  useEffect(() => {
+    if (emailConfirmed) {
+      toast.success("E-mail confirmado! Entre com sua senha para continuar.");
+    }
+  }, [emailConfirmed]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -83,7 +95,7 @@ function LoginPage() {
     e.preventDefault();
     setForgotLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getPasswordResetRedirectUrl(),
     });
     setForgotLoading(false);
     if (error) {
@@ -118,6 +130,11 @@ function LoginPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Entre para continuar gerenciando sua agenda.
           </p>
+          {emailConfirmed && (
+            <p className="mt-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-medium text-emerald-700">
+              E-mail confirmado com sucesso. Use a senha que você criou no cadastro.
+            </p>
+          )}
         </motion.div>
 
         <form onSubmit={submit} className="relative mt-6 flex flex-col gap-3">

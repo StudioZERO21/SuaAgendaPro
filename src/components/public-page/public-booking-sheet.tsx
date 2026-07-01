@@ -42,6 +42,7 @@ import {
   getPublicSlots,
   createPublicBooking,
   createMpPreferenceAndBooking,
+  createMpPixPaymentAndBooking,
   createPublicPixBooking,
   cancelPendingPublicBooking,
   lookupClientByPhone,
@@ -1293,18 +1294,29 @@ function PaymentDialog({
   onExpired: () => void;
   onPixReserved?: () => void;
 }) {
+  type PayMethod = "mp_pix" | "mp_card" | "pix_manual";
   const hasPix = pix?.enabled && !!pix?.key;
-  const defaultMethod: "mp" | "pix" = mpConnected ? "mp" : hasPix ? "pix" : "mp";
+  const defaultMethod: PayMethod = mpConnected
+    ? "mp_pix"
+    : hasPix
+      ? "pix_manual"
+      : "mp_card";
 
   const TOTAL_SECONDS = 10 * 60;
   const [remaining, setRemaining] = useState(TOTAL_SECONDS);
   const [processing, setProcessing] = useState(false);
   const [mpLoading, setMpLoading] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [mpPixQrDataUrl, setMpPixQrDataUrl] = useState<string | null>(null);
+  const [mpPixQrCode, setMpPixQrCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [payMethod, setPayMethod] = useState<"mp" | "pix">(defaultMethod);
+  const [mpPixCopied, setMpPixCopied] = useState(false);
+  const [payMethod, setPayMethod] = useState<PayMethod>(defaultMethod);
   const [pixAppointmentId, setPixAppointmentId] = useState<string | null>(null);
+  const [mpPixAppointmentId, setMpPixAppointmentId] = useState<string | null>(null);
   const pixReservedRef = useRef(false);
+  const mpPixReservedRef = useRef(false);
+  const prevPayMethodRef = useRef<PayMethod>(defaultMethod);
 
   // valor em reais (consistente com o resto da UI)
   const depositValue = Math.round(service.price_cents * 0.3) / 100;
@@ -1328,15 +1340,107 @@ function PaymentDialog({
       setProcessing(false);
       setMpLoading(false);
       setCopied(false);
+      setMpPixCopied(false);
       setPayMethod(defaultMethod);
       setPixAppointmentId(null);
+      setMpPixAppointmentId(null);
+      setMpPixQrCode(null);
+      setMpPixQrDataUrl(null);
       pixReservedRef.current = false;
+      mpPixReservedRef.current = false;
+      prevPayMethodRef.current = defaultMethod;
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // PIX: reserva slot no servidor ao abrir (sem confirmação client-side)
+  // Cancela reserva ao trocar de método de pagamento
   useEffect(() => {
-    if (!open || payMethod !== "pix" || !hasPix || pixReservedRef.current) return;
+    if (!open || prevPayMethodRef.current === payMethod) return;
+    const prev = prevPayMethodRef.current;
+    const cancelId =
+      prev === "pix_manual"
+        ? pixAppointmentId
+        : prev === "mp_pix"
+          ? mpPixAppointmentId
+          : null;
+    if (cancelId) {
+      cancelPendingPublicBooking({ data: { appointmentId: cancelId } }).catch(() => {});
+    }
+    if (prev === "pix_manual") {
+      setPixAppointmentId(null);
+      pixReservedRef.current = false;
+    }
+    if (prev === "mp_pix") {
+      setMpPixAppointmentId(null);
+      setMpPixQrCode(null);
+      setMpPixQrDataUrl(null);
+      mpPixReservedRef.current = false;
+    }
+    prevPayMethodRef.current = payMethod;
+  }, [payMethod, open, pixAppointmentId, mpPixAppointmentId]);
+
+  // PIX Mercado Pago: gera QR na tela (sem redirecionar)
+  useEffect(() => {
+    if (!open || payMethod !== "mp_pix" || !mpConnected || mpPixReservedRef.current) return;
+    mpPixReservedRef.current = true;
+    createMpPixPaymentAndBooking({
+      data: {
+        professionalId,
+        serviceId: service.id,
+        scheduledAt: `${date}T${time}:00${localTzSuffix()}`,
+        durationMinutes: service.duration,
+        priceCents: service.price_cents,
+        depositCents,
+        clientName,
+        clientPhone,
+        clientEmail,
+        notes: clientNotes,
+        slug: professionalSlug,
+        origin: window.location.origin,
+      },
+    })
+      .then(({ appointmentId, qrCode, qrCodeBase64 }) => {
+        setMpPixAppointmentId(appointmentId);
+        setMpPixQrCode(qrCode);
+        if (qrCodeBase64) {
+          setMpPixQrDataUrl(`data:image/png;base64,${qrCodeBase64}`);
+        }
+      })
+      .catch(() => {
+        toast.error("Não foi possível gerar o PIX. Tente novamente.");
+        onOpenChange(false);
+      });
+  }, [
+    open,
+    payMethod,
+    mpConnected,
+    professionalId,
+    service.id,
+    date,
+    time,
+    clientName,
+    clientPhone,
+    clientEmail,
+    clientNotes,
+    service.duration,
+    service.price_cents,
+    depositCents,
+    professionalSlug,
+    onOpenChange,
+  ]);
+
+  // QR MP a partir do código (fallback se base64 não vier)
+  useEffect(() => {
+    if (!open || !mpPixQrCode || mpPixQrDataUrl) return;
+    import("qrcode").then(({ default: QRCode }) => {
+      QRCode.toDataURL(mpPixQrCode, { width: 200, margin: 1 })
+        .then(setMpPixQrDataUrl)
+        .catch(() => setMpPixQrDataUrl(null));
+    });
+  }, [open, mpPixQrCode, mpPixQrDataUrl]);
+
+  // PIX manual: reserva slot no servidor ao abrir (sem confirmação client-side)
+  useEffect(() => {
+    if (!open || payMethod !== "pix_manual" || !hasPix || pixReservedRef.current) return;
     pixReservedRef.current = true;
     createPublicPixBooking({
       data: {
@@ -1401,8 +1505,9 @@ function PaymentDialog({
       setRemaining((r) => {
         if (r <= 1) {
           window.clearInterval(id);
-          if (pixAppointmentId) {
-            cancelPendingPublicBooking({ data: { appointmentId: pixAppointmentId } }).catch(() => {});
+          const expiredId = pixAppointmentId ?? mpPixAppointmentId;
+          if (expiredId) {
+            cancelPendingPublicBooking({ data: { appointmentId: expiredId } }).catch(() => {});
           }
           onExpired();
           return 0;
@@ -1411,7 +1516,7 @@ function PaymentDialog({
       });
     }, 1000);
     return () => window.clearInterval(id);
-  }, [open, onExpired, pixAppointmentId]);
+  }, [open, onExpired, pixAppointmentId, mpPixAppointmentId]);
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
@@ -1435,6 +1540,18 @@ function PaymentDialog({
       setCopied(true);
       toast.success("Código PIX copiado!");
       setTimeout(() => setCopied(false), 3000);
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  }
+
+  async function copyMpPix() {
+    if (!mpPixQrCode) return;
+    try {
+      await navigator.clipboard.writeText(mpPixQrCode);
+      setMpPixCopied(true);
+      toast.success("Código PIX copiado!");
+      setTimeout(() => setMpPixCopied(false), 3000);
     } catch {
       toast.error("Não foi possível copiar");
     }
@@ -1471,11 +1588,13 @@ function PaymentDialog({
                 <div>
                   <DialogTitle className="font-display text-lg">Pagamento do sinal</DialogTitle>
                   <DialogDescription className="text-xs">
-                    {payMethod === "mp"
-                      ? "Mercado Pago — pagamento automático"
-                      : hasPix
-                        ? `PIX pessoal · ${pix.beneficiaryName || professionalName}`
-                        : "Confirme com o profissional"}
+                    {payMethod === "mp_pix"
+                      ? "PIX via Mercado Pago — confirmação automática"
+                      : payMethod === "mp_card"
+                        ? "Cartão de crédito ou débito"
+                        : hasPix
+                          ? `PIX pessoal · ${pix.beneficiaryName || professionalName}`
+                          : "Confirme com o profissional"}
                   </DialogDescription>
                 </div>
               </div>
@@ -1501,43 +1620,105 @@ function PaymentDialog({
               <div className="font-display text-2xl font-bold text-gradient">{formatPrice(depositValue)}</div>
             </div>
 
-            {/* Abas de método (só mostra se os dois estão disponíveis) */}
-            {mpConnected && hasPix && (
-              <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-border/60 bg-secondary/40 p-1">
+            {/* Escolha do método de pagamento */}
+            {mpConnected && (
+              <div
+                className={cn(
+                  "mt-4 grid gap-2 rounded-2xl border border-border/60 bg-secondary/40 p-1",
+                  hasPix ? "grid-cols-3" : "grid-cols-2",
+                )}
+              >
                 <button
                   type="button"
-                  onClick={() => setPayMethod("mp")}
+                  onClick={() => setPayMethod("mp_pix")}
                   className={cn(
-                    "flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition",
-                    payMethod === "mp" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground",
+                    "flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold transition",
+                    payMethod === "mp_pix"
+                      ? "bg-card shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <CreditCard className="h-3.5 w-3.5" /> Mercado Pago
+                  <QrCode className="h-3.5 w-3.5 shrink-0" /> PIX
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPayMethod("pix")}
+                  onClick={() => setPayMethod("mp_card")}
                   className={cn(
-                    "flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition",
-                    payMethod === "pix" ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground",
+                    "flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold transition",
+                    payMethod === "mp_card"
+                      ? "bg-card shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <QrCode className="h-3.5 w-3.5" /> PIX
+                  <CreditCard className="h-3.5 w-3.5 shrink-0" /> Cartão
                 </button>
+                {hasPix && (
+                  <button
+                    type="button"
+                    onClick={() => setPayMethod("pix_manual")}
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[10px] font-semibold transition sm:text-xs",
+                      payMethod === "pix_manual"
+                        ? "bg-card shadow text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <QrCode className="h-3.5 w-3.5 shrink-0" /> PIX direto
+                  </button>
+                )}
               </div>
             )}
 
-            {/* ── Mercado Pago ── */}
-            {payMethod === "mp" && (
+            {/* ── PIX Mercado Pago (QR na tela) ── */}
+            {payMethod === "mp_pix" && (
+              <>
+                <div className="mt-4 flex flex-col items-center rounded-3xl border border-border/60 bg-card p-5">
+                  {mpPixQrDataUrl ? (
+                    <img
+                      src={mpPixQrDataUrl}
+                      alt="QR Code PIX Mercado Pago"
+                      className="h-[176px] w-[176px] rounded-xl"
+                    />
+                  ) : (
+                    <div className="flex h-[176px] w-[176px] items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/30 text-muted-foreground">
+                      <QrCode className="h-16 w-16 animate-pulse" />
+                    </div>
+                  )}
+                  <p className="mt-3 text-center text-xs text-muted-foreground">
+                    Escaneie o QR Code no app do banco ou copie o código PIX abaixo.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyMpPix}
+                    disabled={!mpPixQrCode}
+                    className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-secondary/70 disabled:opacity-50"
+                  >
+                    {mpPixCopied ? (
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                    {mpPixCopied ? "Copiado!" : "Copiar código PIX"}
+                  </button>
+                </div>
+                <p className="mt-4 text-center text-xs text-muted-foreground">
+                  {firstName}, assim que o pagamento for detectado, seu agendamento será
+                  confirmado automaticamente. Se o tempo expirar, o horário será liberado.
+                </p>
+              </>
+            )}
+
+            {/* ── Cartão Mercado Pago (redireciona) ── */}
+            {payMethod === "mp_card" && (
               <div className="mt-4 flex flex-col items-center gap-4 rounded-3xl border border-border/60 bg-card p-5">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#009EE3]/10">
                   <CreditCard className="h-8 w-8 text-[#009EE3]" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-foreground">Pagar com Mercado Pago</p>
+                  <p className="text-sm font-semibold text-foreground">Pagar com cartão</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Você será redirecionado para o ambiente seguro do Mercado Pago para concluir o pagamento.
-                    Ao voltar, seu agendamento será confirmado automaticamente.
+                    Você será redirecionado ao Mercado Pago para pagar com cartão de crédito
+                    ou débito. Ao concluir, seu agendamento será confirmado automaticamente.
                   </p>
                 </div>
                 <Button
@@ -1546,13 +1727,19 @@ function PaymentDialog({
                   size="lg"
                   className="h-12 w-full rounded-2xl bg-[#009EE3] text-sm font-bold text-white hover:bg-[#0082bd] disabled:opacity-60"
                 >
-                  {mpLoading ? "Aguarde…" : <><CreditCard className="mr-2 h-4 w-4" /> Pagar {formatPrice(depositValue)} via Mercado Pago</>}
+                  {mpLoading ? (
+                    "Aguarde…"
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" /> Pagar {formatPrice(depositValue)} com cartão
+                    </>
+                  )}
                 </Button>
               </div>
             )}
 
-            {/* ── PIX ── */}
-            {payMethod === "pix" && (
+            {/* ── PIX manual (chave do profissional) ── */}
+            {payMethod === "pix_manual" && (
               <>
                 <div className="mt-4 flex flex-col items-center rounded-3xl border border-border/60 bg-card p-5">
                   {hasPix ? (
@@ -1615,7 +1802,13 @@ function PaymentDialog({
             <button
               type="button"
               onClick={() => {
-                if (payMethod === "pix" && pixAppointmentId) {
+                const reservedId =
+                  payMethod === "pix_manual"
+                    ? pixAppointmentId
+                    : payMethod === "mp_pix"
+                      ? mpPixAppointmentId
+                      : null;
+                if (reservedId) {
                   onPixReserved?.();
                 } else {
                   onOpenChange(false);
@@ -1623,8 +1816,11 @@ function PaymentDialog({
               }}
               className="mt-3 w-full rounded-xl py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
-              {payMethod === "pix" && pixAppointmentId
-                ? "Concluir — enviarei o comprovante"
+              {(payMethod === "pix_manual" && pixAppointmentId) ||
+              (payMethod === "mp_pix" && mpPixAppointmentId)
+                ? payMethod === "pix_manual"
+                  ? "Concluir — enviarei o comprovante"
+                  : "Concluir — aguardando confirmação do PIX"
                 : "Cancelar e liberar o horário"}
             </button>
           </div>

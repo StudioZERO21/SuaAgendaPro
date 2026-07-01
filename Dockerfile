@@ -5,6 +5,11 @@
 # node:22 tem WebSocket nativo (exigido pelo @supabase/realtime-js server-side)
 FROM node:22-alpine AS builder
 WORKDIR /app
+
+# URL pública embutida no bundle (confirmação de e-mail, links OAuth)
+ARG VITE_APP_URL=https://app.suaagenda.pro
+ENV VITE_APP_URL=$VITE_APP_URL
+
 COPY package*.json ./
 RUN npm ci
 COPY . .
