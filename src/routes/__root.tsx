@@ -67,6 +67,7 @@ const PUBLIC_PATHS = [
   "/precos",
   "/reset-password",
   "/redefinir-senha",
+  "/ativar",
 ];
 
 function isPublicPath(pathname: string) {
