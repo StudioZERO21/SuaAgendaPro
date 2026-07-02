@@ -4,14 +4,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   TrendingUp, TrendingDown, Calendar, Users, DollarSign, Clock,
   Star, ArrowUpRight, Trophy, Medal, Award, Loader2,
+  XCircle, RotateCcw, FileDown, FileSpreadsheet,
 } from "lucide-react";
+import { pdf } from "@react-pdf/renderer";
 import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
-import { useDashboard, pctDelta } from "@/hooks/useDashboard";
+import { useDashboard, pctDelta, buildPeriod, type DashboardPeriod } from "@/hooks/useDashboard";
 import { formatPrice } from "@/hooks/useServicos";
 import { cn } from "@/lib/utils";
 import { ThemeTimeBadge } from "@/components/dashboard/theme-time-badge";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
+import { PeriodFilter } from "@/components/dashboard/period-filter";
+import { DashboardPDFDocument, type PDFReportProps } from "@/components/dashboard/pdf-report";
 import {
   DASH_EASE,
   dashTransition,
@@ -49,9 +53,9 @@ const rankColors = [
   "text-orange-500 bg-orange-100",
 ];
 
-const periods = ["7", "14", "30"] as const;
-type Period = (typeof periods)[number];
-const periodLabel: Record<Period, string> = { "7": "7 dias", "14": "14 dias", "30": "30 dias" };
+const chartPeriods = ["7", "14", "30"] as const;
+type ChartPeriod = (typeof chartPeriods)[number];
+const chartPeriodLabel: Record<ChartPeriod, string> = { "7": "7 dias", "14": "14 dias", "30": "30 dias" };
 
 type KpiItem = {
   key: string;
@@ -126,18 +130,17 @@ const KpiGrid = memo(function KpiGrid({ kpis }: { kpis: KpiItem[] }) {
 });
 
 function DashboardPage() {
-  const { data: d, isLoading } = useDashboard();
-  const [periodId, setPeriodId] = useState<Period>("7");
+  const [period, setPeriod] = useState<DashboardPeriod>(() => buildPeriod("mes"));
+  const { data: d, isLoading } = useDashboard(period);
+  const [chartPeriodId, setChartPeriodId] = useState<ChartPeriod>("7");
+  const [exportingPdf, setExportingPdf] = useState(false);
   const { reduced } = useDashboardMotion();
 
-  const chartData = periodId === "7" ? d.chart7 : periodId === "14" ? d.chart14 : d.chart30;
+  const chartData = chartPeriodId === "7" ? d.chart7 : chartPeriodId === "14" ? d.chart14 : d.chart30;
 
-  const revenueD = pctDelta(d.revenueCents, d.lastRevenueCents);
-  const apptD    = pctDelta(d.apptCount, d.lastApptCount);
-  const nowMonth = useMemo(
-    () => new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
-    [],
-  );
+  const revenueD   = pctDelta(d.revenueCents, d.lastRevenueCents);
+  const apptD      = pctDelta(d.apptCount, d.lastApptCount);
+  const cancelD    = pctDelta(d.cancelados, d.lastCancelados);
 
   const kpis = useMemo<KpiItem[]>(() => [
     {
@@ -153,12 +156,12 @@ function DashboardPage() {
       value: String(d.apptCount),
       delta: apptD.delta, up: apptD.up,
       icon: Calendar,
-      bg: "bg-gradient-to-br from-violet-500 to-violet-700",
+      bg: "bg-gradient-to-br from-sky-500 to-sky-700",
     },
     {
       key: "clientes", label: "Novas clientes",
       value: String(d.newClients),
-      delta: "este mês", up: true,
+      delta: period.label, up: true,
       icon: Users,
       bg: "gradient-primary text-white",
       premium: true,
@@ -166,20 +169,129 @@ function DashboardPage() {
     {
       key: "ocupacao", label: "Ocupação",
       value: `${d.occupancyPct}%`,
-      delta: "este mês", up: d.occupancyPct >= 50,
+      delta: period.label, up: d.occupancyPct >= 50,
       icon: Clock,
       bg: "bg-gradient-to-br from-amber-500 to-amber-700",
     },
-  ], [d, revenueD, apptD]);
+    {
+      key: "cancelamentos", label: "Cancelamentos",
+      value: String(d.cancelados),
+      delta: cancelD.delta, up: !cancelD.up,
+      icon: XCircle,
+      bg: d.cancelados > 0
+        ? "bg-gradient-to-br from-rose-500 to-rose-700"
+        : "bg-gradient-to-br from-slate-500 to-slate-700",
+    },
+    {
+      key: "retencao", label: "Taxa de retenção",
+      subtitle: "clientes que voltaram",
+      value: `${d.taxaRetencaoPct}%`,
+      delta: `${d.clientesRecorrentes} recorrentes`, up: d.taxaRetencaoPct >= 50,
+      icon: RotateCcw,
+      bg: "bg-gradient-to-br from-fuchsia-500 to-pink-600",
+    },
+  ], [d, revenueD, apptD, cancelD, period.label]);
+
+  async function handleExportPdf() {
+    setExportingPdf(true);
+    try {
+      const props: PDFReportProps = {
+        period:       period.label,
+        revenue:      formatPrice(d.revenueCents),
+        revenueDelta: revenueD.delta,
+        revenueUp:    revenueD.up,
+        appts:        d.apptCount,
+        apptsDelta:   apptD.delta,
+        apptsUp:      apptD.up,
+        cancelados:   d.cancelados,
+        taxaRetencao: d.taxaRetencaoPct,
+        ticketMedio:  formatPrice(d.ticketMedioCents),
+        newClients:   d.newClients,
+        topServices:  d.topServices.map((s) => ({
+          name: s.name, count: s.count, revenue: formatPrice(s.revenueCents),
+        })),
+        topClients: d.topClients.map((c) => ({
+          name: c.name, visits: c.totalAppointments, spent: formatPrice(c.totalSpentCents),
+        })),
+        chartData: d.chart30,
+        generatedAt: new Date().toLocaleString("pt-BR"),
+      };
+      const blob = await pdf(<DashboardPDFDocument {...props} />).toBlob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `relatorio-${period.from.toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
+  function handleExportCsv() {
+    const rows: (string | number)[][] = [
+      ["Métrica", "Valor", "Período anterior", "Variação"],
+      ["Faturamento (R$)", (d.revenueCents / 100).toFixed(2), (d.lastRevenueCents / 100).toFixed(2), revenueD.delta],
+      ["Atendimentos", d.apptCount, d.lastApptCount, apptD.delta],
+      ["Cancelamentos", d.cancelados, d.lastCancelados, cancelD.delta],
+      ["Novas clientes", d.newClients, "", ""],
+      ["Clientes recorrentes", d.clientesRecorrentes, "", ""],
+      ["Taxa de retenção (%)", d.taxaRetencaoPct, "", ""],
+      ["Ticket médio (R$)", (d.ticketMedioCents / 100).toFixed(2), "", ""],
+      [],
+      ["Serviço", "Atendimentos", "Receita (R$)"],
+      ...d.topServices.map((s) => [s.name, s.count, (s.revenueCents / 100).toFixed(2)]),
+      [],
+      ["Cliente", "Visitas", "Total gasto (R$)"],
+      ...d.topClients.map((c) => [c.name, c.totalAppointments, (c.totalSpentCents / 100).toFixed(2)]),
+    ];
+    const csv  = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `relatorio-${period.from.toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <MobileShell withNav>
       <header className="px-5 pt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Visão geral
-        </p>
-        <h1 className="font-display text-3xl font-bold leading-tight">Dashboard</h1>
-        <p className="mt-1 text-sm capitalize text-muted-foreground">{nowMonth}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Visão geral
+            </p>
+            <h1 className="font-display text-3xl font-bold leading-tight">Dashboard</h1>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-[11px] font-semibold text-muted-foreground shadow-sm transition-colors hover:bg-muted active:scale-95"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              CSV
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="flex items-center gap-1.5 rounded-full gradient-primary px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition-opacity active:scale-95 disabled:opacity-60"
+            >
+              {exportingPdf
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <FileDown className="h-3.5 w-3.5" />
+              }
+              PDF
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <PeriodFilter period={period} onChange={setPeriod} />
+        </div>
       </header>
 
       <AnimatePresence mode="wait" initial={false}>
@@ -286,19 +398,19 @@ function DashboardPage() {
                     <p className="font-display text-lg font-bold">{formatPrice(d.revenueCents)}</p>
                   </div>
                   <div className="inline-flex rounded-full bg-muted p-1">
-                    {periods.map((p) => {
-                      const active = p === periodId;
+                    {chartPeriods.map((p) => {
+                      const active = p === chartPeriodId;
                       return (
                         <button
                           key={p}
                           type="button"
-                          onClick={() => setPeriodId(p)}
+                          onClick={() => setChartPeriodId(p)}
                           className={cn(
                             "rounded-full px-3 py-1 text-[11px] font-semibold transition-colors duration-150",
                             active ? "bg-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground",
                           )}
                         >
-                          {periodLabel[p]}
+                          {chartPeriodLabel[p]}
                         </button>
                       );
                     })}
@@ -307,7 +419,7 @@ function DashboardPage() {
 
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
-                    key={periodId}
+                    key={chartPeriodId}
                     className="mt-4 h-40"
                     initial={{ opacity: 0, y: reduced ? 0 : 6 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -342,7 +454,7 @@ function DashboardPage() {
               title="Top serviços"
               linkTo="/servicos"
               linkLabel="Ver todos"
-              empty="Nenhum atendimento registrado este mês."
+              empty="Nenhum atendimento registrado no período."
               isEmpty={d.topServices.length === 0}
               reduced={reduced}
             >

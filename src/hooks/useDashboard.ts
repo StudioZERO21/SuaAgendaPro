@@ -12,16 +12,33 @@ export type TopService  = { name: string; count: number; revenueCents: number };
 export type PeakCell    = { day: string; slot: string; count: number };
 export type UpcomingItem = { id: string; time: string; client: string; service: string };
 
+export type PeriodPreset = "hoje" | "semana" | "mes" | "mes_passado" | "custom";
+
+export type DashboardPeriod = {
+  preset: PeriodPreset;
+  from: Date;
+  to: Date;
+  prevFrom: Date;
+  prevTo: Date;
+  label: string;
+};
+
 export type DashboardData = {
-  // KPIs (current month)
+  // KPIs
   revenueCents:       number;
   lastRevenueCents:   number;
   apptCount:          number;
   lastApptCount:      number;
   newClients:         number;
-  occupancyPct:       number;   // slots booked / total working slots in month
+  occupancyPct:       number;
 
-  // Chart (value = receita em centavos por dia)
+  // New KPIs
+  cancelados:         number;
+  lastCancelados:     number;
+  taxaRetencaoPct:    number;
+  clientesRecorrentes: number;
+
+  // Chart (value = receita em centavos por dia — always 30 days from today)
   chart7:  ChartPoint[];
   chart14: ChartPoint[];
   chart30: ChartPoint[];
@@ -36,7 +53,7 @@ export type DashboardData = {
   topClients:    UIClient[];
 
   // Heatmap
-  peakMatrix:    number[][];   // 6 rows (slots) × 6 cols (Mon–Sat), 0–10
+  peakMatrix:    number[][];
   peakTop:       PeakCell[];
 };
 
@@ -45,7 +62,6 @@ export type DashboardData = {
 const PEAK_DAYS  = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const PEAK_SLOTS = ["09h", "11h", "13h", "15h", "17h", "19h"];
 const SLOT_HOURS = [9, 11, 13, 15, 17, 19];
-// day_of_week (0=Sun) → column index in heatmap (Mon–Sat only)
 const DOW_TO_COL: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5 };
 
 function dateStr(d: Date) {
@@ -58,43 +74,93 @@ function pctDelta(current: number, prev: number): { delta: string; up: boolean }
   return { delta: `${pct >= 0 ? "+" : ""}${pct}%`, up: pct >= 0 };
 }
 
+// ── Period builder ─────────────────────────────────────────────
+
+export function buildPeriod(preset: PeriodPreset, customFrom?: Date, customTo?: Date): DashboardPeriod {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (preset) {
+    case "hoje": {
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      return { preset, from: today, to: today, prevFrom: yesterday, prevTo: yesterday, label: "Hoje" };
+    }
+    case "semana": {
+      const dow  = today.getDay();
+      const mon  = new Date(today);
+      mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+      const sun  = new Date(mon);
+      sun.setDate(mon.getDate() + 6);
+      const prevMon = new Date(mon);
+      prevMon.setDate(mon.getDate() - 7);
+      const prevSun = new Date(sun);
+      prevSun.setDate(sun.getDate() - 7);
+      return { preset, from: mon, to: sun, prevFrom: prevMon, prevTo: prevSun, label: "Esta semana" };
+    }
+    case "mes": {
+      const from  = new Date(today.getFullYear(), today.getMonth(), 1);
+      const to    = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const pFrom = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const pTo   = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { preset, from, to, prevFrom: pFrom, prevTo: pTo, label: "Este mês" };
+    }
+    case "mes_passado": {
+      const from  = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const to    = new Date(today.getFullYear(), today.getMonth(), 0);
+      const pFrom = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+      const pTo   = new Date(today.getFullYear(), today.getMonth() - 1, 0);
+      return { preset, from, to, prevFrom: pFrom, prevTo: pTo, label: "Mês passado" };
+    }
+    case "custom": {
+      const from   = customFrom ?? today;
+      const to     = customTo   ?? today;
+      const diffMs = to.getTime() - from.getTime();
+      const pTo    = new Date(from.getTime() - 1);
+      const pFrom  = new Date(pTo.getTime() - diffMs);
+      return { preset, from, to, prevFrom: pFrom, prevTo: pTo, label: "Personalizado" };
+    }
+  }
+}
+
 // ── Hook ──────────────────────────────────────────────────────
 
-export function useDashboard() {
+export function useDashboard(period?: DashboardPeriod) {
   const { data: appts   = [], isLoading: loadingA } = useAgendamentos();
   const { data: clients = [], isLoading: loadingC } = useClientes();
   const { data: services = [] }                      = useServices();
 
   const isLoading = loadingA || loadingC;
 
+  // Default to current month if no period provided
+  const activePeriod = period ?? buildPeriod("mes");
+
   const data = useMemo<DashboardData>(() => {
-    const now       = new Date();
-    const thisYear  = now.getFullYear();
-    const thisMonth = now.getMonth();
-    const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-    const prevYear  = thisMonth === 0 ? thisYear - 1 : thisYear;
-    const todayStr  = dateStr(now);
+    const now      = new Date();
+    const todayStr = dateStr(now);
+
+    const { from, to, prevFrom, prevTo } = activePeriod;
 
     const serviceMap = new Map<string, Service>(services.map((s) => [s.id, s]));
     const clientMap  = new Map<string, UIClient>(clients.map((c) => [c.id, c]));
 
-    const thisMonthAppts: typeof appts = [];
-    const lastMonthAppts: typeof appts = [];
+    const inRange = (ds: string, f: Date, t: Date) => {
+      const d = new Date(ds + "T00:00:00");
+      return d >= f && d <= t;
+    };
+
+    const periodAppts = appts.filter((a) => inRange(a.date, from, to));
+    const prevAppts   = appts.filter((a) => inRange(a.date, prevFrom, prevTo));
+
     const revenueByDate = new Map<string, number>();
     const raw: number[][] = Array.from({ length: 6 }, () => Array(6).fill(0));
 
     for (const a of appts) {
-      const d = new Date(a.date + "T00:00:00");
-      const y = d.getFullYear();
-      const m = d.getMonth();
-      if (y === thisYear && m === thisMonth) thisMonthAppts.push(a);
-      else if (y === prevYear && m === prevMonth) lastMonthAppts.push(a);
-
       if (a.status === "concluido") {
         revenueByDate.set(a.date, (revenueByDate.get(a.date) ?? 0) + a.priceCents);
       }
-
       if (a.status !== "cancelado") {
+        const d = new Date(a.date + "T00:00:00");
         const colIdx = DOW_TO_COL[d.getDay()];
         if (colIdx !== undefined) {
           const h = parseInt(a.start.split(":")[0], 10);
@@ -110,21 +176,37 @@ export function useDashboard() {
     const nonCancelled = (arr: typeof appts) => arr.filter((a) => a.status !== "cancelado");
     const completed    = (arr: typeof appts) => arr.filter((a) => a.status === "concluido");
 
-    const revenueCents     = completed(thisMonthAppts).reduce((s, a) => s + a.priceCents, 0);
-    const lastRevenueCents = completed(lastMonthAppts).reduce((s, a) => s + a.priceCents, 0);
-    const apptCount        = nonCancelled(thisMonthAppts).length;
-    const lastApptCount    = nonCancelled(lastMonthAppts).length;
+    const revenueCents     = completed(periodAppts).reduce((s, a) => s + a.priceCents, 0);
+    const lastRevenueCents = completed(prevAppts).reduce((s, a) => s + a.priceCents, 0);
+    const apptCount        = nonCancelled(periodAppts).length;
+    const lastApptCount    = nonCancelled(prevAppts).length;
+
+    // Cancelamentos (status "cancelado" in period)
+    const cancelados     = periodAppts.filter((a) => a.status === "cancelado").length;
+    const lastCancelados = prevAppts.filter((a) => a.status === "cancelado").length;
+
+    // Taxa de retenção: % clientes concluídos no período que já tinham visita anterior
+    const clientsInPeriod = new Set(
+      completed(periodAppts).map((a) => a.clientId),
+    );
+    const returningClients = [...clientsInPeriod].filter((cId) =>
+      appts.some(
+        (a) => a.clientId === cId && a.status === "concluido" && new Date(a.date + "T00:00:00") < from,
+      ),
+    );
+    const taxaRetencaoPct = clientsInPeriod.size > 0
+      ? Math.round((returningClients.length / clientsInPeriod.size) * 100)
+      : 0;
+    const clientesRecorrentes = returningClients.length;
 
     const newClients = clients.filter((c) => {
-      const cd = new Date(c.createdAt);
-      return cd.getFullYear() === thisYear && cd.getMonth() === thisMonth;
+      const cd = new Date(c.createdAt + "T00:00:00");
+      return cd >= from && cd <= to;
     }).length;
 
-    const workDaysThisMonth = thisMonthAppts.length > 0
-      ? new Set(thisMonthAppts.map((a) => a.date)).size
-      : 0;
-    const occupancyPct = workDaysThisMonth > 0
-      ? Math.min(100, Math.round((apptCount / (workDaysThisMonth * 8)) * 100))
+    const workDays     = new Set(nonCancelled(periodAppts).map((a) => a.date)).size;
+    const occupancyPct = workDays > 0
+      ? Math.min(100, Math.round((apptCount / (workDays * 8)) * 100))
       : 0;
 
     const upcoming: UpcomingItem[] = appts
@@ -151,7 +233,7 @@ export function useDashboard() {
     }
 
     const svcAgg: Record<string, { count: number; revenueCents: number }> = {};
-    for (const a of nonCancelled(thisMonthAppts)) {
+    for (const a of nonCancelled(periodAppts)) {
       if (!svcAgg[a.serviceId]) svcAgg[a.serviceId] = { count: 0, revenueCents: 0 };
       svcAgg[a.serviceId].count++;
       if (a.status === "concluido") svcAgg[a.serviceId].revenueCents += a.priceCents;
@@ -174,11 +256,12 @@ export function useDashboard() {
     }));
     const peakTop = [...peakCells].sort((a, b) => b.count - a.count).slice(0, 3);
 
-    const doneCount = completed(thisMonthAppts).length;
+    const doneCount = completed(periodAppts).length;
 
     return {
       revenueCents, lastRevenueCents, apptCount, lastApptCount,
       newClients, occupancyPct,
+      cancelados, lastCancelados, taxaRetencaoPct, clientesRecorrentes,
       chart7:  getChartData(7),
       chart14: getChartData(14),
       chart30: getChartData(30),
@@ -186,11 +269,12 @@ export function useDashboard() {
       upcoming, topServices, topClients,
       peakMatrix, peakTop,
     };
-  }, [appts, clients, services]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appts, clients, services, activePeriod]);
 
   return { data, isLoading };
 }
 
-// ── Re-export delta helper for use in page ────────────────────
+// ── Re-export helpers ─────────────────────────────────────────
 export { pctDelta };
 export { PEAK_DAYS, PEAK_SLOTS };
