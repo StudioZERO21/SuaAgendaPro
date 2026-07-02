@@ -1,7 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, User, Mail, Lock, Phone, Check, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, User, Mail, Phone, Check, Mail as MailIcon } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { MobileShell } from "@/components/mobile-shell";
 import { BrandLogo } from "@/components/brand-logo";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { recordReferralVisit, linkReferralToUser } from "@/lib/referral.functions";
-import { recordTermsAcceptance } from "@/lib/privacy.functions";
-import { getEmailConfirmRedirectUrl } from "@/lib/app-url";
+import { recordReferralVisit } from "@/lib/referral.functions";
+import { preRegister } from "@/lib/register.functions";
 
 export const Route = createFileRoute("/(site)/cadastro")({
   head: () => ({
@@ -26,31 +24,24 @@ export const Route = createFileRoute("/(site)/cadastro")({
 });
 
 const schema = z.object({
-  nome: z.string().min(3, "Nome deve ter ao menos 3 caracteres"),
-  email: z.string().email("Email inválido"),
+  nome:     z.string().min(3, "Nome deve ter ao menos 3 caracteres"),
+  email:    z.string().email("Email inválido"),
   telefone: z.string().min(10, "Telefone inválido"),
-  senha: z
-    .string()
-    .min(8, "Mínimo de 8 caracteres")
-    .regex(/[A-Z]/, "Deve ter ao menos 1 letra maiúscula")
-    .regex(/[0-9]/, "Deve ter ao menos 1 número"),
 });
 
-type FieldId = "nome" | "email" | "telefone" | "senha";
+type FieldId = "nome" | "email" | "telefone";
 
 const fields: Array<{ id: FieldId; label: string; icon: React.ElementType; type: string; placeholder: string; autoComplete: string }> = [
-  { id: "nome",     label: "Nome completo", icon: User,  type: "text",     placeholder: "Como devemos te chamar",  autoComplete: "name" },
-  { id: "email",    label: "Email",         icon: Mail,  type: "email",    placeholder: "voce@studio.com",         autoComplete: "email" },
-  { id: "telefone", label: "WhatsApp",      icon: Phone, type: "tel",      placeholder: "(11) 99999-9999",         autoComplete: "tel" },
-  { id: "senha",    label: "Senha",         icon: Lock,  type: "password", placeholder: "Mín. 8 chars, 1 maiúsc., 1 número", autoComplete: "new-password" },
+  { id: "nome",     label: "Nome completo", icon: User,  type: "text",  placeholder: "Como devemos te chamar", autoComplete: "name" },
+  { id: "email",    label: "Email",         icon: Mail,  type: "email", placeholder: "voce@studio.com",        autoComplete: "email" },
+  { id: "telefone", label: "WhatsApp",      icon: Phone, type: "tel",   placeholder: "(11) 99999-9999",        autoComplete: "tel" },
 ];
 
 function SignupPage() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<FieldId, string>>>({});
-  const [showPwd, setShowPwd] = useState(false);
   const [acceptedLegal, setAcceptedLegal] = useState(false);
+  const [sentEmail, setSentEmail] = useState<string | null>(null);
 
   const refCode = typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("ref") ?? null
@@ -64,12 +55,11 @@ function SignupPage() {
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const data = new FormData(e.currentTarget);
+    const fd     = new FormData(e.currentTarget);
     const values = {
-      nome:     String(data.get("nome") ?? "").trim(),
-      email:    String(data.get("email") ?? "").trim(),
-      telefone: String(data.get("telefone") ?? "").trim(),
-      senha:    String(data.get("senha") ?? ""),
+      nome:     String(fd.get("nome") ?? "").trim(),
+      email:    String(fd.get("email") ?? "").trim(),
+      telefone: String(fd.get("telefone") ?? "").trim(),
     };
 
     const result = schema.safeParse(values);
@@ -89,40 +79,61 @@ function SignupPage() {
     setErrors({});
     setLoading(true);
 
-    // Anti-fraude: telefone repetido NÃO bloqueia o cadastro, mas a conta entra
-    // sem Acesso Livre (trigger create_trial_subscription cria suspensa). O super
-    // admin pode liberar o trial manualmente com justificativa.
-
-    const { data: authData, error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.senha,
-      options: {
-        data: { full_name: values.nome, phone: values.telefone },
-        emailRedirectTo: getEmailConfirmRedirectUrl(),
-      },
-    });
-
-    setLoading(false);
-    if (error) {
-      if (error.message.toLowerCase().includes("already")) {
-        toast.error("Este email já está cadastrado. Tente fazer login.");
-      } else {
-        toast.error("Não foi possível criar a conta. Tente novamente.");
-      }
-      return;
+    try {
+      await preRegister({
+        data: { name: values.nome, email: values.email, phone: values.telefone, refCode: refCode ?? null },
+      });
+      setSentEmail(values.email);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível enviar o e-mail. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
+  }
 
-    // Vincular indicação se veio via link
-    if (refCode && authData?.user?.id) {
-      linkReferralToUser({
-        data: { code: refCode, refereeId: authData.user.id, refereeEmail: values.email },
-      }).catch(() => {});
-    }
-
-    recordTermsAcceptance({}).catch(() => {});
-
-    toast.success("Conta criada! Confirme seu e-mail para finalizar ✨");
-    navigate({ to: "/onboarding", search: { verify_email: "1" } });
+  if (sentEmail) {
+    return (
+      <MobileShell>
+        <div className="relative flex flex-1 flex-col px-6 pt-6">
+          <div className="pointer-events-none absolute -top-24 -right-12 h-56 w-56 rounded-full gradient-hero opacity-70 blur-3xl" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative flex flex-1 flex-col items-center justify-center text-center"
+          >
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full gradient-primary shadow-glow">
+              <MailIcon className="h-9 w-9 text-white" />
+            </div>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Verifique seu e-mail
+            </h1>
+            <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
+              Enviamos um link de ativação para{" "}
+              <span className="font-semibold text-foreground">{sentEmail}</span>.
+              Clique no link para criar sua senha e ativar a conta.
+            </p>
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+              ⏰ O link expira em 4 horas. Verifique também a pasta de spam.
+            </div>
+            <p className="mt-8 text-sm text-muted-foreground">
+              Não recebeu o e-mail?{" "}
+              <button
+                onClick={() => setSentEmail(null)}
+                className="font-semibold text-primary hover:underline"
+              >
+                Tentar novamente
+              </button>
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Já tem conta?{" "}
+              <Link to="/login" className="font-semibold text-primary hover:underline">
+                Entrar
+              </Link>
+            </p>
+          </motion.div>
+        </div>
+      </MobileShell>
+    );
   }
 
   return (
@@ -167,22 +178,12 @@ function SignupPage() {
                 <Input
                   id={f.id}
                   name={f.id}
-                  type={f.id === "senha" ? (showPwd ? "text" : "password") : f.type}
+                  type={f.type}
                   required
                   autoComplete={f.autoComplete}
                   placeholder={f.placeholder}
-                  className={`h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary ${f.id === "senha" ? "pr-11" : ""} ${errors[f.id] ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+                  className={`h-14 rounded-2xl border-border bg-card pl-11 text-base shadow-card focus-visible:ring-primary ${errors[f.id] ? "border-red-400 focus-visible:ring-red-400" : ""}`}
                 />
-                {f.id === "senha" && (
-                  <button
-                    type="button"
-                    onClick={() => setShowPwd((s) => !s)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    aria-label={showPwd ? "Ocultar senha" : "Mostrar senha"}
-                  >
-                    {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                )}
               </div>
               {errors[f.id] && (
                 <p className="text-xs text-red-500">{errors[f.id]}</p>
@@ -226,7 +227,7 @@ function SignupPage() {
             disabled={loading || !acceptedLegal}
             className="mt-3 h-14 rounded-2xl gradient-primary text-base font-semibold shadow-glow"
           >
-            {loading ? "Criando..." : "Criar conta grátis"}
+            {loading ? "Enviando..." : "Continuar"}
           </Button>
 
           <p className="mb-8 mt-auto pt-4 text-center text-sm text-muted-foreground">

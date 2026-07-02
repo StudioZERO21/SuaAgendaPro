@@ -24,6 +24,7 @@ import { Route as siteLoginRouteImport } from './routes/(site)/login'
 import { Route as siteDsarRouteImport } from './routes/(site)/dsar'
 import { Route as siteContatoRouteImport } from './routes/(site)/contato'
 import { Route as siteCadastroRouteImport } from './routes/(site)/cadastro'
+import { Route as siteAtivarRouteImport } from './routes/(site)/ativar'
 import { Route as publicPerfilPublicoRouteImport } from './routes/(public)/perfil-publico'
 import { Route as appWhatsappRouteImport } from './routes/(app)/whatsapp'
 import { Route as appUseNoCelularRouteImport } from './routes/(app)/use-no-celular'
@@ -149,6 +150,11 @@ const siteContatoRoute = siteContatoRouteImport.update({
 const siteCadastroRoute = siteCadastroRouteImport.update({
   id: '/(site)/cadastro',
   path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const siteAtivarRoute = siteAtivarRouteImport.update({
+  id: '/(site)/ativar',
+  path: '/ativar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const publicPerfilPublicoRoute = publicPerfilPublicoRouteImport.update({
@@ -434,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/use-no-celular': typeof appUseNoCelularRoute
   '/whatsapp': typeof appWhatsappRoute
   '/perfil-publico': typeof publicPerfilPublicoRoute
+  '/ativar': typeof siteAtivarRoute
   '/cadastro': typeof siteCadastroRoute
   '/contato': typeof siteContatoRoute
   '/dsar': typeof siteDsarRoute
@@ -502,6 +509,7 @@ export interface FileRoutesByTo {
   '/use-no-celular': typeof appUseNoCelularRoute
   '/whatsapp': typeof appWhatsappRoute
   '/perfil-publico': typeof publicPerfilPublicoRoute
+  '/ativar': typeof siteAtivarRoute
   '/cadastro': typeof siteCadastroRoute
   '/contato': typeof siteContatoRoute
   '/dsar': typeof siteDsarRoute
@@ -570,6 +578,7 @@ export interface FileRoutesById {
   '/(app)/use-no-celular': typeof appUseNoCelularRoute
   '/(app)/whatsapp': typeof appWhatsappRoute
   '/(public)/perfil-publico': typeof publicPerfilPublicoRoute
+  '/(site)/ativar': typeof siteAtivarRoute
   '/(site)/cadastro': typeof siteCadastroRoute
   '/(site)/contato': typeof siteContatoRoute
   '/(site)/dsar': typeof siteDsarRoute
@@ -640,6 +649,7 @@ export interface FileRouteTypes {
     | '/use-no-celular'
     | '/whatsapp'
     | '/perfil-publico'
+    | '/ativar'
     | '/cadastro'
     | '/contato'
     | '/dsar'
@@ -708,6 +718,7 @@ export interface FileRouteTypes {
     | '/use-no-celular'
     | '/whatsapp'
     | '/perfil-publico'
+    | '/ativar'
     | '/cadastro'
     | '/contato'
     | '/dsar'
@@ -775,6 +786,7 @@ export interface FileRouteTypes {
     | '/(app)/use-no-celular'
     | '/(app)/whatsapp'
     | '/(public)/perfil-publico'
+    | '/(site)/ativar'
     | '/(site)/cadastro'
     | '/(site)/contato'
     | '/(site)/dsar'
@@ -844,6 +856,7 @@ export interface RootRouteChildren {
   appUseNoCelularRoute: typeof appUseNoCelularRoute
   appWhatsappRoute: typeof appWhatsappRoute
   publicPerfilPublicoRoute: typeof publicPerfilPublicoRoute
+  siteAtivarRoute: typeof siteAtivarRoute
   siteCadastroRoute: typeof siteCadastroRoute
   siteContatoRoute: typeof siteContatoRoute
   siteDsarRoute: typeof siteDsarRoute
@@ -978,6 +991,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastro'
       fullPath: '/cadastro'
       preLoaderRoute: typeof siteCadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(site)/ativar': {
+      id: '/(site)/ativar'
+      path: '/ativar'
+      fullPath: '/ativar'
+      preLoaderRoute: typeof siteAtivarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(public)/perfil-publico': {
@@ -1406,6 +1426,7 @@ const rootRouteChildren: RootRouteChildren = {
   appUseNoCelularRoute: appUseNoCelularRoute,
   appWhatsappRoute: appWhatsappRoute,
   publicPerfilPublicoRoute: publicPerfilPublicoRoute,
+  siteAtivarRoute: siteAtivarRoute,
   siteCadastroRoute: siteCadastroRoute,
   siteContatoRoute: siteContatoRoute,
   siteDsarRoute: siteDsarRoute,
