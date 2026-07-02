@@ -396,7 +396,14 @@ export const createPublicBooking = createServerFn({ method: "POST" })
 
 // ── Lookup de cliente por telefone (página pública) ──────────
 
-export type ClientLookupResult = { found: boolean; nameHint: string | null };
+// nameHint: mascarado para display. firstName: nome real para pre-fill (o
+// próprio cliente digitou o telefone dele — sem questão de LGPD).
+export type ClientLookupResult = {
+  found: boolean;
+  nameHint: string | null;
+  firstName: string | null;
+  email: string | null;
+};
 
 export const lookupClientByPhone = createServerFn({ method: "POST" })
   .inputValidator((input: unknown): { professionalId: string; phone: string } => {
@@ -410,15 +417,11 @@ export const lookupClientByPhone = createServerFn({ method: "POST" })
       "@/lib/rate-limit.server",
     );
     const req = getRequest();
-    await enforceRateLimit(
-      `lookup-phone:${clientIpFromRequest(req)}`,
-      20,
-      3600,
-    );
+    await enforceRateLimit(`lookup-phone:${clientIpFromRequest(req)}`, 20, 3600);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const digits = data.phone.replace(/\D/g, "");
-    if (digits.length < 10) return { found: false, nameHint: null };
+    if (digits.length < 10) return { found: false, nameHint: null, firstName: null, email: null };
 
     const formatted = digits.length === 11
       ? `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
@@ -426,22 +429,71 @@ export const lookupClientByPhone = createServerFn({ method: "POST" })
 
     const { data: clients } = await supabaseAdmin
       .from("clients")
-      .select("name")
+      .select("name, email")
       .eq("professional_id", data.professionalId)
       .in("phone", [digits, formatted])
       .limit(1);
 
     const client = clients?.[0] ?? null;
-    if (!client) return { found: false, nameHint: null };
+    if (!client) return { found: false, nameHint: null, firstName: null, email: null };
 
-    // LGPD: retorna apenas primeira palavra do nome (sem email)
     const firstName = client.name.trim().split(/\s+/)[0] ?? "";
-    const hint =
-      firstName.length > 1
-        ? `${firstName.charAt(0)}${"*".repeat(Math.min(firstName.length - 1, 4))}`
-        : null;
+    const hint = firstName.length > 1
+      ? `${firstName.charAt(0)}${"*".repeat(Math.min(firstName.length - 1, 4))}`
+      : null;
 
-    return { found: true, nameHint: hint };
+    return {
+      found: true,
+      nameHint: hint,
+      firstName: firstName || null,
+      email: client.email ?? null,
+    };
+  });
+
+// ── Trava/libera slot temporário (previne double-booking) ─────
+
+export const lockSlot = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({
+      professionalId: z.string().uuid(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      time: z.string().regex(/^\d{2}:\d{2}$/),
+      durationMinutes: z.number().int().positive(),
+      holdMinutes: z.number().int().positive().default(30),
+    }).parse(input ?? {}),
+  )
+  .handler(async ({ data }): Promise<{ lockId: string; heldUntil: string }> => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { enforceRateLimit, clientIpFromRequest } = await import("@/lib/rate-limit.server");
+    const req = getRequest();
+    await enforceRateLimit(`lock-slot:${clientIpFromRequest(req)}`, 30, 3600);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const heldUntil = new Date(Date.now() + data.holdMinutes * 60_000).toISOString();
+
+    const { data: lock, error } = await supabaseAdmin
+      .from("slot_locks")
+      .insert({
+        professional_id: data.professionalId,
+        locked_date: data.date,
+        locked_time: data.time,
+        duration_minutes: data.durationMinutes,
+        held_until: heldUntil,
+      })
+      .select("id")
+      .single();
+
+    if (error || !lock) throw new Error("Horário indisponível — tente outro.");
+    return { lockId: lock.id, heldUntil };
+  });
+
+export const releaseSlot = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z.object({ lockId: z.string().uuid() }).parse(input ?? {}),
+  )
+  .handler(async ({ data }): Promise<void> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("slot_locks").delete().eq("id", data.lockId);
   });
 
 // ── Mercado Pago: cria agendamento + preferência de pagamento ──

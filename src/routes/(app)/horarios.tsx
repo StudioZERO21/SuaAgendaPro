@@ -40,6 +40,7 @@ type DayState = {
   end_time: string;
   break_start: string | null;
   break_end: string | null;
+  break_after_minutes: number;
 };
 
 const DEFAULT_DAY = (open: boolean): DayState => ({
@@ -48,6 +49,7 @@ const DEFAULT_DAY = (open: boolean): DayState => ({
   end_time: "18:00",
   break_start: open ? "12:00" : null,
   break_end: open ? "13:00" : null,
+  break_after_minutes: 0,
 });
 
 type BlockReason = "ferias" | "licenca" | "manutencao" | "feriado" | "outro";
@@ -93,6 +95,7 @@ function HorariosPage() {
   const [mode, setMode]           = useState<"uniform" | "custom">("uniform");
   const [uniform, setUniform]     = useState({ start: "09:00", end: "18:00" });
   const [lunchAll, setLunchAll]   = useState({ enabled: true, start: "12:00", end: "13:00" });
+  const [uniformBreakAfter, setUniformBreakAfter] = useState(0);
   const [blockOpen, setBlockOpen]     = useState(false);
   const [editingBlock, setEditingBlock] = useState<ScheduleBlock | null>(null);
   const [newBlock, setNewBlock]   = useState<NewBlock>({
@@ -122,11 +125,12 @@ function HorariosPage() {
         const row = map[info.dow];
         if (row) {
           next[info.dow] = {
-            is_open:     row.is_open,
-            start_time:  row.start_time ?? "09:00",
-            end_time:    row.end_time   ?? "18:00",
-            break_start: row.break_start ?? null,
-            break_end:   row.break_end   ?? null,
+            is_open:             row.is_open,
+            start_time:          row.start_time ?? "09:00",
+            end_time:            row.end_time   ?? "18:00",
+            break_start:         row.break_start ?? null,
+            break_end:           row.break_end   ?? null,
+            break_after_minutes: row.break_after_minutes ?? 0,
           };
         }
       }
@@ -146,10 +150,11 @@ function HorariosPage() {
         if (next[info.dow].is_open) {
           next[info.dow] = {
             ...next[info.dow],
-            start_time:  uniform.start,
-            end_time:    uniform.end,
-            break_start: lunchAll.enabled ? lunchAll.start : null,
-            break_end:   lunchAll.enabled ? lunchAll.end   : null,
+            start_time:          uniform.start,
+            end_time:            uniform.end,
+            break_start:         lunchAll.enabled ? lunchAll.start : null,
+            break_end:           lunchAll.enabled ? lunchAll.end   : null,
+            break_after_minutes: uniformBreakAfter,
           };
         }
       }
@@ -178,12 +183,13 @@ function HorariosPage() {
     const rows = DAY_INFO.map((info) => {
       const d = days[info.dow];
       return {
-        day_of_week:  info.dow,
-        is_open:      d.is_open,
-        start_time:   d.is_open ? d.start_time : null,
-        end_time:     d.is_open ? d.end_time   : null,
-        break_start:  d.is_open ? d.break_start : null,
-        break_end:    d.is_open ? d.break_end   : null,
+        day_of_week:         info.dow,
+        is_open:             d.is_open,
+        start_time:          d.is_open ? d.start_time : null,
+        end_time:            d.is_open ? d.end_time   : null,
+        break_start:         d.is_open ? d.break_start : null,
+        break_end:           d.is_open ? d.break_end   : null,
+        break_after_minutes: d.is_open ? (d.break_after_minutes || 0) : 0,
       };
     });
     try {
@@ -346,6 +352,7 @@ function HorariosPage() {
                   onToggle={(en) => setLunchAll((s) => ({ ...s, enabled: en }))}
                   onChange={(p)  => setLunchAll((s) => ({ ...s, ...p }))}
                 />
+                <BreakAfterField value={uniformBreakAfter} onChange={setUniformBreakAfter} />
                 <Button variant="outline" onClick={applyUniformToWeekdays} className="h-10 w-full rounded-xl text-xs font-semibold">
                   <Copy className="mr-2 h-3.5 w-3.5" /> Aplicar aos dias úteis
                 </Button>
@@ -374,6 +381,7 @@ function HorariosPage() {
                         ...(p.end   !== undefined && { break_end:   p.end }),
                       })}
                     />
+                    <BreakAfterField value={days[6].break_after_minutes} onChange={(v) => setDay(6, { break_after_minutes: v })} />
                   </>
                 )}
               </section>
@@ -403,6 +411,7 @@ function HorariosPage() {
                         ...(p.end   !== undefined && { break_end:   p.end }),
                       })}
                     />
+                    <BreakAfterField value={d.break_after_minutes} onChange={(v) => setDay(info.dow, { break_after_minutes: v })} />
                   </div>
                 );
               })}
@@ -573,6 +582,29 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
       <Input type="time" value={value} onChange={(e) => onChange(e.target.value)} className="text-base" />
+    </div>
+  );
+}
+
+function BreakAfterField({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-secondary/30 p-3">
+      <div>
+        <p className="text-sm font-semibold">Intervalo entre atendimentos</p>
+        <p className="text-xs text-muted-foreground">Tempo de descanso após cada cliente</p>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Input
+          type="number"
+          min={0}
+          max={120}
+          step={5}
+          value={value}
+          onChange={(e) => onChange(Math.max(0, Math.min(120, Number(e.target.value) || 0)))}
+          className="h-9 w-16 rounded-xl text-center text-sm"
+        />
+        <span className="text-xs text-muted-foreground">min</span>
+      </div>
     </div>
   );
 }

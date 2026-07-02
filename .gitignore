@@ -1,3 +1,7 @@
+# Claude Code memory / AI assistant config
+.claude/
+.cursor/
+
 # Environment — NUNCA commitar senhas/chaves
 .env
 .env.local

@@ -46,6 +46,8 @@ import {
   createPublicPixBooking,
   cancelPendingPublicBooking,
   lookupClientByPhone,
+  lockSlot,
+  releaseSlot,
   type PublicPixSettings,
 } from "@/lib/public-booking.functions";
 import { buildPixPayload, normalizePixKey } from "@/lib/pix";
@@ -433,7 +435,7 @@ export function BookingSheet({
 
               {/* Barra de progresso */}
               <div style={{ height: 3, background: resolvedTheme.border, flexShrink: 0 }}>
-                <div style={{ height: "100%", width: `${progressPct}%`, background: resolvedTheme.primary, transition: "width 0.3s ease" }} />
+                <div style={{ height: "100%", width: "100%", background: resolvedTheme.primary, transformOrigin: "left", transform: `scaleX(${progressPct / 100})`, transition: "transform 0.3s ease" }} />
               </div>
 
               {/* Corpo scrollável */}
@@ -753,7 +755,14 @@ function StepDateTime({
         })}
       </div>
 
-      <h4 style={{ marginTop: 24, marginBottom: 12, fontSize: 14, fontWeight: 600, color: theme.text }}>Horários disponíveis</h4>
+      <div style={{ marginTop: 24, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: theme.text }}>Horários disponíveis</h4>
+        {!loadingSlots && slots.length > 0 && slots.length <= 2 && (
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: "#b45309", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 999, padding: "2px 8px" }}>
+            ÚLTIMAS VAGAS
+          </span>
+        )}
+      </div>
       {loadingSlots ? (
         <div className="grid grid-cols-3 gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -763,7 +772,10 @@ function StepDateTime({
       ) : !date ? (
         <p style={{ fontSize: 14, color: theme.textMuted }}>Selecione uma data para ver os horários.</p>
       ) : slots.length === 0 ? (
-        <p style={{ fontSize: 14, color: theme.textMuted }}>Nenhum horário disponível nesta data.</p>
+        <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: theme.text, marginBottom: 4 }}>Sem horários disponíveis</p>
+          <p style={{ fontSize: 13, color: theme.textMuted }}>Tente selecionar outra data.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {slots.map((t) => {
@@ -835,6 +847,8 @@ function StepDetails({
         const result = await lookupClientByPhone({ data: { professionalId, phone: phoneDigits } });
         if (result.found) {
           setLookupStatus("found");
+          if (result.firstName) onName(result.firstName);
+          if (result.email) onEmail(result.email);
         } else {
           setLookupStatus("notfound");
         }
@@ -1463,8 +1477,16 @@ function PaymentDialog({
   }, [open, payMethod, hasPix, professionalId, service.id, date, time, clientName, clientPhone, clientEmail, clientNotes, service.duration, service.price_cents, onOpenChange]);
 
   async function handleMpPay() {
+    if (!date || !time) return;
     setMpLoading(true);
+    let lockId: string | undefined;
     try {
+      // Trava o slot por 30 min antes de criar a preferência MP
+      const lock = await lockSlot({
+        data: { professionalId, date, time, durationMinutes: service.duration, holdMinutes: 30 },
+      });
+      lockId = lock.lockId;
+
       const { initPoint } = await createMpPreferenceAndBooking({
         data: {
           professionalId,
@@ -1481,9 +1503,12 @@ function PaymentDialog({
           origin: window.location.origin,
         },
       });
-      window.location.href = initPoint;
-    } catch {
-      toast.error("Não foi possível criar a cobrança. Tente novamente.");
+      // Abre em nova aba — evita deeplink em mobile e mantém a página
+      window.open(initPoint, "_blank", "noopener,noreferrer");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      toast.error(msg.includes("indisponível") ? msg : "Não foi possível criar a cobrança. Tente novamente.");
+      if (lockId) releaseSlot({ data: { lockId } }).catch(() => {});
       setMpLoading(false);
     }
   }

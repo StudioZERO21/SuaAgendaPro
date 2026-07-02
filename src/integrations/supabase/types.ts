@@ -100,6 +100,7 @@ export type Database = {
       }
       appointments: {
         Row: {
+          _test_sid: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           client_id: string
@@ -118,6 +119,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          _test_sid?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           client_id: string
@@ -136,6 +138,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          _test_sid?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           client_id?: string
@@ -322,6 +325,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          _test_sid: string | null
           birth_date: string | null
           created_at: string
           email: string | null
@@ -338,6 +342,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          _test_sid?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -354,6 +359,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          _test_sid?: string | null
           birth_date?: string | null
           created_at?: string
           email?: string | null
@@ -385,6 +391,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      cron_runs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          duration_ms: number | null
+          errors: number
+          id: string
+          job: string
+          notified: number
+          suspended: number
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          errors?: number
+          id?: string
+          job: string
+          notified?: number
+          suspended?: number
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          errors?: number
+          id?: string
+          job?: string
+          notified?: number
+          suspended?: number
+        }
+        Relationships: []
       }
       faq_categories: {
         Row: {
@@ -552,6 +615,42 @@ export type Database = {
           },
         ]
       }
+      google_calendar_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          google_email: string | null
+          id: string
+          refresh_token: string | null
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          google_email?: string | null
+          id?: string
+          refresh_token?: string | null
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          google_email?: string | null
+          id?: string
+          refresh_token?: string | null
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mercado_pago_account_secrets: {
         Row: {
           access_token: string
@@ -645,6 +744,75 @@ export type Database = {
         }
         Relationships: []
       }
+      metrics_snapshots: {
+        Row: {
+          active: number
+          cancelled: number
+          created_at: string
+          date: string
+          especial: number
+          mrr_cents: number
+          suspended: number
+          total: number
+          trial: number
+        }
+        Insert: {
+          active?: number
+          cancelled?: number
+          created_at?: string
+          date: string
+          especial?: number
+          mrr_cents?: number
+          suspended?: number
+          total?: number
+          trial?: number
+        }
+        Update: {
+          active?: number
+          cancelled?: number
+          created_at?: string
+          date?: string
+          especial?: number
+          mrr_cents?: number
+          suspended?: number
+          total?: number
+          trial?: number
+        }
+        Relationships: []
+      }
+      notification_settings: {
+        Row: {
+          channels: Json
+          id: boolean
+          send_delay_ms: number
+          throttle_per_run: number
+          timezone: string
+          updated_at: string
+          window_end_hour: number
+          window_start_hour: number
+        }
+        Insert: {
+          channels?: Json
+          id?: boolean
+          send_delay_ms?: number
+          throttle_per_run?: number
+          timezone?: string
+          updated_at?: string
+          window_end_hour?: number
+          window_start_hour?: number
+        }
+        Update: {
+          channels?: Json
+          id?: boolean
+          send_delay_ms?: number
+          throttle_per_run?: number
+          timezone?: string
+          updated_at?: string
+          window_end_hour?: number
+          window_start_hour?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           appointment_id: string | null
@@ -685,6 +853,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      password_reset_requests: {
+        Row: {
+          id: string
+          reason: string | null
+          requested_at: string
+          reset_token: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          token_expires_at: string | null
+          user_email: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          id?: string
+          reason?: string | null
+          requested_at?: string
+          reset_token?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          token_expires_at?: string | null
+          user_email: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          id?: string
+          reason?: string | null
+          requested_at?: string
+          reset_token?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          token_expires_at?: string | null
+          user_email?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
       }
       payment_transactions: {
         Row: {
@@ -929,6 +1139,7 @@ export type Database = {
       profiles: {
         Row: {
           accept_online: boolean
+          active_session_nonce: string | null
           address_complement: string | null
           avatar_url: string | null
           banner_url: string | null
@@ -941,11 +1152,14 @@ export type Database = {
           created_at: string
           custom_colors: Json | null
           display_name: string
+          force_password_change: boolean
           gradient_color_2: string | null
           id: string
           is_active: boolean
           neighborhood: string | null
           onboarding_completed: boolean
+          password_reset_token: string | null
+          password_reset_token_expires_at: string | null
           phone: string | null
           show_portfolio: boolean
           show_prices: boolean
@@ -969,6 +1183,7 @@ export type Database = {
         }
         Insert: {
           accept_online?: boolean
+          active_session_nonce?: string | null
           address_complement?: string | null
           avatar_url?: string | null
           banner_url?: string | null
@@ -981,11 +1196,14 @@ export type Database = {
           created_at?: string
           custom_colors?: Json | null
           display_name?: string
+          force_password_change?: boolean
           gradient_color_2?: string | null
           id: string
           is_active?: boolean
           neighborhood?: string | null
           onboarding_completed?: boolean
+          password_reset_token?: string | null
+          password_reset_token_expires_at?: string | null
           phone?: string | null
           show_portfolio?: boolean
           show_prices?: boolean
@@ -1009,6 +1227,7 @@ export type Database = {
         }
         Update: {
           accept_online?: boolean
+          active_session_nonce?: string | null
           address_complement?: string | null
           avatar_url?: string | null
           banner_url?: string | null
@@ -1021,11 +1240,14 @@ export type Database = {
           created_at?: string
           custom_colors?: Json | null
           display_name?: string
+          force_password_change?: boolean
           gradient_color_2?: string | null
           id?: string
           is_active?: boolean
           neighborhood?: string | null
           onboarding_completed?: boolean
+          password_reset_token?: string | null
+          password_reset_token_expires_at?: string | null
           phone?: string | null
           show_portfolio?: boolean
           show_prices?: boolean
@@ -1345,6 +1567,7 @@ export type Database = {
       }
       services: {
         Row: {
+          _test_sid: string | null
           category: string | null
           category_label: string | null
           created_at: string
@@ -1361,6 +1584,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          _test_sid?: string | null
           category?: string | null
           category_label?: string | null
           created_at?: string
@@ -1377,6 +1601,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          _test_sid?: string | null
           category?: string | null
           category_label?: string | null
           created_at?: string
@@ -1408,6 +1633,130 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      slot_locks: {
+        Row: {
+          appointment_id: string | null
+          created_at: string | null
+          duration_minutes: number
+          held_until: string
+          id: string
+          locked_date: string
+          locked_time: string
+          professional_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string | null
+          duration_minutes: number
+          held_until: string
+          id?: string
+          locked_date: string
+          locked_time: string
+          professional_id: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string | null
+          duration_minutes?: number
+          held_until?: string
+          id?: string
+          locked_date?: string
+          locked_time?: string
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slot_locks_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_locks_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_locks_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      special_access_grants: {
+        Row: {
+          granted_at: string
+          granted_by: string
+          id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string
+          id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_notifications: {
+        Row: {
+          attempts: number
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          target: string | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status: string
+          target?: string | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          target?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
@@ -1481,6 +1830,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      super_admin_credentials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          must_change_password: boolean
+          name: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          must_change_password?: boolean
+          name: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          must_change_password?: boolean
+          name?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       super_admin_mfa: {
         Row: {
@@ -1566,6 +1945,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_config: {
+        Row: {
+          id: number
+          maintenance_ends_at: string | null
+          maintenance_message: string
+          maintenance_mode_active: boolean
+          test_mode_active: boolean
+          test_mode_expires_at: string | null
+          test_session_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          maintenance_ends_at?: string | null
+          maintenance_message?: string
+          maintenance_mode_active?: boolean
+          test_mode_active?: boolean
+          test_mode_expires_at?: string | null
+          test_session_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          maintenance_ends_at?: string | null
+          maintenance_message?: string
+          maintenance_mode_active?: boolean
+          test_mode_active?: boolean
+          test_mode_expires_at?: string | null
+          test_session_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           description: string | null
@@ -1647,6 +2062,7 @@ export type Database = {
       }
       working_hours: {
         Row: {
+          break_after_minutes: number
           break_end: string | null
           break_start: string | null
           created_at: string
@@ -1659,6 +2075,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          break_after_minutes?: number
           break_end?: string | null
           break_start?: string | null
           created_at?: string
@@ -1671,6 +2088,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          break_after_minutes?: number
           break_end?: string | null
           break_start?: string | null
           created_at?: string
@@ -1745,6 +2163,9 @@ export type Database = {
       }
     }
     Functions: {
+      capture_metrics_snapshot: { Args: never; Returns: undefined }
+      cleanup_expired_slot_locks: { Args: never; Returns: undefined }
+      current_test_sid: { Args: never; Returns: string }
       get_available_slots: {
         Args: {
           p_date: string
@@ -1768,6 +2189,7 @@ export type Database = {
         Args: { p_id: string; p_is_ai: boolean }
         Returns: undefined
       }
+      phone_in_use: { Args: { p: string }; Returns: boolean }
       submit_review_with_token: {
         Args: {
           p_client_name: string
@@ -1941,4 +2363,3 @@ export const Constants = {
     },
   },
 } as const
-
