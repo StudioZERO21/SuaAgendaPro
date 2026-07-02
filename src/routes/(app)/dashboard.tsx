@@ -6,7 +6,6 @@ import {
   Star, ArrowUpRight, Trophy, Medal, Award, Loader2,
   XCircle, RotateCcw, FileDown, FileSpreadsheet,
 } from "lucide-react";
-import { pdf } from "@react-pdf/renderer";
 import { MobileShell } from "@/components/mobile-shell";
 import { BottomNav } from "@/components/bottom-nav";
 import { useDashboard, pctDelta, buildPeriod, type DashboardPeriod } from "@/hooks/useDashboard";
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { ThemeTimeBadge } from "@/components/dashboard/theme-time-badge";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
-import { DashboardPDFDocument, type PDFReportProps } from "@/components/dashboard/pdf-report";
 import {
   DASH_EASE,
   dashTransition,
@@ -195,7 +193,12 @@ function DashboardPage() {
   async function handleExportPdf() {
     setExportingPdf(true);
     try {
-      const props: PDFReportProps = {
+      const [{ pdf }, { DashboardPDFDocument }, { createElement }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/components/dashboard/pdf-report"),
+        import("react"),
+      ]);
+      const props = {
         period:       period.label,
         revenue:      formatPrice(d.revenueCents),
         revenueDelta: revenueD.delta,
@@ -216,7 +219,7 @@ function DashboardPage() {
         chartData: d.chart30,
         generatedAt: new Date().toLocaleString("pt-BR"),
       };
-      const blob = await pdf(<DashboardPDFDocument {...props} />).toBlob();
+      const blob = await pdf(createElement(DashboardPDFDocument, props)).toBlob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href     = url;
